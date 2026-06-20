@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from backend.auth import get_current_user
 from backend.models import get_or_create_user, get_user, get_user_orders
+from backend.database import get_db
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -32,4 +33,20 @@ async def my_orders(tg_user: dict = Depends(get_current_user)):
             "created_at": o["created_at"].isoformat(),
         }
         for o in orders
+    ]
+
+
+@router.get("/topups")
+async def my_topups(tg_user: dict = Depends(get_current_user)):
+    db = get_db()
+    topups = await db.topups.find({"user_id": tg_user["id"]}).sort("created_at", -1).limit(20).to_list(None)
+    return [
+        {
+            "id": str(t["_id"]),
+            "amount": t["amount"],
+            "method": t["method"],
+            "status": t["status"],
+            "created_at": t["created_at"].isoformat(),
+        }
+        for t in topups
     ]

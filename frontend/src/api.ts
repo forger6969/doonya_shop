@@ -38,3 +38,17 @@ export const leaveReview = (data: {
   rating: number;
   text: string;
 }) => api.post("/orders/review", data).then((r) => r.data);
+
+export const getMyTopups = () => api.get("/users/topups").then((r) => r.data);
+
+// Admin
+export const adminGetTopups = (status = "pending") =>
+  api.get(`/admin/topups?status=${status}`).then((r) => r.data);
+export const adminGetOrders = (status = "pending") =>
+  api.get(`/admin/orders?status=${status}`).then((r) => r.data);
+export const adminConfirmTopup = (id: string) =>
+  api.post(`/admin/topup/${id}/confirm`).then((r) => r.data);
+export const adminRejectTopup = (id: string) =>
+  api.post(`/admin/topup/${id}/reject`).then((r) => r.data);
+export const adminCompleteOrder = (id: string) =>
+  api.post(`/admin/order/${id}/complete`).then((r) => r.data);

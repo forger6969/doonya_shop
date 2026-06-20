@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from backend.config import ADMIN_ID
+from backend.auth import get_current_user
+from backend.database import get_db
 from backend.models import (
     confirm_topup, reject_topup, complete_order,
     create_game, delete_game, create_product, delete_product,
@@ -10,13 +12,51 @@ from backend.models import (
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-async def require_admin(x_admin_id: str = Header(..., alias="X-Admin-Id")):
-    if int(x_admin_id) != ADMIN_ID:
+async def require_admin(tg_user: dict = Depends(get_current_user)):
+    if tg_user["id"] != ADMIN_ID:
         raise HTTPException(status_code=403, detail="Forbidden")
-    return int(x_admin_id)
+    return tg_user
 
 
-# ── Top-ups ───────────────────────────────────────────────────────────────
+# ── Top-ups list ─────────────────────────────────────────────────────────
+
+@router.get("/topups")
+async def list_topups(status: str = "pending", _=Depends(require_admin)):
+    db = get_db()
+    topups = await db.topups.find({"status": status}).sort("created_at", -1).limit(50).to_list(None)
+    return [
+        {
+            "id": str(t["_id"]),
+            "user_id": t["user_id"],
+            "amount": t["amount"],
+            "unique_amount": t["unique_amount"],
+            "method": t["method"],
+            "receipt_url": t.get("receipt_file_id", ""),
+            "status": t["status"],
+            "created_at": t["created_at"].isoformat(),
+        }
+        for t in topups
+    ]
+
+
+@router.get("/orders")
+async def list_orders(status: str = "pending", _=Depends(require_admin)):
+    db = get_db()
+    orders = await db.orders.find({"status": status}).sort("created_at", -1).limit(50).to_list(None)
+    return [
+        {
+            "id": str(o["_id"]),
+            "user_id": o["user_id"],
+            "product_id": o["product_id"],
+            "amount": o["amount"],
+            "status": o["status"],
+            "created_at": o["created_at"].isoformat(),
+        }
+        for o in orders
+    ]
+
+
+# ── Top-ups actions ───────────────────────────────────────────────────────
 
 @router.post("/topup/{topup_id}/confirm")
 async def confirm(topup_id: str, _=Depends(require_admin)):

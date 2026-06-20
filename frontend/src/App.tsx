@@ -3,12 +3,15 @@ import { getMe } from "./api";
 import CatalogPage from "./pages/CatalogPage";
 import ProfilePage from "./pages/ProfilePage";
 import TopupPage from "./pages/TopupPage";
+import AdminPage from "./pages/AdminPage";
 import BuyModal from "./pages/BuyModal";
 
-type Tab = "catalog" | "profile";
+type Tab = "catalog" | "profile" | "admin";
 
-interface User { balance: number; first_name: string }
+interface User { user_id: number; balance: number; first_name: string }
 interface Product { id: string; name: string; price: number }
+
+const ADMIN_ID = Number(import.meta.env.VITE_ADMIN_ID || "6299152655");
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("catalog");
@@ -21,6 +24,7 @@ export default function App() {
   }, []);
 
   const refreshUser = () => getMe().then(setUser).catch(() => {});
+  const isAdmin = user?.user_id === ADMIN_ID;
 
   if (showTopup) {
     return (
@@ -44,11 +48,9 @@ export default function App() {
 
       {/* Content */}
       <div className="flex-1 px-4 pb-24 overflow-y-auto">
-        {tab === "catalog" ? (
-          <CatalogPage onBuy={(p) => setBuyProduct(p)} />
-        ) : (
-          <ProfilePage onTopup={() => setShowTopup(true)} />
-        )}
+        {tab === "catalog" && <CatalogPage onBuy={(p) => setBuyProduct(p)} />}
+        {tab === "profile" && <ProfilePage onTopup={() => setShowTopup(true)} />}
+        {tab === "admin" && isAdmin && <AdminPage />}
       </div>
 
       {/* Bottom nav */}
@@ -59,6 +61,7 @@ export default function App() {
         {([
           { id: "catalog", icon: "🎮", label: "Каталог" },
           { id: "profile", icon: "👤", label: "Профиль" },
+          ...(isAdmin ? [{ id: "admin", icon: "⚙️", label: "Админ" }] : []),
         ] as { id: Tab; icon: string; label: string }[]).map((t) => (
           <button
             key={t.id}
