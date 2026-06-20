@@ -1,11 +1,15 @@
 from datetime import datetime
 from bson import ObjectId
-from backend.database import db
+from backend.database import get_db
+
+
+def db():
+    return get_db()
 
 
 # ── Users ──────────────────────────────────────────────────────────────
 async def get_or_create_user(user_id: int, username: str, first_name: str) -> dict:
-    user = await db.users.find_one({"user_id": user_id})
+    user = await db().users.find_one({"user_id": user_id})
     if not user:
         user = {
             "user_id": user_id,
@@ -14,30 +18,30 @@ async def get_or_create_user(user_id: int, username: str, first_name: str) -> di
             "balance": 0,
             "created_at": datetime.utcnow(),
         }
-        await db.users.insert_one(user)
+        await db().users.insert_one(user)
     return user
 
 
 async def get_user(user_id: int) -> dict | None:
-    return await db.users.find_one({"user_id": user_id})
+    return await db().users.find_one({"user_id": user_id})
 
 
 async def update_balance(user_id: int, amount: int):
-    await db.users.update_one({"user_id": user_id}, {"$inc": {"balance": amount}})
+    await db().users.update_one({"user_id": user_id}, {"$inc": {"balance": amount}})
 
 
 # ── Games ───────────────────────────────────────────────────────────────
 async def get_games() -> list:
-    return await db.games.find({"is_active": True}).sort("order", 1).to_list(None)
+    return await db().games.find({"is_active": True}).sort("order", 1).to_list(None)
 
 
 async def get_game(game_id: str) -> dict | None:
-    return await db.games.find_one({"_id": ObjectId(game_id), "is_active": True})
+    return await db().games.find_one({"_id": ObjectId(game_id), "is_active": True})
 
 
 async def create_game(name: str, description: str = "", photo_id: str = "") -> str:
-    count = await db.games.count_documents({})
-    result = await db.games.insert_one({
+    count = await db().games.count_documents({})
+    result = await db().games.insert_one({
         "name": name,
         "description": description,
         "photo_id": photo_id,
@@ -49,21 +53,21 @@ async def create_game(name: str, description: str = "", photo_id: str = "") -> s
 
 
 async def delete_game(game_id: str):
-    await db.games.update_one({"_id": ObjectId(game_id)}, {"$set": {"is_active": False}})
+    await db().games.update_one({"_id": ObjectId(game_id)}, {"$set": {"is_active": False}})
 
 
 # ── Products ─────────────────────────────────────────────────────────────
 async def get_products(game_id: str) -> list:
-    return await db.products.find({"game_id": game_id, "is_active": True}).sort("order", 1).to_list(None)
+    return await db().products.find({"game_id": game_id, "is_active": True}).sort("order", 1).to_list(None)
 
 
 async def get_product(product_id: str) -> dict | None:
-    return await db.products.find_one({"_id": ObjectId(product_id), "is_active": True})
+    return await db().products.find_one({"_id": ObjectId(product_id), "is_active": True})
 
 
 async def create_product(game_id: str, name: str, description: str, price: int, photo_id: str = "") -> str:
-    count = await db.products.count_documents({"game_id": game_id})
-    result = await db.products.insert_one({
+    count = await db().products.count_documents({"game_id": game_id})
+    result = await db().products.insert_one({
         "game_id": game_id,
         "name": name,
         "description": description,
@@ -77,12 +81,12 @@ async def create_product(game_id: str, name: str, description: str, price: int, 
 
 
 async def delete_product(product_id: str):
-    await db.products.update_one({"_id": ObjectId(product_id)}, {"$set": {"is_active": False}})
+    await db().products.update_one({"_id": ObjectId(product_id)}, {"$set": {"is_active": False}})
 
 
 # ── Top-ups ──────────────────────────────────────────────────────────────
 async def create_topup(user_id: int, amount: int, unique_amount: int, method: str, receipt_file_id: str) -> str:
-    result = await db.topups.insert_one({
+    result = await db().topups.insert_one({
         "user_id": user_id,
         "amount": amount,
         "unique_amount": unique_amount,
@@ -95,9 +99,9 @@ async def create_topup(user_id: int, amount: int, unique_amount: int, method: st
 
 
 async def confirm_topup(topup_id: str) -> dict | None:
-    topup = await db.topups.find_one({"_id": ObjectId(topup_id)})
+    topup = await db().topups.find_one({"_id": ObjectId(topup_id)})
     if topup and topup["status"] == "pending":
-        await db.topups.update_one(
+        await db().topups.update_one(
             {"_id": ObjectId(topup_id)},
             {"$set": {"status": "confirmed", "confirmed_at": datetime.utcnow()}}
         )
@@ -107,9 +111,9 @@ async def confirm_topup(topup_id: str) -> dict | None:
 
 
 async def reject_topup(topup_id: str) -> dict | None:
-    topup = await db.topups.find_one({"_id": ObjectId(topup_id)})
+    topup = await db().topups.find_one({"_id": ObjectId(topup_id)})
     if topup and topup["status"] == "pending":
-        await db.topups.update_one(
+        await db().topups.update_one(
             {"_id": ObjectId(topup_id)},
             {"$set": {"status": "rejected", "rejected_at": datetime.utcnow()}}
         )
@@ -118,7 +122,7 @@ async def reject_topup(topup_id: str) -> dict | None:
 
 # ── Orders ───────────────────────────────────────────────────────────────
 async def create_order(user_id: int, product_id: str, game_id: str, amount: int) -> str:
-    result = await db.orders.insert_one({
+    result = await db().orders.insert_one({
         "user_id": user_id,
         "product_id": product_id,
         "game_id": game_id,
@@ -131,20 +135,20 @@ async def create_order(user_id: int, product_id: str, game_id: str, amount: int)
 
 
 async def complete_order(order_id: str) -> dict | None:
-    await db.orders.update_one(
+    await db().orders.update_one(
         {"_id": ObjectId(order_id)},
         {"$set": {"status": "completed", "completed_at": datetime.utcnow()}}
     )
-    return await db.orders.find_one({"_id": ObjectId(order_id)})
+    return await db().orders.find_one({"_id": ObjectId(order_id)})
 
 
 async def get_user_orders(user_id: int) -> list:
-    return await db.orders.find({"user_id": user_id}).sort("created_at", -1).limit(10).to_list(None)
+    return await db().orders.find({"user_id": user_id}).sort("created_at", -1).limit(10).to_list(None)
 
 
 # ── Reviews ──────────────────────────────────────────────────────────────
 async def create_review(user_id: int, order_id: str, product_id: str, rating: int, text: str) -> str:
-    result = await db.reviews.insert_one({
+    result = await db().reviews.insert_one({
         "user_id": user_id,
         "order_id": order_id,
         "product_id": product_id,
@@ -156,4 +160,4 @@ async def create_review(user_id: int, order_id: str, product_id: str, rating: in
 
 
 async def get_product_reviews(product_id: str) -> list:
-    return await db.reviews.find({"product_id": product_id}).sort("created_at", -1).limit(5).to_list(None)
+    return await db().reviews.find({"product_id": product_id}).sort("created_at", -1).limit(5).to_list(None)

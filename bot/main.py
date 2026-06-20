@@ -1,9 +1,7 @@
-import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from backend.config import BOT_TOKEN, MINI_APP_URL, ADMIN_ID
-from backend.database import connect_db, close_db
 from backend.models import confirm_topup, reject_topup, complete_order
 from backend.notify import notify_user_topup_confirmed, notify_user_topup_rejected, notify_user_order_ready
 
@@ -17,21 +15,20 @@ async def cmd_start(message: types.Message):
         InlineKeyboardButton(text="🎮 Открыть магазин", web_app=WebAppInfo(url=MINI_APP_URL))
     ]])
     await message.answer(
-        "👋 Добро пожаловать в <b>Nyx Shop</b>!\n\n"
+        "👋 Добро пожаловать в <b>Doonya Shop</b>!\n\n"
         "Здесь вы можете купить внутриигровую валюту, донаты и товары для ваших игр.",
         reply_markup=kb,
         parse_mode="HTML",
     )
 
 
-# Admin commands: /confirm_<id>, /reject_<id>, /done_<id>
 @dp.message(lambda m: m.text and m.text.startswith("/confirm_") and m.from_user.id == ADMIN_ID)
 async def admin_confirm(message: types.Message):
     topup_id = message.text.removeprefix("/confirm_").strip()
     result = await confirm_topup(topup_id)
     if result:
         await notify_user_topup_confirmed(result["user_id"], result["amount"])
-        await message.answer(f"✅ Пополнение подтверждено, баланс пользователя обновлён.")
+        await message.answer("✅ Пополнение подтверждено, баланс обновлён.")
     else:
         await message.answer("❌ Не найдено или уже обработано.")
 
@@ -42,7 +39,7 @@ async def admin_reject(message: types.Message):
     result = await reject_topup(topup_id)
     if result:
         await notify_user_topup_rejected(result["user_id"])
-        await message.answer("✅ Пополнение отклонено, пользователь уведомлён.")
+        await message.answer("✅ Отклонено, пользователь уведомлён.")
     else:
         await message.answer("❌ Не найдено или уже обработано.")
 
@@ -56,16 +53,3 @@ async def admin_done(message: types.Message):
         await message.answer("✅ Заказ выполнен, пользователь уведомлён.")
     else:
         await message.answer("❌ Заказ не найден.")
-
-
-async def main():
-    await connect_db()
-    try:
-        await dp.start_polling(bot)
-    finally:
-        await close_db()
-        await bot.session.close()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
