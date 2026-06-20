@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --tg-bg: var(--tg-theme-bg-color, #16171d);
+  --tg-text: var(--tg-theme-text-color, #ffffff);
+  --tg-hint: var(--tg-theme-hint-color, #8b8b9a);
+  --tg-button: var(--tg-theme-button-color, #7c3aed);
+  --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
+  --tg-secondary: var(--tg-theme-secondary-bg-color, #1f2028);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--tg-bg);
+  color: var(--tg-text);
+  min-height: 100dvh;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.card {
+  @apply rounded-2xl p-4;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+
+.btn-primary {
+  @apply w-full py-3 rounded-xl font-semibold text-white transition-opacity active:opacity-70 disabled:opacity-40;
+  background: var(--tg-button);
+  color: var(--tg-button-text);
+}
+
+.btn-outline {
+  @apply w-full py-3 rounded-xl font-semibold border text-white transition-opacity active:opacity-70;
+  border-color: rgba(255,255,255,0.20);
+}
+
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }

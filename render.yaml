@@ -1,0 +1,55 @@
+services:
+  # Backend API (FastAPI) — $7/month Starter
+  - type: web
+    name: nyx-shop-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    plan: starter
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_ID
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: DB_NAME
+        value: nyx_shop
+      - key: MINI_APP_URL
+        sync: false
+      - key: CARD_REQUISITES
+        sync: false
+      - key: CARD_HOLDER
+        sync: false
+      - key: PAYME_PHONE
+        sync: false
+
+  # Bot (aiogram polling) — $7/month Starter
+  - type: worker
+    name: nyx-shop-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m bot.main
+    plan: starter
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_ID
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: DB_NAME
+        value: nyx_shop
+      - key: MINI_APP_URL
+        sync: false
+
+  # Frontend (React TMA) — Free static site
+  - type: web
+    name: nyx-shop-frontend
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    plan: free
+    envVars:
+      - key: VITE_API_URL
+        sync: false
