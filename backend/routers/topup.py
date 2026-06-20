@@ -1,30 +1,31 @@
 import random
+import cloudinary
+import cloudinary.uploader
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from backend.auth import get_current_user
 from backend.models import get_or_create_user, create_topup
 from backend.config import CARD_REQUISITES, CARD_HOLDER, PAYME_PHONE
-import aiofiles
-import os
+from backend.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 
 router = APIRouter(prefix="/topup", tags=["topup"])
 
-UPLOADS_DIR = "/tmp/receipts"
-os.makedirs(UPLOADS_DIR, exist_ok=True)
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
+)
 
 
 def _unique_amount(base: int) -> int:
-    """Card/Payme: add random 1-999 so the transfer is uniquely identifiable."""
     return base + random.randint(1, 999)
 
 
 def _round_amount(base: int) -> int:
-    """ATM: round to nearest 1000 (ATM can't accept odd sums)."""
     return round(base / 1000) * 1000
 
 
 @router.get("/methods")
 async def topup_methods(amount: int, method: str):
-    """Return requisites + the exact amount to transfer for given method."""
     if method == "card":
         exact = _unique_amount(amount)
         return {
@@ -63,24 +64,26 @@ async def submit_topup(
     user_id = tg_user["id"]
     await get_or_create_user(user_id, tg_user.get("username", ""), tg_user.get("first_name", ""))
 
-    ext = receipt.filename.rsplit(".", 1)[-1] if "." in receipt.filename else "jpg"
-    filename = f"{user_id}_{unique_amount}.{ext}"
-    path = os.path.join(UPLOADS_DIR, filename)
-    async with aiofiles.open(path, "wb") as f:
-        await f.write(await receipt.read())
+    contents = await receipt.read()
+    upload_result = cloudinary.uploader.upload(
+        contents,
+        folder="doonya_shop/receipts",
+        public_id=f"{user_id}_{unique_amount}",
+        resource_type="image",
+    )
+    receipt_url = upload_result["secure_url"]
 
     topup_id = await create_topup(
         user_id=user_id,
         amount=amount,
         unique_amount=unique_amount,
         method=method,
-        receipt_file_id=filename,
+        receipt_file_id=receipt_url,
     )
 
-    # Notify admin via bot (fire-and-forget)
     try:
         from backend.notify import notify_admin_topup
-        await notify_admin_topup(topup_id, user_id, unique_amount, method)
+        await notify_admin_topup(topup_id, user_id, unique_amount, method, receipt_url)
     except Exception:
         pass
 

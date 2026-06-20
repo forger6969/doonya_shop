@@ -7,3 +7,4 @@ aiogram==3.13.1
 aiofiles==24.1.0
 cryptography==43.0.3
 python-multipart==0.0.20
+cloudinary==1.41.0

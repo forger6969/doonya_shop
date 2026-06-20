@@ -11,7 +11,7 @@ def get_bot() -> Bot:
     return _bot
 
 
-async def notify_admin_topup(topup_id: str, user_id: int, amount: int, method: str):
+async def notify_admin_topup(topup_id: str, user_id: int, amount: int, method: str, receipt_url: str = ""):
     bot = get_bot()
     text = (
         f"💰 <b>Новое пополнение</b>\n"
@@ -22,7 +22,10 @@ async def notify_admin_topup(topup_id: str, user_id: int, amount: int, method: s
         f"✅ /confirm_{topup_id}\n"
         f"❌ /reject_{topup_id}"
     )
-    await bot.send_message(ADMIN_ID, text, parse_mode="HTML")
+    if receipt_url:
+        await bot.send_photo(ADMIN_ID, receipt_url, caption=text, parse_mode="HTML")
+    else:
+        await bot.send_message(ADMIN_ID, text, parse_mode="HTML")
 
 
 async def notify_admin_order(order_id: str, user_id: int, product_name: str, price: int):
