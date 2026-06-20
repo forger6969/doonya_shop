@@ -18,6 +18,25 @@ async def require_admin(tg_user: dict = Depends(get_current_user)):
     return tg_user
 
 
+# ── Stats ────────────────────────────────────────────────────────────────
+
+@router.get("/stats")
+async def get_stats(_=Depends(require_admin)):
+    db = get_db()
+    pending_topups, pending_orders, total_games, total_products = await __import__("asyncio").gather(
+        db.topups.count_documents({"status": "pending"}),
+        db.orders.count_documents({"status": "pending"}),
+        db.games.count_documents({}),
+        db.products.count_documents({}),
+    )
+    return {
+        "pending_topups": pending_topups,
+        "pending_orders": pending_orders,
+        "total_games": total_games,
+        "total_products": total_products,
+    }
+
+
 # ── Top-ups list ─────────────────────────────────────────────────────────
 
 @router.get("/topups")

@@ -48,3 +48,36 @@ body {
 }
 
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+/* ── Admin Panel ─────────────────────────────────────── */
+
+.admin-shell {
+  background: #0b0c10;
+  color: #e4e5f0;
+}
+
+.admin-header {
+  background: #0f1016;
+  border-bottom: 1px solid #1a1c27;
+}
+
+.admin-card {
+  background: #13141c;
+  border: 1px solid #1e2030;
+  border-radius: 14px;
+}
+
+.admin-input {
+  @apply w-full bg-[#0b0c10] border border-[#2a2d3e] rounded-xl px-3 py-2.5 text-sm text-white placeholder-zinc-600 outline-none;
+  transition: border-color 0.15s;
+}
+.admin-input:focus { border-color: #f59e0b; }
+
+.admin-btn-primary {
+  @apply flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold transition-opacity active:opacity-70 disabled:opacity-30;
+  background: #f59e0b;
+  color: #0b0c10;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

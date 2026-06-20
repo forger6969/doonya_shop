@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Settings } from "lucide-react";
 import { getMe } from "./api";
 import CatalogPage from "./pages/CatalogPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -26,6 +27,21 @@ export default function App() {
   const refreshUser = () => getMe().then(setUser).catch(() => {});
   const isAdmin = user?.user_id === ADMIN_ID;
 
+  // Admin panel takes over the full screen — no header/nav from main app
+  if (tab === "admin" && isAdmin) {
+    return (
+      <div className="min-h-dvh">
+        <AdminPage />
+        <button
+          onClick={() => setTab("catalog")}
+          className="fixed bottom-4 right-4 w-10 h-10 rounded-full bg-amber-400/20 border border-amber-400/30 flex items-center justify-center active:opacity-70 z-50"
+        >
+          <Settings className="w-4 h-4 text-amber-400 rotate-45" />
+        </button>
+      </div>
+    );
+  }
+
   if (showTopup) {
     return (
       <div className="p-4 pb-8 min-h-dvh">
@@ -38,19 +54,26 @@ export default function App() {
     <div className="flex flex-col min-h-dvh">
       {/* Header */}
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
-        <h1 className="text-xl font-bold">🎮 Nyx Shop</h1>
-        {user && (
-          <span className="text-sm text-purple-400 font-semibold">
-            {user.balance.toLocaleString()} сум
-          </span>
-        )}
+        <h1 className="text-xl font-bold">Nyx Shop</h1>
+        <div className="flex items-center gap-3">
+          {user && (
+            <span className="text-sm text-purple-400 font-semibold">
+              {user.balance.toLocaleString()} sum
+            </span>
+          )}
+          {isAdmin && (
+            <button onClick={() => setTab("admin")}
+              className="w-8 h-8 rounded-lg bg-amber-400/10 flex items-center justify-center active:opacity-70">
+              <Settings className="w-4 h-4 text-amber-400" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 px-4 pb-24 overflow-y-auto">
         {tab === "catalog" && <CatalogPage onBuy={(p) => setBuyProduct(p)} />}
         {tab === "profile" && <ProfilePage onTopup={() => setShowTopup(true)} />}
-        {tab === "admin" && isAdmin && <AdminPage />}
       </div>
 
       {/* Bottom nav */}
@@ -59,10 +82,9 @@ export default function App() {
         style={{ background: "var(--tg-secondary)" }}
       >
         {([
-          { id: "catalog", icon: "🎮", label: "Каталог" },
-          { id: "profile", icon: "👤", label: "Профиль" },
-          ...(isAdmin ? [{ id: "admin", icon: "⚙️", label: "Админ" }] : []),
-        ] as { id: Tab; icon: string; label: string }[]).map((t) => (
+          { id: "catalog", label: "Catalogue" },
+          { id: "profile", label: "Profile" },
+        ] as { id: Tab; label: string }[]).map((t) => (
           <button
             key={t.id}
             className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-xs font-medium transition-colors ${
@@ -70,7 +92,6 @@ export default function App() {
             }`}
             onClick={() => setTab(t.id)}
           >
-            <span className="text-xl">{t.icon}</span>
             {t.label}
           </button>
         ))}
