@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef, useCallback } from "react";
-import { Search, X, ChevronRight, ArrowLeft, ShoppingCart, Star, Zap } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Search, X, ChevronRight, ArrowLeft, ShoppingCart, Zap } from "lucide-react";
 import { getGames, getProducts } from "../api";
 
 interface Game { id: string; name: string; description: string; photo_id: string }
@@ -152,9 +152,8 @@ function GameGrid({ games, onSelect }: { games: Game[]; onSelect: (g: Game) => v
   );
 }
 
-function ProductCard({ product, gameName, onBuy }: {
+function ProductCard({ product, onBuy }: {
   product: Product;
-  gameName: string;
   onBuy: () => void;
 }) {
   return (
@@ -240,7 +239,6 @@ function GameDetailPage({
                 <ProductCard
                   key={p.id}
                   product={p}
-                  gameName={game.name}
                   onBuy={() => onBuy({ ...p, gameName: game.name })}
                 />
               ))}
