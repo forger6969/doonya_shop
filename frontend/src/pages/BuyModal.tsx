@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { buyProduct } from "../api";
-import WebApp from "@twa-dev/sdk";
+
 
 interface Product { id: string; name: string; price: number }
 interface Props {
@@ -19,11 +19,11 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
     setLoading(true);
     try {
       await buyProduct(product.id);
-      WebApp.showAlert(`✅ Заказ оформлен! Ожидайте доставки.`);
+      window.Telegram?.WebApp?.showAlert(`✅ Заказ оформлен! Ожидайте доставки.`);
       onSuccess();
     } catch (e: any) {
       const msg = e?.response?.data?.detail || "Ошибка покупки";
-      WebApp.showAlert(`❌ ${msg}`);
+      window.Telegram?.WebApp?.showAlert(`❌ ${msg}`);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import WebApp from "@twa-dev/sdk";
 import { getMe } from "./api";
 import CatalogPage from "./pages/CatalogPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -18,8 +17,6 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    WebApp.ready();
-    WebApp.expand();
     getMe().then(setUser).catch(() => {});
   }, []);
 

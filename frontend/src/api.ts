@@ -1,12 +1,12 @@
 import axios from "axios";
-import WebApp from "@twa-dev/sdk";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export const api = axios.create({ baseURL: BASE_URL });
 
 api.interceptors.request.use((config) => {
-  config.headers["X-Init-Data"] = WebApp.initData;
+  const initData = window.Telegram?.WebApp?.initData ?? "";
+  config.headers["X-Init-Data"] = initData;
   return config;
 });
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getTopupInfo, submitTopup } from "../api";
-import WebApp from "@twa-dev/sdk";
+
 
 type Method = "card" | "payme" | "atm";
 type Step = "amount" | "method" | "requisites" | "receipt" | "done";
@@ -132,7 +132,7 @@ export default function TopupPage({ onBack }: Props) {
                   className="font-mono font-bold text-purple-300 active:opacity-70"
                   onClick={() => {
                     navigator.clipboard.writeText(info.requisites!);
-                    WebApp.showAlert("Скопировано!");
+                    window.Telegram?.WebApp?.showAlert("Скопировано!");
                   }}
                 >
                   {info.requisites} 📋
@@ -151,7 +151,7 @@ export default function TopupPage({ onBack }: Props) {
                 className="text-xl font-bold text-yellow-400 active:opacity-70"
                 onClick={() => {
                   navigator.clipboard.writeText(String(info.amount));
-                  WebApp.showAlert("Скопировано!");
+                  window.Telegram?.WebApp?.showAlert("Скопировано!");
                 }}
               >
                 {info.amount.toLocaleString()} сум 📋
