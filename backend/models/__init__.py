@@ -45,6 +45,7 @@ async def create_game(name: str, description: str = "", photo_id: str = "") -> s
         "name": name,
         "description": description,
         "photo_id": photo_id,
+        "icon_url": photo_id,
         "is_active": True,
         "order": count,
         "created_at": datetime.utcnow(),

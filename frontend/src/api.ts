@@ -56,8 +56,8 @@ export const adminCompleteOrder = (id: string) =>
 export const adminGetGames = () => api.get("/admin/games").then((r) => r.data);
 export const adminGetProducts = (gameId: string) =>
   api.get(`/admin/games/${gameId}/products`).then((r) => r.data);
-export const adminCreateGame = (name: string, description: string) =>
-  api.post("/admin/games", { name, description }).then((r) => r.data);
+export const adminCreateGame = (name: string, description: string, icon_url = "") =>
+  api.post("/admin/games", { name, description, icon_url }).then((r) => r.data);
 export const adminDeleteGame = (id: string) =>
   api.delete(`/admin/games/${id}`).then((r) => r.data);
 export const adminCreateProduct = (data: { game_id: string; name: string; description: string; price: number }) =>

@@ -424,6 +424,7 @@ function Catalog() {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [iconUrl, setIconUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
@@ -438,8 +439,8 @@ function Catalog() {
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
-    await adminCreateGame(name.trim(), desc.trim());
-    setName(""); setDesc("");
+    await adminCreateGame(name.trim(), desc.trim(), iconUrl.trim());
+    setName(""); setDesc(""); setIconUrl("");
     setShowForm(false);
     setSaving(false);
     load();
@@ -468,10 +469,19 @@ function Catalog() {
       {showForm && (
         <div className="mx-4 mb-3 admin-card p-4 flex flex-col gap-3">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">New Game</p>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Game name"
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Game name *"
             className="admin-input" />
           <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Description (optional)"
             className="admin-input" />
+          <input value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="Icon image URL (optional)"
+            className="admin-input" />
+          {iconUrl && (
+            <div className="flex items-center gap-2">
+              <img src={iconUrl} className="w-10 h-10 rounded-xl object-cover" alt="preview"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <span className="text-[11px] text-zinc-500">Icon preview</span>
+            </div>
+          )}
           <button onClick={save} disabled={saving || !name.trim()} className="admin-btn-primary">
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Create Game</>}
           </button>

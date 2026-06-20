@@ -12,7 +12,7 @@ async def list_games():
             "id": str(g["_id"]),
             "name": g["name"],
             "description": g.get("description", ""),
-            "photo_id": g.get("photo_id", ""),
+            "photo_id": g.get("photo_id", "") or g.get("icon_url", ""),
         }
         for g in games
     ]

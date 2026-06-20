@@ -123,6 +123,7 @@ async def complete(order_id: str, _=Depends(require_admin)):
 class GameCreate(BaseModel):
     name: str
     description: str = ""
+    icon_url: str = ""
 
 
 class ProductCreate(BaseModel):
@@ -134,7 +135,7 @@ class ProductCreate(BaseModel):
 
 @router.post("/games")
 async def add_game(data: GameCreate, _=Depends(require_admin)):
-    game_id = await create_game(data.name, data.description)
+    game_id = await create_game(data.name, data.description, data.icon_url)
     return {"ok": True, "game_id": game_id}
 
 
