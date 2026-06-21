@@ -357,7 +357,7 @@ function toAdminCards(p: Product): AdminCard[] {
 }
 
 // Inline editor for a single card (variant or standalone product)
-function AdminCardEditor({ card, onSaved }: { card: AdminCard; onSaved: () => void }) {
+function AdminCardEditor({ card, gameId, onSaved }: { card: AdminCard; gameId: string; onSaved: () => void }) {
   const { t } = useLang();
   const [name, setName] = useState(card.display_name);
   const [price, setPrice] = useState(String(card.price));
@@ -380,23 +380,46 @@ function AdminCardEditor({ card, onSaved }: { card: AdminCard; onSaved: () => vo
   const save = async () => {
     if (!name.trim() || !price) return;
     setSaving(true);
-    // Save name/price/fields
+
     if (card.is_variant) {
-      const updatedVariants = card.product.variants!.map((v) =>
-        v.label === card.variant_label
-          ? { label: name.trim(), price: Number(price) }
-          : v
-      );
-      await adminPatchProduct(card.product_id, { variants: updatedVariants, purchase_fields: fields });
+      // Extract this variant → standalone product so it gets its own independent discount
+      const remaining = card.product.variants!.filter((v) => v.label !== card.variant_label);
+      // Remove variant from parent (or delete parent if it was the only one)
+      if (remaining.length === 0) {
+        await adminDeleteProduct(card.product_id);
+      } else {
+        await adminPatchProduct(card.product_id, { variants: remaining });
+      }
+      // Create new standalone product
+      const result = await adminCreateProduct({
+        game_id: gameId,
+        name: name.trim(),
+        description: "",
+        price: Number(price),
+        icon_url: card.icon_url,
+      });
+      if (result?.product_id) {
+        if (fields.length > 0) {
+          await adminPatchProduct(result.product_id, { purchase_fields: fields });
+        }
+        if (discountEnabled && Number(discountPct) > 0) {
+          await adminSetDiscount(result.product_id, {
+            discount_percent: Number(discountPct),
+            discount_enabled: true,
+            discount_until: discountUntil ? new Date(discountUntil).toISOString() : null,
+          });
+        }
+      }
     } else {
+      // Standalone product — patch directly
       await adminPatchProduct(card.product_id, { name: name.trim(), price: Number(price), purchase_fields: fields });
+      await adminSetDiscount(card.product_id, {
+        discount_percent: Number(discountPct) || 0,
+        discount_enabled: discountEnabled,
+        discount_until: discountUntil ? new Date(discountUntil).toISOString() : null,
+      });
     }
-    // Save discount
-    await adminSetDiscount(card.product_id, {
-      discount_percent: Number(discountPct) || 0,
-      discount_enabled: discountEnabled,
-      discount_until: discountUntil ? new Date(discountUntil).toISOString() : null,
-    });
+
     setSaving(false);
     onSaved();
   };
@@ -656,6 +679,7 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
               {expandedKey === card.key && (
                 <AdminCardEditor
                   card={card}
+                  gameId={game.id}
                   onSaved={() => { load(); setExpandedKey(null); }}
                 />
               )}
