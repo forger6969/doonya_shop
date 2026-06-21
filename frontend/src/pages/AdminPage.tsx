@@ -405,17 +405,37 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", desc: "", price: "", icon_url: "" });
+  const [formVariants, setFormVariants] = useState<Variant[]>([]);
+  const [formFields, setFormFields] = useState<PurchaseField[]>([]);
+  const [newVar, setNewVar] = useState({ label: "", price: "" });
+  const [newField, setNewField] = useState({ label: "", required: false });
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = async () => { setLoading(true); setProducts(await adminGetProducts(game.id)); setLoading(false); };
   useEffect(() => { load(); }, [game.id]);
 
+  const addVar = () => {
+    if (!newVar.label.trim() || !newVar.price) return;
+    setFormVariants([...formVariants, { label: newVar.label.trim(), price: Number(newVar.price) }]);
+    setNewVar({ label: "", price: "" });
+  };
+  const addField = () => {
+    if (!newField.label.trim()) return;
+    setFormFields([...formFields, { label: newField.label.trim(), required: newField.required }]);
+    setNewField({ label: "", required: false });
+  };
+
   const save = async () => {
     if (!form.name.trim() || !form.price) return;
     setSaving(true);
-    await adminCreateProduct({ game_id: game.id, name: form.name.trim(), description: form.desc.trim(), price: Number(form.price), icon_url: form.icon_url });
+    const result = await adminCreateProduct({ game_id: game.id, name: form.name.trim(), description: form.desc.trim(), price: Number(form.price), icon_url: form.icon_url });
+    if ((formVariants.length > 0 || formFields.length > 0) && result?.product_id) {
+      await adminPatchProduct(result.product_id, { variants: formVariants, purchase_fields: formFields });
+    }
     setForm({ name: "", desc: "", price: "", icon_url: "" });
+    setFormVariants([]); setFormFields([]);
+    setNewVar({ label: "", price: "" }); setNewField({ label: "", required: false });
     setShowForm(false); setSaving(false); load();
   };
 
@@ -441,8 +461,10 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
       </div>
 
       {showForm && (
-        <div className="mx-4 mt-4 a-card p-4 flex flex-col gap-3">
+        <div className="mx-4 mt-4 a-card p-4 flex flex-col gap-4">
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">New Product</p>
+
+          {/* Base info */}
           <div className="flex gap-3 items-start">
             <UploadBtn current={form.icon_url} onDone={(url) => setForm({ ...form, icon_url: url })} />
             <div className="flex-1 flex flex-col gap-2">
@@ -451,8 +473,68 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
             </div>
           </div>
           <input value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder="Description (optional)" className="a-input" />
+
+          {/* Variants */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">
+              Variants <span className="text-zinc-700 normal-case font-normal">(если нужны — 10 stars, 25 stars…)</span>
+            </p>
+            {formVariants.map((v, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs bg-white/[0.03] rounded-lg px-2.5 py-1.5">
+                <span className="flex-1 text-white/70">{v.label}</span>
+                <span className="text-zinc-500">{v.price.toLocaleString()} sum</span>
+                <button onClick={() => setFormVariants(formVariants.filter((_, j) => j !== i))} className="w-5 h-5 rounded bg-red-500/15 flex items-center justify-center flex-shrink-0">
+                  <X className="w-3 h-3 text-red-400" />
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <input value={newVar.label} onChange={(e) => setNewVar({ ...newVar, label: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && addVar()}
+                placeholder="Название (10 stars)" className="a-input flex-1 text-xs" />
+              <input value={newVar.price} onChange={(e) => setNewVar({ ...newVar, price: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && addVar()}
+                placeholder="Цена" type="number" className="a-input w-24 text-xs" />
+              <button onClick={addVar} disabled={!newVar.label.trim() || !newVar.price}
+                className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
+                <Plus className="w-4 h-4 text-amber-400" />
+              </button>
+            </div>
+          </div>
+
+          {/* Purchase fields */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">
+              Что спросить при покупке <span className="text-zinc-700 normal-case font-normal">(ID игрока, ник…)</span>
+            </p>
+            {formFields.map((f, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs bg-white/[0.03] rounded-lg px-2.5 py-1.5">
+                <span className="flex-1 text-white/70">{f.label}</span>
+                <span className="text-[10px] text-zinc-600">{f.required ? "обязательно" : "необязательно"}</span>
+                <button onClick={() => setFormFields(formFields.filter((_, j) => j !== i))} className="w-5 h-5 rounded bg-red-500/15 flex items-center justify-center flex-shrink-0">
+                  <X className="w-3 h-3 text-red-400" />
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-2 items-center">
+              <input value={newField.label} onChange={(e) => setNewField({ ...newField, label: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && addField()}
+                placeholder="Например: ID в Brawl Stars" className="a-input flex-1 text-xs" />
+              <label className="flex items-center gap-1 text-[11px] text-zinc-500 flex-shrink-0 cursor-pointer select-none">
+                <input type="checkbox" checked={newField.required}
+                  onChange={(e) => setNewField({ ...newField, required: e.target.checked })}
+                  className="w-3.5 h-3.5 accent-amber-500" />
+                обяз.
+              </label>
+              <button onClick={addField} disabled={!newField.label.trim()}
+                className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
+                <Plus className="w-4 h-4 text-amber-400" />
+              </button>
+            </div>
+          </div>
+
           <button onClick={save} disabled={saving || !form.name.trim() || !form.price} className="a-btn">
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Add Product</>}
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Создать товар</>}
           </button>
         </div>
       )}
