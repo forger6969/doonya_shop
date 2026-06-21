@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Clock, Copy } from "lucide-react";
 import { getTopupInfo, submitTopup } from "../api";
 
-type Method = "card" | "uzcard" | "visa" | "atm";
+type Method = "uzcard" | "visa" | "atm";
 type Step = "amount" | "method" | "requisites" | "receipt" | "done" | "expired";
 
 interface CardInfo { requisites: string; holder: string; type: string }
@@ -29,10 +29,9 @@ const SESSION_VERSION = 2;
 const TIMER_DURATION = 10 * 60; // 600 seconds
 
 const METHODS: { id: Method; label: string; icon: string }[] = [
-  { id: "card",   label: "Банковская карта", icon: "💳" },
-  { id: "uzcard", label: "Uzcard",           icon: "🏦" },
-  { id: "visa",   label: "Visa",             icon: "💠" },
-  { id: "atm",    label: "Банкомат",         icon: "🏧" },
+  { id: "uzcard", label: "Uzcard",  icon: "🏦" },
+  { id: "visa",   label: "Visa",    icon: "💠" },
+  { id: "atm",    label: "Банкомат", icon: "🏧" },
 ];
 
 interface Props { onBack: () => void }

@@ -291,6 +291,126 @@ async def get_top_users(limit: int = 20) -> list:
     return rows
 
 
+# ── Discounts ────────────────────────────────────────────────────────────────
+
+def is_discount_active(product: dict) -> bool:
+    if not product.get("discount_enabled"):
+        return False
+    pct = product.get("discount_percent", 0)
+    if not pct:
+        return False
+    until = product.get("discount_until")
+    if until and datetime.utcnow() > until:
+        return False
+    return True
+
+
+def calc_discounted_price(price: int, product: dict) -> int | None:
+    if not is_discount_active(product):
+        return None
+    pct = product.get("discount_percent", 0)
+    return max(1, int(price * (100 - pct) / 100))
+
+
+async def set_discount(product_id: str, discount_percent: int, discount_enabled: bool, discount_until: datetime | None):
+    await db().products.update_one(
+        {"_id": ObjectId(product_id)},
+        {"$set": {
+            "discount_percent": discount_percent,
+            "discount_enabled": discount_enabled,
+            "discount_until": discount_until,
+        }},
+    )
+
+
+async def get_active_discounts(limit: int = 20) -> list:
+    now = datetime.utcnow()
+    return await db().products.find({
+        "is_active": True,
+        "discount_enabled": True,
+        "discount_percent": {"$gt": 0},
+        "$or": [
+            {"discount_until": None},
+            {"discount_until": {"$gt": now}},
+        ],
+    }).sort("discount_percent", -1).limit(limit).to_list(None)
+
+
+async def get_top_catalog_products(limit: int = 6) -> list:
+    pipeline = [
+        {"$match": {"status": {"$ne": "refunded"}}},
+        {"$group": {"_id": "$product_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": limit},
+    ]
+    rows = await db().orders.aggregate(pipeline).to_list(None)
+    result = []
+    for row in rows:
+        try:
+            p = await db().products.find_one({"_id": ObjectId(row["_id"]), "is_active": True})
+            if p:
+                p["_sales_count"] = row["count"]
+                result.append(p)
+        except Exception:
+            pass
+    return result
+
+
+# ── Support Chat ──────────────────────────────────────────────────────────────
+
+async def get_or_create_chat(user_id: int, user_name: str, first_name: str) -> dict:
+    chat = await db().support_chats.find_one({"user_id": user_id})
+    if not chat:
+        chat = {
+            "user_id": user_id,
+            "user_name": user_name,
+            "first_name": first_name,
+            "messages": [],
+            "status": "open",
+            "unread_by_agent": 0,
+            "last_ts": datetime.utcnow(),
+            "created_at": datetime.utcnow(),
+        }
+        await db().support_chats.insert_one(chat)
+    return chat
+
+
+async def add_chat_message(user_id: int, from_: str, text: str, agent_id: int | None = None) -> dict:
+    import uuid
+    msg = {
+        "id": str(uuid.uuid4()),
+        "from": from_,
+        "text": text,
+        "ts": datetime.utcnow().isoformat(),
+        "agent_id": agent_id,
+    }
+    update: dict = {
+        "$push": {"messages": msg},
+        "$set": {"last_ts": datetime.utcnow()},
+    }
+    if from_ == "user":
+        update["$inc"] = {"unread_by_agent": 1}
+    else:
+        update["$set"]["unread_by_agent"] = 0
+    await db().support_chats.update_one({"user_id": user_id}, update)
+    return msg
+
+
+async def get_chat(user_id: int) -> dict | None:
+    return await db().support_chats.find_one({"user_id": user_id})
+
+
+async def list_active_chats(limit: int = 50) -> list:
+    return await db().support_chats.find({}).sort("last_ts", -1).limit(limit).to_list(None)
+
+
+async def mark_chat_read(user_id: int):
+    await db().support_chats.update_one(
+        {"user_id": user_id},
+        {"$set": {"unread_by_agent": 0}},
+    )
+
+
 async def get_product_stats(product_id: str) -> dict:
     pipeline = [
         {"$match": {"product_id": product_id}},

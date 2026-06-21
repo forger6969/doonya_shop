@@ -20,15 +20,17 @@ export const uploadAvatar = (file: File) => {
 };
 
 // ── Support ─────────────────────────────────────────────────────────────────
-export const createTicket = (data: { category: string; message: string }) =>
-  api.post("/support/ticket", data).then((r) => r.data);
-export const getMyTickets = () => api.get("/support/tickets").then((r) => r.data);
+export const getSupportHistory = () => api.get("/support/chat").then((r) => r.data);
+export const agentGetChats = () => api.get("/support/agent/chats").then((r) => r.data);
+export const agentGetChat = (userId: number) => api.get(`/support/agent/chats/${userId}`).then((r) => r.data);
 
 // ── Catalog ──────────────────────────────────────────────────────────────────
 export const getGames = () => api.get("/catalog/games").then((r) => r.data);
 export const getProducts = (gameId: string) => api.get(`/catalog/games/${gameId}/products`).then((r) => r.data);
 export const getProduct = (id: string) => api.get(`/catalog/products/${id}`).then((r) => r.data);
 export const getReviews = (id: string) => api.get(`/catalog/products/${id}/reviews`).then((r) => r.data);
+export const getTopProducts = () => api.get("/catalog/top").then((r) => r.data);
+export const getOnSaleProducts = () => api.get("/catalog/on-sale").then((r) => r.data);
 
 // ── Topup ────────────────────────────────────────────────────────────────────
 export const getTopupInfo = (amount: number, method: string) =>
@@ -99,3 +101,15 @@ export const adminCreatePromo = (data: { code: string; discount_pct: number; min
   api.post("/admin/promos", data).then((r) => r.data);
 export const adminDeletePromo = (id: string) => api.delete(`/admin/promos/${id}`).then((r) => r.data);
 export const adminTogglePromo = (id: string) => api.patch(`/admin/promos/${id}/toggle`).then((r) => r.data);
+
+// Discount
+export const adminSetDiscount = (
+  productId: string,
+  data: { discount_percent: number; discount_enabled: boolean; discount_until?: string | null }
+) => api.patch(`/admin/products/${productId}/discount`, data).then((r) => r.data);
+
+// Support WS URL helper
+export const getSupportWsUrl = () => {
+  const base = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  return base.replace(/^http/, "ws") + "/support/ws";
+};

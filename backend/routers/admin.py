@@ -12,6 +12,7 @@ from backend.models import (
     get_games, get_products,
     create_promo, list_promos, delete_promo, toggle_promo,
     get_sales_by_day, get_top_products, get_top_users, get_product_stats,
+    set_discount,
 )
 
 cloudinary.config(
@@ -192,6 +193,25 @@ async def patch_product(product_id: str, data: ProductUpdate, _=Depends(require_
 @router.delete("/products/{product_id}")
 async def del_product(product_id: str, _=Depends(require_admin)):
     await delete_product(product_id)
+    return {"ok": True}
+
+
+class DiscountSet(BaseModel):
+    discount_percent: int = 0
+    discount_enabled: bool = True
+    discount_until: str | None = None  # ISO datetime string or null
+
+
+@router.patch("/products/{product_id}/discount")
+async def patch_discount(product_id: str, data: DiscountSet, _=Depends(require_admin)):
+    from datetime import datetime as dt
+    until = None
+    if data.discount_until:
+        try:
+            until = dt.fromisoformat(data.discount_until.replace("Z", "+00:00")).replace(tzinfo=None)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid discount_until format")
+    await set_discount(product_id, data.discount_percent, data.discount_enabled, until)
     return {"ok": True}
 
 

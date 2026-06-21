@@ -24,3 +24,8 @@ ADMIN_IDS: set = {ADMIN_ID} | {
 CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME", "")
 CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")
 CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
+
+# Support agents (can reply to users in chat)
+SUPPORT_AGENT_IDS: set = {
+    int(x.strip()) for x in os.getenv("SUPPORT_AGENT_IDS", "1771984046,8235243143").split(",") if x.strip()
+}

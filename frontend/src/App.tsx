@@ -5,6 +5,7 @@ import { useLang } from "./i18n";
 import CatalogPage from "./pages/CatalogPage";
 import ProfilePage from "./pages/ProfilePage";
 import SupportPage from "./pages/SupportPage";
+import SupportAgentPage from "./pages/SupportAgentPage";
 import TopupPage from "./pages/TopupPage";
 import AdminPage from "./pages/AdminPage";
 import BuyModal from "./pages/BuyModal";
@@ -23,6 +24,8 @@ const ADMIN_IDS = new Set([
   Number(import.meta.env.VITE_ADMIN_ID || "6299152655"),
   7004667100,
 ]);
+
+const SUPPORT_AGENT_IDS = new Set([1771984046, 8235243143]);
 
 const TOPUP_SESSION_KEY = "topup_pending";
 const TOPUP_SESSION_VERSION = 2;
@@ -100,6 +103,7 @@ export default function App() {
 
   const refreshUser = () => getMe().then(setUser).catch(() => {});
   const isAdmin = user?.user_id != null && ADMIN_IDS.has(user.user_id);
+  const isSupportAgent = user?.user_id != null && SUPPORT_AGENT_IDS.has(user.user_id);
 
   const openPendingTopup = () => setShowTopup(true);
 
@@ -112,6 +116,7 @@ export default function App() {
   }
 
   if (isAdmin) return <AdminPage />;
+  if (isSupportAgent) return <SupportAgentPage />;
 
   if (showTopup) {
     return (

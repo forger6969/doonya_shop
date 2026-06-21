@@ -1,8 +1,8 @@
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from backend.config import BOT_TOKEN, MINI_APP_URL, ADMIN_ID
-from backend.models import confirm_topup, reject_topup, complete_order, get_product
+from backend.config import BOT_TOKEN, MINI_APP_URL, ADMIN_ID, SUPPORT_AGENT_IDS
+from backend.models import confirm_topup, reject_topup, complete_order, get_product, add_chat_message, get_chat
 from backend.database import get_db
 from backend.notify import notify_user_topup_confirmed, notify_user_topup_rejected, notify_user_order_ready
 
@@ -118,3 +118,48 @@ async def admin_done(message: types.Message):
         await message.answer("✅ Заказ выполнен, пользователь уведомлён.")
     else:
         await message.answer("❌ Заказ не найден.")
+
+
+# ── Support: agent reply via bot ──────────────────────────────────────────────
+
+@dp.message(lambda m: m.text and m.text.startswith("/sreply") and m.from_user.id in SUPPORT_AGENT_IDS)
+async def agent_sreply(message: types.Message):
+    """Usage: /sreply <user_id> <text>"""
+    parts = message.text.removeprefix("/sreply").strip().split(" ", 1)
+    if len(parts) < 2:
+        await message.answer("Usage: /sreply <user_id> <text>")
+        return
+    try:
+        target_user_id = int(parts[0])
+    except ValueError:
+        await message.answer("❌ Invalid user_id")
+        return
+    text = parts[1].strip()
+    if not text:
+        await message.answer("❌ Empty message")
+        return
+
+    msg = await add_chat_message(target_user_id, "agent", text, agent_id=message.from_user.id)
+
+    # Push to user via WebSocket if online
+    try:
+        from backend.routers.support import manager
+        await manager.send_to_user(target_user_id, {"type": "message", **msg})
+        await manager.broadcast_to_agents({"type": "message", "user_id": target_user_id, **msg})
+    except Exception:
+        pass
+
+    # Notify user via bot if not in mini-app
+    try:
+        await bot.send_message(
+            target_user_id,
+            f"💬 <b>Поддержка:</b>\n{text}\n\n<i>Открой магазин чтобы ответить</i>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(text="💬 Открыть чат", web_app=WebAppInfo(url=MINI_APP_URL))
+            ]]),
+        )
+    except Exception:
+        pass
+
+    await message.answer("✅ Отправлено")
