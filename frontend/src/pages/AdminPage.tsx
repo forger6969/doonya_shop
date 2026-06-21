@@ -9,7 +9,7 @@ import {
   adminGetStats, adminUpload, getMe, uploadAvatar,
   adminGetTopups, adminGetOrders, adminConfirmTopup, adminRejectTopup, adminCompleteOrder,
   adminGetGames, adminGetProducts, adminCreateGame, adminPatchGame, adminDeleteGame,
-  adminCreateProduct, adminPatchProduct, adminDeleteProduct,
+  adminCreateProduct, adminPatchProduct, adminDeleteProduct, adminSetDiscount,
   adminSalesStats, adminProductStats, adminUserStats,
   adminGetPromos, adminCreatePromo, adminDeletePromo, adminTogglePromo,
 } from "../api";
@@ -22,7 +22,7 @@ interface Order { id: string; user_id: number; amount: number; status: string; p
 interface Game { id: string; name: string; description: string; icon_url: string }
 interface Variant { label: string; price: number }
 interface PurchaseField { label: string; required: boolean }
-interface Product { id: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; variants: Variant[]; purchase_fields: PurchaseField[] }
+interface Product { id: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; variants: Variant[]; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
 type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos";
@@ -363,6 +363,12 @@ function AdminCardEditor({ card, onSaved }: { card: AdminCard; onSaved: () => vo
   const [price, setPrice] = useState(String(card.price));
   const [fields, setFields] = useState<PurchaseField[]>(card.product.purchase_fields ?? []);
   const [newField, setNewField] = useState({ label: "", required: false });
+  // Discount state (per product, shared by all variants)
+  const [discountEnabled, setDiscountEnabled] = useState(card.product.discount_enabled ?? false);
+  const [discountPct, setDiscountPct] = useState(String(card.product.discount_percent || ""));
+  const [discountUntil, setDiscountUntil] = useState(
+    card.product.discount_until ? card.product.discount_until.slice(0, 16) : ""
+  );
   const [saving, setSaving] = useState(false);
 
   const addField = () => {
@@ -374,6 +380,7 @@ function AdminCardEditor({ card, onSaved }: { card: AdminCard; onSaved: () => vo
   const save = async () => {
     if (!name.trim() || !price) return;
     setSaving(true);
+    // Save name/price/fields
     if (card.is_variant) {
       const updatedVariants = card.product.variants!.map((v) =>
         v.label === card.variant_label
@@ -384,6 +391,12 @@ function AdminCardEditor({ card, onSaved }: { card: AdminCard; onSaved: () => vo
     } else {
       await adminPatchProduct(card.product_id, { name: name.trim(), price: Number(price), purchase_fields: fields });
     }
+    // Save discount
+    await adminSetDiscount(card.product_id, {
+      discount_percent: Number(discountPct) || 0,
+      discount_enabled: discountEnabled,
+      discount_until: discountUntil ? new Date(discountUntil).toISOString() : null,
+    });
     setSaving(false);
     onSaved();
   };
@@ -396,6 +409,53 @@ function AdminCardEditor({ card, onSaved }: { card: AdminCard; onSaved: () => vo
           placeholder={t.productNamePlaceholder} className="a-input flex-1 text-sm" />
         <input value={price} onChange={(e) => setPrice(e.target.value)}
           type="number" placeholder={t.pricePlaceholder} className="a-input w-28 text-sm" />
+      </div>
+
+      {/* Discount */}
+      <div className="flex flex-col gap-2 rounded-xl p-3" style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)" }}>
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-red-400/80">Скидка</p>
+          <button
+            onClick={() => setDiscountEnabled(!discountEnabled)}
+            className="flex items-center gap-1.5 active:opacity-70"
+          >
+            {discountEnabled
+              ? <ToggleRight className="w-5 h-5 text-red-400" />
+              : <ToggleLeft className="w-5 h-5 text-zinc-600" />
+            }
+            <span className={`text-[11px] font-bold ${discountEnabled ? "text-red-400" : "text-zinc-600"}`}>
+              {discountEnabled ? "Вкл" : "Выкл"}
+            </span>
+          </button>
+        </div>
+        {discountEnabled && (
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <p className="text-[9px] text-zinc-600 mb-1 uppercase tracking-wider">% скидки</p>
+              <input
+                value={discountPct}
+                onChange={(e) => setDiscountPct(e.target.value)}
+                type="number" min="1" max="99"
+                placeholder="напр. 20"
+                className="a-input w-full text-sm"
+              />
+            </div>
+            <div className="flex-1">
+              <p className="text-[9px] text-zinc-600 mb-1 uppercase tracking-wider">До (необязательно)</p>
+              <input
+                value={discountUntil}
+                onChange={(e) => setDiscountUntil(e.target.value)}
+                type="datetime-local"
+                className="a-input w-full text-sm"
+              />
+            </div>
+          </div>
+        )}
+        {discountEnabled && discountPct && (
+          <p className="text-[10px] text-red-400/60">
+            Цена со скидкой: {Math.max(1, Math.floor(Number(price) * (100 - Number(discountPct)) / 100)).toLocaleString()} sum
+          </p>
+        )}
       </div>
 
       {/* Purchase fields */}

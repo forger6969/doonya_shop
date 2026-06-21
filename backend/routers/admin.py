@@ -161,6 +161,9 @@ async def list_all_products(game_id: str, _=Depends(require_admin)):
             "revenue": stats["revenue"],
             "variants": p.get("variants", []),
             "purchase_fields": p.get("purchase_fields", []),
+            "discount_percent": p.get("discount_percent", 0),
+            "discount_enabled": p.get("discount_enabled", False),
+            "discount_until": p.get("discount_until").isoformat() if p.get("discount_until") else None,
         })
     return result
 
