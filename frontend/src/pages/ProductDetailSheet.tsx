@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Star, ShoppingCart, ImageOff } from "lucide-react";
+import { X, Star, ShoppingCart } from "lucide-react";
 import { getProduct, getReviews } from "../api";
 
 interface Product { id: string; name: string; price: number; gameName?: string }
