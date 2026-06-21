@@ -45,6 +45,7 @@ export default function TopupPage({ onBack }: Props) {
   const [file, setFile]     = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]   = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const intervalRef = useRef<number>(0);
 
@@ -193,8 +194,56 @@ export default function TopupPage({ onBack }: Props) {
               onKeyDown={(e) => e.key === "Enter" && handleAmountNext()}
             />
           </div>
+
+          {/* Legal disclaimer */}
+          <div
+            className="rounded-2xl p-4 flex flex-col gap-3"
+            style={{ background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.18)" }}
+          >
+            <div className="flex items-start gap-2">
+              <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
+              <p className="text-[12px] leading-relaxed text-white/60">
+                Пополненные средства являются внутренним балансом магазина и{" "}
+                <span className="text-yellow-400 font-semibold">не подлежат возврату</span>.
+                Баланс нельзя вывести на карту или счёт — он используется
+                исключительно для покупок в Doonya Shop.
+                Перед пополнением убедитесь, что вы хотите приобрести товары в нашем магазине.
+              </p>
+            </div>
+
+            {/* Checkbox */}
+            <button
+              onClick={() => setAgreed((v) => !v)}
+              className="flex items-center gap-3 active:opacity-70"
+            >
+              <div
+                className="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-colors"
+                style={{
+                  background: agreed ? "#eab308" : "transparent",
+                  border: agreed ? "1.5px solid #eab308" : "1.5px solid rgba(255,255,255,0.25)",
+                }}
+              >
+                {agreed && (
+                  <svg className="w-3 h-3 text-black" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
+              </div>
+              <span className="text-[12px] text-white/70 text-left leading-snug">
+                Я понимаю, что средства не возвращаются и не выводятся
+              </span>
+            </button>
+          </div>
+
           {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button className="btn-primary" onClick={handleAmountNext}>Продолжить</button>
+          <button
+            className="btn-primary"
+            disabled={!agreed}
+            onClick={handleAmountNext}
+            style={!agreed ? { opacity: 0.35, cursor: "not-allowed" } : undefined}
+          >
+            Продолжить
+          </button>
         </div>
       )}
 
