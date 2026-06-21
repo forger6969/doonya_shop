@@ -33,15 +33,16 @@ const fmtShort = (n: number) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + "M
 const fmtDate = (s: string) => new Date(s).toLocaleDateString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 const METHOD: Record<string, string> = { card: "Card", payme: "Payme", atm: "ATM" };
-const STATUS: Record<string, { label: string; cls: string }> = {
-  pending:   { label: "Pending",   cls: "text-amber-400 bg-amber-400/10" },
-  confirmed: { label: "Done",      cls: "text-emerald-400 bg-emerald-400/10" },
-  rejected:  { label: "Rejected",  cls: "text-red-400 bg-red-400/10" },
-  completed: { label: "Completed", cls: "text-emerald-400 bg-emerald-400/10" },
-};
 
 // ─── Micro-components ─────────────────────────────────────────────────────────
 function Badge({ status }: { status: string }) {
+  const { t } = useLang();
+  const STATUS: Record<string, { label: string; cls: string }> = {
+    pending:   { label: t.badgePending,   cls: "text-amber-400 bg-amber-400/10" },
+    confirmed: { label: t.badgeDone,      cls: "text-emerald-400 bg-emerald-400/10" },
+    rejected:  { label: t.badgeRejected,  cls: "text-red-400 bg-red-400/10" },
+    completed: { label: t.badgeCompleted, cls: "text-emerald-400 bg-emerald-400/10" },
+  };
   const s = STATUS[status] ?? { label: status, cls: "text-zinc-400 bg-zinc-400/10" };
   return <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${s.cls}`}>{s.label}</span>;
 }
@@ -204,6 +205,7 @@ function TopupDetail({ topup, onBack, onDone }: { topup: Topup; onBack: () => vo
 }
 
 function Payments() {
+  const { t } = useLang();
   const [topups, setTopups] = useState<Topup[]>([]);
   const [filter, setFilter] = useState("pending");
   const [loading, setLoading] = useState(true);
@@ -211,26 +213,28 @@ function Payments() {
   const load = useCallback(async () => { setLoading(true); setTopups(await adminGetTopups(filter)); setLoading(false); }, [filter]);
   useEffect(() => { load(); }, [load]);
 
+  const filterLabels: Record<string, string> = { pending: t.filterPending, confirmed: t.filterConfirmed, rejected: t.filterRejected };
+
   if (selected) return <TopupDetail topup={selected} onBack={() => setSelected(null)} onDone={() => { setSelected(null); load(); }} />;
 
   return (
     <div className="flex flex-col flex-1">
       <div className="px-4 pt-4 pb-3">
-        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">Finance</p>
-        <h2 className="text-xl font-black text-white mt-0.5">Payments</h2>
+        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">{t.finance}</p>
+        <h2 className="text-xl font-black text-white mt-0.5">{t.paymentsTitle}</h2>
       </div>
       <div className="flex items-center gap-2 px-4 pb-3">
         {["pending", "confirmed", "rejected"].map((s) => (
           <button key={s} onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${filter === s ? "bg-white/10 text-white" : "text-zinc-600"}`}>
-            {s[0].toUpperCase() + s.slice(1)}
+            {filterLabels[s] ?? s}
           </button>
         ))}
         <button onClick={load} className="ml-auto p-1.5 text-zinc-600 active:text-white"><RefreshCw className="w-4 h-4" /></button>
       </div>
       <div className="a-card mx-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
-          : topups.length === 0 ? <Empty icon={CreditCard} text={`No ${filter} payments`} />
+          : topups.length === 0 ? <Empty icon={CreditCard} text={t.noPaymentsFilter} />
           : topups.map((t, i) => (
             <div key={t.id}>
               {i > 0 && <Divider />}
@@ -257,6 +261,7 @@ function Payments() {
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
 function Orders() {
+  const { t } = useLang();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState("pending");
   const [loading, setLoading] = useState(true);
@@ -264,24 +269,26 @@ function Orders() {
   useEffect(() => { load(); }, [load]);
   const done = async (id: string) => { await adminCompleteOrder(id); load(); };
 
+  const filterLabels: Record<string, string> = { pending: t.filterPending, completed: t.filterCompleted };
+
   return (
     <div className="flex flex-col flex-1">
       <div className="px-4 pt-4 pb-3">
-        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">Commerce</p>
-        <h2 className="text-xl font-black text-white mt-0.5">Orders</h2>
+        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">{t.commerce}</p>
+        <h2 className="text-xl font-black text-white mt-0.5">{t.ordersTitle}</h2>
       </div>
       <div className="flex items-center gap-2 px-4 pb-3">
         {["pending", "completed"].map((s) => (
           <button key={s} onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${filter === s ? "bg-white/10 text-white" : "text-zinc-600"}`}>
-            {s[0].toUpperCase() + s.slice(1)}
+            {filterLabels[s] ?? s}
           </button>
         ))}
         <button onClick={load} className="ml-auto p-1.5 text-zinc-600 active:text-white"><RefreshCw className="w-4 h-4" /></button>
       </div>
       <div className="a-card mx-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
-          : orders.length === 0 ? <Empty icon={ShoppingBag} text={`No ${filter} orders`} />
+          : orders.length === 0 ? <Empty icon={ShoppingBag} text={t.noOrdersFilter} />
           : orders.map((o, i) => (
             <div key={o.id}>
               {i > 0 && <Divider />}
@@ -298,7 +305,7 @@ function Orders() {
                 {o.status === "pending"
                   ? <button onClick={() => done(o.id)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-emerald-400 border border-emerald-400/20 active:opacity-70">
-                      <Check className="w-3 h-3" /> Done
+                      <Check className="w-3 h-3" /> {t.doneBtn}
                     </button>
                   : <Badge status={o.status} />
                 }
@@ -312,6 +319,7 @@ function Orders() {
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
 function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => void }) {
+  const { t } = useLang();
   const [variants, setVariants] = useState<Variant[]>(product.variants ?? []);
   const [fields, setFields] = useState<PurchaseField[]>(product.purchase_fields ?? []);
   const [newVar, setNewVar] = useState({ label: "", price: "" });
@@ -341,7 +349,7 @@ function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => 
     <div className="px-4 pb-4 flex flex-col gap-4 border-t border-[#1e2030] pt-3">
       {/* Variants */}
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70 mb-2">Variants (price per option)</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70 mb-2">{t.variantsPricePerOption}</p>
         <div className="flex flex-col gap-1.5">
           {variants.map((v, i) => (
             <div key={i} className="flex items-center gap-2 text-sm">
@@ -356,9 +364,9 @@ function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => 
         </div>
         <div className="flex gap-2 mt-2">
           <input value={newVar.label} onChange={(e) => setNewVar({ ...newVar, label: e.target.value })}
-            placeholder="Label (e.g. 10 stars)" className="a-input flex-1 text-xs" />
+            placeholder={t.labelVariantPlaceholder} className="a-input flex-1 text-xs" />
           <input value={newVar.price} onChange={(e) => setNewVar({ ...newVar, price: e.target.value })}
-            placeholder="Price" type="number" className="a-input w-24 text-xs" />
+            placeholder={t.pricePlaceholder} type="number" className="a-input w-24 text-xs" />
           <button onClick={addVariant} disabled={!newVar.label.trim() || !newVar.price}
             className="w-8 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
             <Plus className="w-4 h-4 text-amber-400" />
@@ -368,12 +376,12 @@ function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => 
 
       {/* Purchase fields */}
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70 mb-2">Purchase fields (ask at checkout)</p>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70 mb-2">{t.purchaseFieldsCheckout}</p>
         <div className="flex flex-col gap-1.5">
           {fields.map((f, i) => (
             <div key={i} className="flex items-center gap-2 text-sm">
               <span className="flex-1 text-white/80">{f.label}</span>
-              <span className="text-[10px] text-zinc-600">{f.required ? "required" : "optional"}</span>
+              <span className="text-[10px] text-zinc-600">{f.required ? t.requiredLabel : t.optionalLabel}</span>
               <button onClick={() => setFields(fields.filter((_, j) => j !== i))}
                 className="w-6 h-6 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
                 <X className="w-3 h-3 text-red-400" />
@@ -383,11 +391,11 @@ function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => 
         </div>
         <div className="flex gap-2 mt-2 items-center">
           <input value={newField.label} onChange={(e) => setNewField({ ...newField, label: e.target.value })}
-            placeholder="Field label (e.g. Player ID)" className="a-input flex-1 text-xs" />
+            placeholder={t.fieldLabelPlaceholder} className="a-input flex-1 text-xs" />
           <label className="flex items-center gap-1 text-[11px] text-zinc-500 flex-shrink-0 cursor-pointer">
             <input type="checkbox" checked={newField.required} onChange={(e) => setNewField({ ...newField, required: e.target.checked })}
               className="w-3.5 h-3.5" />
-            req
+            {t.reqLabel}
           </label>
           <button onClick={addField} disabled={!newField.label.trim()}
             className="w-8 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
@@ -397,13 +405,14 @@ function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => 
       </div>
 
       <button onClick={save} disabled={saving} className="a-btn text-xs py-2">
-        {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Save variants & fields</>}
+        {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> {t.saveVariantsBtn}</>}
       </button>
     </div>
   );
 }
 
 function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
+  const { t } = useLang();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -454,7 +463,7 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
           <ChevronLeft className="w-4 h-4 text-zinc-400" />
         </button>
         <div className="flex-1">
-          <p className="text-[10px] text-zinc-600 uppercase tracking-wider">Products</p>
+          <p className="text-[10px] text-zinc-600 uppercase tracking-wider">{t.productsSubtitle}</p>
           <p className="text-sm font-black text-white">{game.name}</p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
@@ -465,22 +474,22 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
 
       {showForm && (
         <div className="mx-4 mt-4 a-card p-4 flex flex-col gap-4">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">New Product</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{t.newProduct}</p>
 
           {/* Base info */}
           <div className="flex gap-3 items-start">
             <UploadBtn current={form.icon_url} onDone={(url) => setForm({ ...form, icon_url: url })} />
             <div className="flex-1 flex flex-col gap-2">
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Product name *" className="a-input" />
-              <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Base price (sum) *" type="number" className="a-input" />
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t.productNamePlaceholder} className="a-input" />
+              <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder={t.basePricePlaceholder} type="number" className="a-input" />
             </div>
           </div>
-          <input value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder="Description (optional)" className="a-input" />
+          <input value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder={t.descOptional} className="a-input" />
 
           {/* Variants */}
           <div className="flex flex-col gap-2">
             <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">
-              Variants <span className="text-zinc-700 normal-case font-normal">(если нужны — 10 stars, 25 stars…)</span>
+              {t.variantsPricePerOption}
             </p>
             {formVariants.map((v, i) => (
               <div key={i} className="flex items-center gap-2 text-xs bg-white/[0.03] rounded-lg px-2.5 py-1.5">
@@ -494,10 +503,10 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
             <div className="flex gap-2">
               <input value={newVar.label} onChange={(e) => setNewVar({ ...newVar, label: e.target.value })}
                 onKeyDown={(e) => e.key === "Enter" && addVar()}
-                placeholder="Название (10 stars)" className="a-input flex-1 text-xs" />
+                placeholder={t.labelVariantPlaceholder} className="a-input flex-1 text-xs" />
               <input value={newVar.price} onChange={(e) => setNewVar({ ...newVar, price: e.target.value })}
                 onKeyDown={(e) => e.key === "Enter" && addVar()}
-                placeholder="Цена" type="number" className="a-input w-24 text-xs" />
+                placeholder={t.pricePlaceholder} type="number" className="a-input w-24 text-xs" />
               <button onClick={addVar} disabled={!newVar.label.trim() || !newVar.price}
                 className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
                 <Plus className="w-4 h-4 text-amber-400" />
@@ -508,12 +517,12 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
           {/* Purchase fields */}
           <div className="flex flex-col gap-2">
             <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">
-              Что спросить при покупке <span className="text-zinc-700 normal-case font-normal">(ID игрока, ник…)</span>
+              {t.purchaseFieldsCheckout}
             </p>
             {formFields.map((f, i) => (
               <div key={i} className="flex items-center gap-2 text-xs bg-white/[0.03] rounded-lg px-2.5 py-1.5">
                 <span className="flex-1 text-white/70">{f.label}</span>
-                <span className="text-[10px] text-zinc-600">{f.required ? "обязательно" : "необязательно"}</span>
+                <span className="text-[10px] text-zinc-600">{f.required ? t.requiredLabel : t.optionalLabel}</span>
                 <button onClick={() => setFormFields(formFields.filter((_, j) => j !== i))} className="w-5 h-5 rounded bg-red-500/15 flex items-center justify-center flex-shrink-0">
                   <X className="w-3 h-3 text-red-400" />
                 </button>
@@ -522,12 +531,12 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
             <div className="flex gap-2 items-center">
               <input value={newField.label} onChange={(e) => setNewField({ ...newField, label: e.target.value })}
                 onKeyDown={(e) => e.key === "Enter" && addField()}
-                placeholder="Например: ID в Brawl Stars" className="a-input flex-1 text-xs" />
+                placeholder={t.fieldLabelPlaceholder} className="a-input flex-1 text-xs" />
               <label className="flex items-center gap-1 text-[11px] text-zinc-500 flex-shrink-0 cursor-pointer select-none">
                 <input type="checkbox" checked={newField.required}
                   onChange={(e) => setNewField({ ...newField, required: e.target.checked })}
                   className="w-3.5 h-3.5 accent-amber-500" />
-                обяз.
+                {t.reqLabel}
               </label>
               <button onClick={addField} disabled={!newField.label.trim()}
                 className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
@@ -537,14 +546,14 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
           </div>
 
           <button onClick={save} disabled={saving || !form.name.trim() || !form.price} className="a-btn">
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Создать товар</>}
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> {t.createProductBtn}</>}
           </button>
         </div>
       )}
 
       <div className="a-card mx-4 mt-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
-          : products.length === 0 ? <Empty icon={Package} text="No products yet" />
+          : products.length === 0 ? <Empty icon={Package} text={t.noProductsYet} />
           : products.map((p, i) => (
             <div key={p.id}>
               {i > 0 && <Divider />}
@@ -556,10 +565,10 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-bold text-white truncate">{p.name}</p>
                   <p className="text-[11px] text-zinc-600">
-                    {p.variants?.length ? `${p.variants.length} variants` : fmt(p.price)}
-                    {p.purchase_fields?.length ? ` · ${p.purchase_fields.length} fields` : ""}
+                    {p.variants?.length ? `${p.variants.length} ${t.variantCount}` : fmt(p.price)}
+                    {p.purchase_fields?.length ? ` · ${p.purchase_fields.length} ${t.fieldCount}` : ""}
                   </p>
-                  <p className="text-[10px] text-zinc-700 mt-0.5">{p.sales_count} sold · {fmtShort(p.revenue)} sum</p>
+                  <p className="text-[10px] text-zinc-700 mt-0.5">{p.sales_count} {t.sold} · {fmtShort(p.revenue)} sum</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <ChevronRight className={`w-4 h-4 text-zinc-700 transition-transform ${expandedId === p.id ? "rotate-90" : ""}`} />
@@ -580,6 +589,7 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
 }
 
 function Catalog() {
+  const { t } = useLang();
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -609,34 +619,34 @@ function Catalog() {
     <div className="flex flex-col flex-1">
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div>
-          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">Catalog</p>
-          <h2 className="text-xl font-black text-white mt-0.5">Games</h2>
+          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">{t.catalogTitle}</p>
+          <h2 className="text-xl font-black text-white mt-0.5">{t.gamesTitle}</h2>
         </div>
         <button onClick={() => setShowForm(!showForm)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all ${showForm ? "bg-white/10 text-white" : "a-card text-zinc-400"}`}>
-          <Plus className="w-3.5 h-3.5" /> Add
+          <Plus className="w-3.5 h-3.5" /> {t.addBtn}
         </button>
       </div>
 
       {showForm && (
         <div className="mx-4 mb-3 a-card p-4 flex flex-col gap-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">New Game</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{t.newGame}</p>
           <div className="flex gap-3 items-start">
             <UploadBtn current={form.icon_url} onDone={(url) => setForm({ ...form, icon_url: url })} />
             <div className="flex-1 flex flex-col gap-2">
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Game name *" className="a-input" />
-              <input value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder="Description (optional)" className="a-input" />
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t.gameNamePlaceholder} className="a-input" />
+              <input value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder={t.descOptional} className="a-input" />
             </div>
           </div>
           <button onClick={save} disabled={saving || !form.name.trim()} className="a-btn">
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Create Game</>}
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> {t.createGameBtn}</>}
           </button>
         </div>
       )}
 
       <div className="a-card mx-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
-          : games.length === 0 ? <Empty icon={Gamepad2} text="No games yet" />
+          : games.length === 0 ? <Empty icon={Gamepad2} text={t.noGamesYet} />
           : games.map((g, i) => (
             <div key={g.id}>
               {i > 0 && <Divider />}
@@ -644,7 +654,7 @@ function Catalog() {
                 <UploadBtn current={g.icon_url} onDone={(url) => updateIcon(g.id, url)} />
                 <button onClick={() => setSelected(g)} className="flex-1 text-left min-w-0 active:opacity-70">
                   <p className="text-[13px] font-bold text-white">{g.name}</p>
-                  <p className="text-[11px] text-zinc-600">Tap to manage products</p>
+                  <p className="text-[11px] text-zinc-600">{t.tapManageProducts}</p>
                 </button>
                 <div className="flex items-center gap-2">
                   <button onClick={() => adminDeleteGame(g.id).then(load)}
@@ -663,6 +673,7 @@ function Catalog() {
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
 function Analytics() {
+  const { t } = useLang();
   const [period, setPeriod] = useState(7);
   const [view, setView] = useState<"sales" | "products" | "users">("sales");
   const [salesData, setSalesData] = useState<any[]>([]);
@@ -685,13 +696,13 @@ function Analytics() {
   return (
     <div className="flex flex-col flex-1">
       <div className="px-4 pt-4 pb-3">
-        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">Insights</p>
-        <h2 className="text-xl font-black text-white mt-0.5">Analytics</h2>
+        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">{t.insights}</p>
+        <h2 className="text-xl font-black text-white mt-0.5">{t.analyticsTitle}</h2>
       </div>
 
       {/* View tabs */}
       <div className="flex gap-1.5 px-4 pb-3 no-scrollbar overflow-x-auto">
-        {[["sales", "Sales"], ["products", "Products"], ["users", "Users"]] .map(([v, l]) => (
+        {([["sales", t.salesTab], ["products", t.productsTab], ["users", t.usersTab]] as [string, string][]).map(([v, l]) => (
           <button key={v} onClick={() => setView(v as typeof view)}
             className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all ${view === v ? "bg-white/10 text-white" : "text-zinc-600"}`}>
             {l}
@@ -710,9 +721,9 @@ function Analytics() {
         <div className="px-4 pb-4 flex flex-col gap-3">
           {/* Sales chart */}
           {view === "sales" && (
-            salesData.length === 0 ? <Empty icon={BarChart2} text="No sales data yet" /> : (
+            salesData.length === 0 ? <Empty icon={BarChart2} text={t.noSalesData} /> : (
               <div className="a-card p-4 flex flex-col gap-4">
-                <p className="text-xs font-bold text-zinc-500">Revenue by day</p>
+                <p className="text-xs font-bold text-zinc-500">{t.revenueByDay}</p>
                 <div className="flex items-end gap-1 h-28">
                   {salesData.map((d) => (
                     <div key={d._id} className="flex-1 flex flex-col items-center gap-1">
@@ -723,8 +734,8 @@ function Analytics() {
                   ))}
                 </div>
                 <div className="flex justify-between text-[11px]">
-                  <div><p className="text-zinc-600">Orders</p><p className="text-white font-bold">{salesData.reduce((a, b) => a + b.count, 0)}</p></div>
-                  <div className="text-right"><p className="text-zinc-600">Revenue</p><p className="text-violet-400 font-bold">{fmtShort(salesData.reduce((a, b) => a + b.revenue, 0))} sum</p></div>
+                  <div><p className="text-zinc-600">{t.ordersLabel}</p><p className="text-white font-bold">{salesData.reduce((a, b) => a + b.count, 0)}</p></div>
+                  <div className="text-right"><p className="text-zinc-600">{t.revenueLabel}</p><p className="text-violet-400 font-bold">{fmtShort(salesData.reduce((a, b) => a + b.revenue, 0))} sum</p></div>
                 </div>
               </div>
             )
@@ -732,7 +743,7 @@ function Analytics() {
 
           {/* Top products */}
           {view === "products" && (
-            productsData.length === 0 ? <Empty icon={Package} text="No sales yet" /> : (
+            productsData.length === 0 ? <Empty icon={Package} text={t.noSalesYet} /> : (
               <div className="a-card overflow-hidden">
                 {productsData.map((p, i) => (
                   <div key={p._id}>
@@ -741,7 +752,7 @@ function Analytics() {
                       <span className="text-[11px] font-black text-zinc-700 w-5 text-center">#{i + 1}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-bold text-white truncate">{p.name}</p>
-                        <p className="text-[11px] text-zinc-600">{p.count} sales</p>
+                        <p className="text-[11px] text-zinc-600">{p.count} {t.salesCount}</p>
                       </div>
                       <span className="text-[12px] font-black text-violet-400">{fmtShort(p.revenue)} sum</span>
                     </div>
@@ -753,7 +764,7 @@ function Analytics() {
 
           {/* Top users */}
           {view === "users" && (
-            usersData.length === 0 ? <Empty icon={Users} text="No users yet" /> : (
+            usersData.length === 0 ? <Empty icon={Users} text={t.noUsersYet} /> : (
               <div className="a-card overflow-hidden">
                 {usersData.map((u, i) => (
                   <div key={u._id}>
@@ -762,7 +773,7 @@ function Analytics() {
                       <span className={`text-[11px] font-black w-5 text-center ${i === 0 ? "text-amber-400" : i === 1 ? "text-zinc-400" : i === 2 ? "text-orange-700" : "text-zinc-700"}`}>#{i + 1}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-[13px] font-bold text-white">{u.first_name}{u.username ? ` @${u.username}` : ""}</p>
-                        <p className="text-[11px] text-zinc-600">{u.order_count} orders</p>
+                        <p className="text-[11px] text-zinc-600">{u.order_count} {t.ordersCount}</p>
                       </div>
                       <span className="text-[12px] font-black text-violet-400">{fmtShort(u.total_spent)} sum</span>
                     </div>
@@ -779,6 +790,7 @@ function Analytics() {
 
 // ─── Promos ───────────────────────────────────────────────────────────────────
 function Promos() {
+  const { t } = useLang();
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -813,47 +825,47 @@ function Promos() {
     <div className="flex flex-col flex-1">
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
         <div>
-          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">Discounts</p>
-          <h2 className="text-xl font-black text-white mt-0.5">Promo Codes</h2>
+          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">{t.discounts}</p>
+          <h2 className="text-xl font-black text-white mt-0.5">{t.promoCodesTitle}</h2>
         </div>
         <button onClick={() => setShowForm(!showForm)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold ${showForm ? "bg-white/10 text-white" : "a-card text-zinc-400"}`}>
-          <Plus className="w-3.5 h-3.5" /> Create
+          <Plus className="w-3.5 h-3.5" /> {t.createBtn}
         </button>
       </div>
 
       {showForm && (
         <div className="mx-4 mb-3 a-card p-4 flex flex-col gap-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">New Promo</p>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{t.newPromo}</p>
           <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
             placeholder="PROMO CODE *" className="a-input font-mono tracking-widest uppercase" />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <p className="text-[10px] text-zinc-600 mb-1">Discount % *</p>
+              <p className="text-[10px] text-zinc-600 mb-1">{t.discountPct}</p>
               <input value={form.discount_pct} onChange={(e) => setForm({ ...form, discount_pct: e.target.value })}
                 placeholder="e.g. 20" type="number" min="1" max="100" className="a-input" />
             </div>
             <div>
-              <p className="text-[10px] text-zinc-600 mb-1">Min order (0 = any)</p>
+              <p className="text-[10px] text-zinc-600 mb-1">{t.minOrder}</p>
               <input value={form.min_order_amount} onChange={(e) => setForm({ ...form, min_order_amount: e.target.value })}
                 placeholder="e.g. 100000" type="number" className="a-input" />
             </div>
           </div>
           <div>
-            <p className="text-[10px] text-zinc-600 mb-1">Max uses (0 = unlimited)</p>
+            <p className="text-[10px] text-zinc-600 mb-1">{t.maxUses}</p>
             <input value={form.max_uses} onChange={(e) => setForm({ ...form, max_uses: e.target.value })}
               placeholder="e.g. 100" type="number" className="a-input" />
           </div>
           {err && <div className="flex items-center gap-2 text-red-400 text-[11px]"><AlertCircle className="w-3.5 h-3.5" />{err}</div>}
           <button onClick={save} disabled={saving || !form.code.trim() || !form.discount_pct} className="a-btn">
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Tag className="w-4 h-4" /> Create Promo</>}
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Tag className="w-4 h-4" /> {t.createPromoBtn}</>}
           </button>
         </div>
       )}
 
       <div className="a-card mx-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
-          : promos.length === 0 ? <Empty icon={Tag} text="No promo codes yet" />
+          : promos.length === 0 ? <Empty icon={Tag} text={t.noPromoCodesYet} />
           : promos.map((p, i) => (
             <div key={p.id}>
               {i > 0 && <Divider />}
