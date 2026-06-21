@@ -4,7 +4,7 @@ import cloudinary.uploader
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from backend.auth import get_current_user
 from backend.models import get_or_create_user, create_topup
-from backend.config import CARD_REQUISITES, CARD_HOLDER, PAYME_PHONE
+from backend.config import CARD_REQUISITES, CARD_HOLDER, UZCARD_REQUISITES, UZCARD_HOLDER, PAYME_PHONE
 from backend.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 
 router = APIRouter(prefix="/topup", tags=["topup"])
@@ -17,7 +17,7 @@ cloudinary.config(
 
 
 def _unique_amount(base: int) -> int:
-    return base + random.randint(1, 999)
+    return base + random.randint(1, 100)
 
 
 def _round_amount(base: int) -> int:
@@ -34,6 +34,15 @@ async def topup_methods(amount: int, method: str):
             "holder": CARD_HOLDER,
             "amount": exact,
             "note": f"Переведите ровно {exact:,} сум. По этой сумме мы идентифицируем ваш платёж.",
+        }
+    elif method == "uzcard":
+        exact = _unique_amount(amount)
+        return {
+            "method": "uzcard",
+            "requisites": UZCARD_REQUISITES,
+            "holder": UZCARD_HOLDER,
+            "amount": exact,
+            "note": f"Переведите ровно {exact:,} сум на Uzcard. По этой сумме мы идентифицируем ваш платёж.",
         }
     elif method == "payme":
         exact = _unique_amount(amount)

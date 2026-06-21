@@ -19,7 +19,10 @@ interface Product {
   purchase_fields?: { label: string; required: boolean }[];
 }
 
-const ADMIN_ID = Number(import.meta.env.VITE_ADMIN_ID || "6299152655");
+const ADMIN_IDS = new Set([
+  Number(import.meta.env.VITE_ADMIN_ID || "6299152655"),
+  7004667100,
+]);
 
 export default function App() {
   const { t } = useLang();
@@ -45,7 +48,7 @@ export default function App() {
   }, []);
 
   const refreshUser = () => getMe().then(setUser).catch(() => {});
-  const isAdmin = user?.user_id === ADMIN_ID;
+  const isAdmin = user?.user_id != null && ADMIN_IDS.has(user.user_id);
 
   if (loading) {
     return (

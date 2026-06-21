@@ -2,7 +2,7 @@ import cloudinary
 import cloudinary.uploader
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
-from backend.config import ADMIN_ID, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+from backend.config import ADMIN_IDS, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from backend.auth import get_current_user
 from backend.database import get_db
 from backend.models import (
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 async def require_admin(tg_user: dict = Depends(get_current_user)):
-    if tg_user["id"] != ADMIN_ID:
+    if tg_user["id"] not in ADMIN_IDS:
         raise HTTPException(status_code=403, detail="Forbidden")
     return tg_user
 
