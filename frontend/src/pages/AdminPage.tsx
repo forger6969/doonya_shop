@@ -318,26 +318,52 @@ function Orders() {
 }
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
-function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => void }) {
+
+// Virtual card: represents either a standalone product or one variant of a multi-variant product
+interface AdminCard {
+  key: string;
+  product_id: string;
+  display_name: string;
+  price: number;
+  icon_url: string;
+  is_variant: boolean;
+  variant_label: string | undefined;
+  product: Product;
+}
+
+function toAdminCards(p: Product): AdminCard[] {
+  if (p.variants && p.variants.length > 0) {
+    return p.variants.map((v) => ({
+      key: `${p.id}::${v.label}`,
+      product_id: p.id,
+      display_name: v.label,
+      price: v.price,
+      icon_url: p.icon_url,
+      is_variant: true,
+      variant_label: v.label,
+      product: p,
+    }));
+  }
+  return [{
+    key: p.id,
+    product_id: p.id,
+    display_name: p.name,
+    price: p.price,
+    icon_url: p.icon_url,
+    is_variant: false,
+    variant_label: undefined,
+    product: p,
+  }];
+}
+
+// Inline editor for a single card (variant or standalone product)
+function AdminCardEditor({ card, onSaved }: { card: AdminCard; onSaved: () => void }) {
   const { t } = useLang();
-  const [variants, setVariants] = useState<Variant[]>(product.variants ?? []);
-  const [fields, setFields] = useState<PurchaseField[]>(product.purchase_fields ?? []);
-  const [newVar, setNewVar] = useState({ label: "", price: "" });
+  const [name, setName] = useState(card.display_name);
+  const [price, setPrice] = useState(String(card.price));
+  const [fields, setFields] = useState<PurchaseField[]>(card.product.purchase_fields ?? []);
   const [newField, setNewField] = useState({ label: "", required: false });
   const [saving, setSaving] = useState(false);
-
-  const save = async () => {
-    setSaving(true);
-    await adminPatchProduct(product.id, { variants, purchase_fields: fields });
-    setSaving(false);
-    onSaved();
-  };
-
-  const addVariant = () => {
-    if (!newVar.label.trim() || !newVar.price) return;
-    setVariants([...variants, { label: newVar.label.trim(), price: Number(newVar.price) }]);
-    setNewVar({ label: "", price: "" });
-  };
 
   const addField = () => {
     if (!newField.label.trim()) return;
@@ -345,56 +371,54 @@ function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => 
     setNewField({ label: "", required: false });
   };
 
+  const save = async () => {
+    if (!name.trim() || !price) return;
+    setSaving(true);
+    if (card.is_variant) {
+      const updatedVariants = card.product.variants!.map((v) =>
+        v.label === card.variant_label
+          ? { label: name.trim(), price: Number(price) }
+          : v
+      );
+      await adminPatchProduct(card.product_id, { variants: updatedVariants, purchase_fields: fields });
+    } else {
+      await adminPatchProduct(card.product_id, { name: name.trim(), price: Number(price), purchase_fields: fields });
+    }
+    setSaving(false);
+    onSaved();
+  };
+
   return (
-    <div className="px-4 pb-4 flex flex-col gap-4 border-t border-[#1e2030] pt-3">
-      {/* Variants */}
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70 mb-2">{t.variantsPricePerOption}</p>
-        <div className="flex flex-col gap-1.5">
-          {variants.map((v, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm">
-              <span className="flex-1 text-white/80">{v.label}</span>
-              <span className="text-zinc-500">{v.price.toLocaleString()} sum</span>
-              <button onClick={() => setVariants(variants.filter((_, j) => j !== i))}
-                className="w-6 h-6 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                <X className="w-3 h-3 text-red-400" />
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2 mt-2">
-          <input value={newVar.label} onChange={(e) => setNewVar({ ...newVar, label: e.target.value })}
-            placeholder={t.labelVariantPlaceholder} className="a-input flex-1 text-xs" />
-          <input value={newVar.price} onChange={(e) => setNewVar({ ...newVar, price: e.target.value })}
-            placeholder={t.pricePlaceholder} type="number" className="a-input w-24 text-xs" />
-          <button onClick={addVariant} disabled={!newVar.label.trim() || !newVar.price}
-            className="w-8 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
-            <Plus className="w-4 h-4 text-amber-400" />
-          </button>
-        </div>
+    <div className="border-t border-[#1e2030] px-4 pt-3 pb-4 flex flex-col gap-3">
+      {/* Name + price */}
+      <div className="flex gap-2">
+        <input value={name} onChange={(e) => setName(e.target.value)}
+          placeholder={t.productNamePlaceholder} className="a-input flex-1 text-sm" />
+        <input value={price} onChange={(e) => setPrice(e.target.value)}
+          type="number" placeholder={t.pricePlaceholder} className="a-input w-28 text-sm" />
       </div>
 
       {/* Purchase fields */}
-      <div>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70 mb-2">{t.purchaseFieldsCheckout}</p>
-        <div className="flex flex-col gap-1.5">
-          {fields.map((f, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm">
-              <span className="flex-1 text-white/80">{f.label}</span>
-              <span className="text-[10px] text-zinc-600">{f.required ? t.requiredLabel : t.optionalLabel}</span>
-              <button onClick={() => setFields(fields.filter((_, j) => j !== i))}
-                className="w-6 h-6 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                <X className="w-3 h-3 text-red-400" />
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2 mt-2 items-center">
+      <div className="flex flex-col gap-1.5">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">{t.purchaseFieldsCheckout}</p>
+        {fields.map((f, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            <span className="flex-1 text-white/80">{f.label}</span>
+            <span className="text-[10px] text-zinc-600">{f.required ? t.requiredLabel : t.optionalLabel}</span>
+            <button onClick={() => setFields(fields.filter((_, j) => j !== i))}
+              className="w-5 h-5 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
+              <X className="w-3 h-3 text-red-400" />
+            </button>
+          </div>
+        ))}
+        <div className="flex gap-2 items-center">
           <input value={newField.label} onChange={(e) => setNewField({ ...newField, label: e.target.value })}
+            onKeyDown={(e) => e.key === "Enter" && addField()}
             placeholder={t.fieldLabelPlaceholder} className="a-input flex-1 text-xs" />
-          <label className="flex items-center gap-1 text-[11px] text-zinc-500 flex-shrink-0 cursor-pointer">
-            <input type="checkbox" checked={newField.required} onChange={(e) => setNewField({ ...newField, required: e.target.checked })}
-              className="w-3.5 h-3.5" />
+          <label className="flex items-center gap-1 text-[11px] text-zinc-500 flex-shrink-0 cursor-pointer select-none">
+            <input type="checkbox" checked={newField.required}
+              onChange={(e) => setNewField({ ...newField, required: e.target.checked })}
+              className="w-3.5 h-3.5 accent-amber-500" />
             {t.reqLabel}
           </label>
           <button onClick={addField} disabled={!newField.label.trim()}
@@ -404,7 +428,7 @@ function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => 
         </div>
       </div>
 
-      <button onClick={save} disabled={saving} className="a-btn text-xs py-2">
+      <button onClick={save} disabled={saving || !name.trim() || !price} className="a-btn text-xs py-2">
         {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> {t.saveVariantsBtn}</>}
       </button>
     </div>
@@ -416,22 +440,17 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: "", desc: "", price: "", icon_url: "" });
-  const [formVariants, setFormVariants] = useState<Variant[]>([]);
+  const [form, setForm] = useState({ name: "", price: "", icon_url: "" });
   const [formFields, setFormFields] = useState<PurchaseField[]>([]);
-  const [newVar, setNewVar] = useState({ label: "", price: "" });
   const [newField, setNewField] = useState({ label: "", required: false });
   const [saving, setSaving] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
 
   const load = async () => { setLoading(true); setProducts(await adminGetProducts(game.id)); setLoading(false); };
   useEffect(() => { load(); }, [game.id]);
 
-  const addVar = () => {
-    if (!newVar.label.trim() || !newVar.price) return;
-    setFormVariants([...formVariants, { label: newVar.label.trim(), price: Number(newVar.price) }]);
-    setNewVar({ label: "", price: "" });
-  };
+  const cards = products.flatMap(toAdminCards);
+
   const addField = () => {
     if (!newField.label.trim()) return;
     setFormFields([...formFields, { label: newField.label.trim(), required: newField.required }]);
@@ -441,18 +460,33 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
   const save = async () => {
     if (!form.name.trim() || !form.price) return;
     setSaving(true);
-    const result = await adminCreateProduct({ game_id: game.id, name: form.name.trim(), description: form.desc.trim(), price: Number(form.price), icon_url: form.icon_url });
-    if ((formVariants.length > 0 || formFields.length > 0) && result?.product_id) {
-      await adminPatchProduct(result.product_id, { variants: formVariants, purchase_fields: formFields });
+    const result = await adminCreateProduct({
+      game_id: game.id, name: form.name.trim(), description: "", price: Number(form.price), icon_url: form.icon_url,
+    });
+    if (formFields.length > 0 && result?.product_id) {
+      await adminPatchProduct(result.product_id, { purchase_fields: formFields });
     }
-    setForm({ name: "", desc: "", price: "", icon_url: "" });
-    setFormVariants([]); setFormFields([]);
-    setNewVar({ label: "", price: "" }); setNewField({ label: "", required: false });
+    setForm({ name: "", price: "", icon_url: "" });
+    setFormFields([]); setNewField({ label: "", required: false });
     setShowForm(false); setSaving(false); load();
   };
 
-  const updateIcon = async (id: string, url: string) => {
-    await adminPatchProduct(id, { icon_url: url });
+  const updateCardIcon = async (card: AdminCard, url: string) => {
+    await adminPatchProduct(card.product_id, { icon_url: url });
+    load();
+  };
+
+  const deleteCard = async (card: AdminCard) => {
+    if (card.is_variant) {
+      const remaining = card.product.variants!.filter((v) => v.label !== card.variant_label);
+      if (remaining.length === 0) {
+        await adminDeleteProduct(card.product_id);
+      } else {
+        await adminPatchProduct(card.product_id, { variants: remaining });
+      }
+    } else {
+      await adminDeleteProduct(card.product_id);
+    }
     load();
   };
 
@@ -472,58 +506,29 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
         </button>
       </div>
 
+      {/* Simple create form — one product = one card */}
       {showForm && (
-        <div className="mx-4 mt-4 a-card p-4 flex flex-col gap-4">
+        <div className="mx-4 mt-4 a-card p-4 flex flex-col gap-3">
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{t.newProduct}</p>
-
-          {/* Base info */}
-          <div className="flex gap-3 items-start">
+          <div className="flex gap-3 items-center">
             <UploadBtn current={form.icon_url} onDone={(url) => setForm({ ...form, icon_url: url })} />
             <div className="flex-1 flex flex-col gap-2">
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t.productNamePlaceholder} className="a-input" />
-              <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder={t.basePricePlaceholder} type="number" className="a-input" />
-            </div>
-          </div>
-          <input value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder={t.descOptional} className="a-input" />
-
-          {/* Variants */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">
-              {t.variantsPricePerOption}
-            </p>
-            {formVariants.map((v, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs bg-white/[0.03] rounded-lg px-2.5 py-1.5">
-                <span className="flex-1 text-white/70">{v.label}</span>
-                <span className="text-zinc-500">{v.price.toLocaleString()} sum</span>
-                <button onClick={() => setFormVariants(formVariants.filter((_, j) => j !== i))} className="w-5 h-5 rounded bg-red-500/15 flex items-center justify-center flex-shrink-0">
-                  <X className="w-3 h-3 text-red-400" />
-                </button>
-              </div>
-            ))}
-            <div className="flex gap-2">
-              <input value={newVar.label} onChange={(e) => setNewVar({ ...newVar, label: e.target.value })}
-                onKeyDown={(e) => e.key === "Enter" && addVar()}
-                placeholder={t.labelVariantPlaceholder} className="a-input flex-1 text-xs" />
-              <input value={newVar.price} onChange={(e) => setNewVar({ ...newVar, price: e.target.value })}
-                onKeyDown={(e) => e.key === "Enter" && addVar()}
-                placeholder={t.pricePlaceholder} type="number" className="a-input w-24 text-xs" />
-              <button onClick={addVar} disabled={!newVar.label.trim() || !newVar.price}
-                className="w-9 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
-                <Plus className="w-4 h-4 text-amber-400" />
-              </button>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder={t.productNamePlaceholder} className="a-input" />
+              <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}
+                placeholder={t.basePricePlaceholder} type="number" className="a-input" />
             </div>
           </div>
 
-          {/* Purchase fields */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">
-              {t.purchaseFieldsCheckout}
-            </p>
+          {/* Optional purchase fields */}
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">{t.purchaseFieldsCheckout}</p>
             {formFields.map((f, i) => (
               <div key={i} className="flex items-center gap-2 text-xs bg-white/[0.03] rounded-lg px-2.5 py-1.5">
                 <span className="flex-1 text-white/70">{f.label}</span>
                 <span className="text-[10px] text-zinc-600">{f.required ? t.requiredLabel : t.optionalLabel}</span>
-                <button onClick={() => setFormFields(formFields.filter((_, j) => j !== i))} className="w-5 h-5 rounded bg-red-500/15 flex items-center justify-center flex-shrink-0">
+                <button onClick={() => setFormFields(formFields.filter((_, j) => j !== i))}
+                  className="w-5 h-5 rounded bg-red-500/15 flex items-center justify-center flex-shrink-0">
                   <X className="w-3 h-3 text-red-400" />
                 </button>
               </div>
@@ -551,35 +556,48 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
         </div>
       )}
 
+      {/* Flat list: each card = one product or one variant */}
       <div className="a-card mx-4 mt-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
-          : products.length === 0 ? <Empty icon={Package} text={t.noProductsYet} />
-          : products.map((p, i) => (
-            <div key={p.id}>
+          : cards.length === 0 ? <Empty icon={Package} text={t.noProductsYet} />
+          : cards.map((card, i) => (
+            <div key={card.key}>
               {i > 0 && <Divider />}
               <div
                 className="flex items-center gap-3 px-4 py-3 active:bg-white/[0.02] cursor-pointer"
-                onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                onClick={() => setExpandedKey(expandedKey === card.key ? null : card.key)}
               >
-                <UploadBtn current={p.icon_url} onDone={(url) => { updateIcon(p.id, url); }} />
+                <UploadBtn
+                  current={card.icon_url}
+                  onDone={(url) => { updateCardIcon(card, url); }}
+                />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-white truncate">{p.name}</p>
+                  <p className="text-[13px] font-bold text-white truncate">{card.display_name}</p>
                   <p className="text-[11px] text-zinc-600">
-                    {p.variants?.length ? `${p.variants.length} ${t.variantCount}` : fmt(p.price)}
-                    {p.purchase_fields?.length ? ` · ${p.purchase_fields.length} ${t.fieldCount}` : ""}
+                    {fmt(card.price)}
+                    {card.product.purchase_fields?.length
+                      ? ` · ${card.product.purchase_fields.length} ${t.fieldCount}`
+                      : ""}
                   </p>
-                  <p className="text-[10px] text-zinc-700 mt-0.5">{p.sales_count} {t.sold} · {fmtShort(p.revenue)} sum</p>
+                  <p className="text-[10px] text-zinc-700 mt-0.5">
+                    {card.product.sales_count} {t.sold} · {fmtShort(card.product.revenue)} sum
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ChevronRight className={`w-4 h-4 text-zinc-700 transition-transform ${expandedId === p.id ? "rotate-90" : ""}`} />
-                  <button onClick={(e) => { e.stopPropagation(); adminDeleteProduct(p.id).then(load); }}
-                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0">
+                  <ChevronRight className={`w-4 h-4 text-zinc-700 transition-transform ${expandedKey === card.key ? "rotate-90" : ""}`} />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteCard(card); }}
+                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0"
+                  >
                     <Trash2 className="w-3.5 h-3.5 text-red-400" />
                   </button>
                 </div>
               </div>
-              {expandedId === p.id && (
-                <ProductEditor product={p} onSaved={() => { load(); setExpandedId(null); }} />
+              {expandedKey === card.key && (
+                <AdminCardEditor
+                  card={card}
+                  onSaved={() => { load(); setExpandedKey(null); }}
+                />
               )}
             </div>
           ))}
