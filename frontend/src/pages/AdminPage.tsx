@@ -384,11 +384,12 @@ function AdminCardEditor({ card, gameId, onSaved }: { card: AdminCard; gameId: s
     if (card.is_variant) {
       // Extract this variant → standalone product so it gets its own independent discount
       const remaining = card.product.variants!.filter((v) => v.label !== card.variant_label);
-      // Remove variant from parent (or delete parent if it was the only one)
       if (remaining.length === 0) {
         await adminDeleteProduct(card.product_id);
       } else {
         await adminPatchProduct(card.product_id, { variants: remaining });
+        // Reset discount on parent so remaining variants don't inherit it
+        await adminSetDiscount(card.product_id, { discount_percent: 0, discount_enabled: false, discount_until: null });
       }
       // Create new standalone product
       const result = await adminCreateProduct({
@@ -528,6 +529,7 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
   const [newField, setNewField] = useState({ label: "", required: false });
   const [saving, setSaving] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [splitting, setSplitting] = useState<string | null>(null);
 
   const load = async () => { setLoading(true); setProducts(await adminGetProducts(game.id)); setLoading(false); };
   useEffect(() => { load(); }, [game.id]);
@@ -566,10 +568,29 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
         await adminDeleteProduct(card.product_id);
       } else {
         await adminPatchProduct(card.product_id, { variants: remaining });
+        // Reset parent discount so remaining variants aren't affected
+        await adminSetDiscount(card.product_id, { discount_percent: 0, discount_enabled: false, discount_until: null });
       }
     } else {
       await adminDeleteProduct(card.product_id);
     }
+    load();
+  };
+
+  // Extract ALL variants of a product into standalone products at once
+  const splitAllVariants = async (product: Product) => {
+    setSplitting(product.id);
+    for (const v of product.variants ?? []) {
+      const result = await adminCreateProduct({
+        game_id: game.id, name: v.label, description: "", price: v.price, icon_url: product.icon_url,
+      });
+      if (result?.product_id && (product.purchase_fields ?? []).length > 0) {
+        await adminPatchProduct(result.product_id, { purchase_fields: product.purchase_fields });
+      }
+    }
+    // Delete parent (all variants extracted)
+    await adminDeleteProduct(product.id);
+    setSplitting(null);
     load();
   };
 
@@ -643,48 +664,80 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
       <div className="a-card mx-4 mt-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
           : cards.length === 0 ? <Empty icon={Package} text={t.noProductsYet} />
-          : cards.map((card, i) => (
-            <div key={card.key}>
-              {i > 0 && <Divider />}
-              <div
-                className="flex items-center gap-3 px-4 py-3 active:bg-white/[0.02] cursor-pointer"
-                onClick={() => setExpandedKey(expandedKey === card.key ? null : card.key)}
-              >
-                <UploadBtn
-                  current={card.icon_url}
-                  onDone={(url) => { updateCardIcon(card, url); }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-white truncate">{card.display_name}</p>
-                  <p className="text-[11px] text-zinc-600">
-                    {fmt(card.price)}
-                    {card.product.purchase_fields?.length
-                      ? ` · ${card.product.purchase_fields.length} ${t.fieldCount}`
-                      : ""}
-                  </p>
-                  <p className="text-[10px] text-zinc-700 mt-0.5">
-                    {card.product.sales_count} {t.sold} · {fmtShort(card.product.revenue)} sum
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <ChevronRight className={`w-4 h-4 text-zinc-700 transition-transform ${expandedKey === card.key ? "rotate-90" : ""}`} />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteCard(card); }}
-                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                  </button>
-                </div>
-              </div>
-              {expandedKey === card.key && (
-                <AdminCardEditor
-                  card={card}
-                  gameId={game.id}
-                  onSaved={() => { load(); setExpandedKey(null); }}
-                />
-              )}
-            </div>
-          ))}
+          : (() => {
+              // Track which parent products have already shown the split banner
+              const shownSplit = new Set<string>();
+              return cards.map((card, i) => {
+                // Show "Split variants" banner once per multi-variant product
+                const isFirstOfGroup = card.is_variant && !shownSplit.has(card.product_id);
+                if (card.is_variant) shownSplit.add(card.product_id);
+
+                return (
+                  <div key={card.key}>
+                    {i > 0 && <Divider />}
+
+                    {/* Split banner — shown once per grouped product */}
+                    {isFirstOfGroup && (
+                      <div className="px-4 pt-3 pb-1 flex items-center justify-between gap-2">
+                        <p className="text-[10px] text-amber-400/70 font-bold uppercase tracking-wider">
+                          ⚠ Сгруппированные варианты · скидка общая
+                        </p>
+                        <button
+                          onClick={() => splitAllVariants(card.product)}
+                          disabled={splitting === card.product_id}
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-400 border border-amber-400/20 active:opacity-70 disabled:opacity-40 flex-shrink-0"
+                        >
+                          {splitting === card.product_id
+                            ? <RefreshCw className="w-3 h-3 animate-spin" />
+                            : <Plus className="w-3 h-3" />
+                          }
+                          Разделить все
+                        </button>
+                      </div>
+                    )}
+
+                    <div
+                      className="flex items-center gap-3 px-4 py-3 active:bg-white/[0.02] cursor-pointer"
+                      onClick={() => setExpandedKey(expandedKey === card.key ? null : card.key)}
+                    >
+                      <UploadBtn
+                        current={card.icon_url}
+                        onDone={(url) => { updateCardIcon(card, url); }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-bold text-white truncate">{card.display_name}</p>
+                        <p className="text-[11px] text-zinc-600">
+                          {fmt(card.price)}
+                          {card.product.purchase_fields?.length
+                            ? ` · ${card.product.purchase_fields.length} ${t.fieldCount}`
+                            : ""}
+                        </p>
+                        <p className="text-[10px] text-zinc-700 mt-0.5">
+                          {card.product.sales_count} {t.sold} · {fmtShort(card.product.revenue)} sum
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <ChevronRight className={`w-4 h-4 text-zinc-700 transition-transform ${expandedKey === card.key ? "rotate-90" : ""}`} />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteCard(card); }}
+                          className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        </button>
+                      </div>
+                    </div>
+                    {expandedKey === card.key && (
+                      <AdminCardEditor
+                        card={card}
+                        gameId={game.id}
+                        onSaved={() => { load(); setExpandedKey(null); }}
+                      />
+                    )}
+                  </div>
+                );
+              });
+            })()
+        }
       </div>
     </div>
   );
