@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Send, MessageCircle, Users, Loader2, ArrowLeft } from "lucide-react";
+import { Send, MessageCircle, Users, ArrowLeft } from "lucide-react";
 import { getSupportWsUrl } from "../api";
 
 interface Msg { id: string; from: string; text: string; ts: string; agent_id?: number }
