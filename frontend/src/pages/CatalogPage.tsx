@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Search, X, ChevronRight, ArrowLeft, ShoppingCart, Zap } from "lucide-react";
 import { getGames, getProducts } from "../api";
+import ProductDetailSheet from "./ProductDetailSheet";
 
 interface Game { id: string; name: string; description: string; photo_id: string }
 interface Product { id: string; name: string; description: string; price: number; photo_id: string }
@@ -119,15 +120,19 @@ function BannerCarousel({ onTopup }: { onTopup: () => void }) {
   );
 }
 
-function HorizProductCard({ product, gameId, onBuy }: {
+function HorizProductCard({ product, gameId, onBuy, onDetail }: {
   product: Product;
   gameId: string;
   onBuy: () => void;
+  onDetail: () => void;
 }) {
   const [g1, g2] = palette(gameId + product.id);
   return (
-    <div className="flex-shrink-0 w-[128px] rounded-2xl overflow-hidden flex flex-col"
-      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
+    <div
+      className="flex-shrink-0 w-[128px] rounded-2xl overflow-hidden flex flex-col active:opacity-80"
+      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
+      onClick={onDetail}
+    >
       <div className="h-[70px] flex items-center justify-center flex-shrink-0 overflow-hidden"
         style={product.photo_id ? undefined : { background: `linear-gradient(145deg,${g1},${g2})` }}>
         {product.photo_id
@@ -140,7 +145,7 @@ function HorizProductCard({ product, gameId, onBuy }: {
         <div className="flex items-center justify-between mt-auto pt-1">
           <span className="text-[10px] font-black text-blue-400">{product.price.toLocaleString()}</span>
           <button
-            onClick={onBuy}
+            onClick={(e) => { e.stopPropagation(); onBuy(); }}
             className="px-2 py-1 rounded-lg bg-blue-600 text-[10px] font-bold text-white active:opacity-70"
           >
             Buy
@@ -151,10 +156,11 @@ function HorizProductCard({ product, gameId, onBuy }: {
   );
 }
 
-function GameSection({ game, onBuy, onSeeAll }: {
+function GameSection({ game, onBuy, onSeeAll, onDetail }: {
   game: Game;
   onBuy: (p: Product & { gameName: string }) => void;
   onSeeAll: () => void;
+  onDetail: (p: Product & { gameName: string }) => void;
 }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,6 +205,7 @@ function GameSection({ game, onBuy, onSeeAll }: {
               product={p}
               gameId={game.id}
               onBuy={() => onBuy({ ...p, gameName: game.name })}
+              onDetail={() => onDetail({ ...p, gameName: game.name })}
             />
           ))}
         </div>
@@ -209,11 +216,16 @@ function GameSection({ game, onBuy, onSeeAll }: {
 
 // ─── Game detail ─────────────────────────────────────────────────────────────
 
-function ProductDetailCard({ product, onBuy }: { product: Product; onBuy: () => void }) {
+function ProductDetailCard({ product, onBuy, onDetail }: {
+  product: Product;
+  onBuy: () => void;
+  onDetail: () => void;
+}) {
   return (
     <div
-      className="rounded-2xl overflow-hidden flex flex-col"
+      className="rounded-2xl overflow-hidden flex flex-col active:opacity-80"
       style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}
+      onClick={onDetail}
     >
       <div className="flex-1 p-3 pb-2">
         <p className="text-[13px] font-bold text-white leading-snug">{product.name}</p>
@@ -224,7 +236,7 @@ function ProductDetailCard({ product, onBuy }: { product: Product; onBuy: () => 
       <div className="px-3 pb-3 flex items-center justify-between gap-2">
         <span className="text-xs font-black text-blue-400">{product.price.toLocaleString()} sum</span>
         <button
-          onClick={onBuy}
+          onClick={(e) => { e.stopPropagation(); onBuy(); }}
           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 text-[11px] font-bold text-white active:opacity-70"
         >
           <ShoppingCart className="w-3 h-3" /> Buy
@@ -234,10 +246,11 @@ function ProductDetailCard({ product, onBuy }: { product: Product; onBuy: () => 
   );
 }
 
-function GameDetailPage({ game, onBack, onBuy }: {
+function GameDetailPage({ game, onBack, onBuy, onDetail }: {
   game: Game;
   onBack: () => void;
   onBuy: (product: Product & { gameName: string }) => void;
+  onDetail: (product: Product & { gameName: string }) => void;
 }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -293,6 +306,7 @@ function GameDetailPage({ game, onBack, onBuy }: {
                   key={p.id}
                   product={p}
                   onBuy={() => onBuy({ ...p, gameName: game.name })}
+                  onDetail={() => onDetail({ ...p, gameName: game.name })}
                 />
               ))}
             </div>
@@ -310,6 +324,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Game | null>(null);
   const [query, setQuery] = useState("");
+  const [detailProduct, setDetailProduct] = useState<(Product & { gameName: string }) | null>(null);
 
   useEffect(() => {
     getGames().then((g) => { setGames(g); setLoading(false); });
@@ -317,11 +332,21 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
 
   if (selected) {
     return (
-      <GameDetailPage
-        game={selected}
-        onBack={() => setSelected(null)}
-        onBuy={(p) => { onBuy(p); }}
-      />
+      <>
+        <GameDetailPage
+          game={selected}
+          onBack={() => setSelected(null)}
+          onBuy={(p) => { onBuy(p); }}
+          onDetail={setDetailProduct}
+        />
+        {detailProduct && (
+          <ProductDetailSheet
+            product={detailProduct}
+            onClose={() => setDetailProduct(null)}
+            onBuy={() => onBuy(detailProduct)}
+          />
+        )}
+      </>
     );
   }
 
@@ -330,53 +355,63 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
     : games;
 
   return (
-    <div className="flex flex-col gap-5 pb-4">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search games..."
-          className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-blue-500/40 transition-colors"
-        />
-        {query && (
-          <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-            <X className="w-4 h-4 text-white/30" />
-          </button>
+    <>
+      <div className="flex flex-col gap-5 pb-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search games..."
+            className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-blue-500/40 transition-colors"
+          />
+          {query && (
+            <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+              <X className="w-4 h-4 text-white/30" />
+            </button>
+          )}
+        </div>
+
+        {/* Banner */}
+        {!query && <BannerCarousel onTopup={onTopup} />}
+
+        {/* Content */}
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-14 text-white/25">
+            <Search className="w-8 h-8" />
+            <p className="text-sm">Nothing found for "{query}"</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-7">
+            {query && (
+              <p className="text-sm font-bold text-white">Results ({filtered.length})</p>
+            )}
+            {filtered.map((g) => (
+              <GameSection
+                key={g.id}
+                game={g}
+                onBuy={onBuy}
+                onSeeAll={() => setSelected(g)}
+                onDetail={setDetailProduct}
+              />
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Banner */}
-      {!query && <BannerCarousel onTopup={onTopup} />}
-
-      {/* Content */}
-      {loading ? (
-        <div className="flex justify-center py-10">
-          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-14 text-white/25">
-          <Search className="w-8 h-8" />
-          <p className="text-sm">Nothing found for "{query}"</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-7">
-          {query && (
-            <p className="text-sm font-bold text-white">
-              Results ({filtered.length})
-            </p>
-          )}
-          {filtered.map((g) => (
-            <GameSection
-              key={g.id}
-              game={g}
-              onBuy={onBuy}
-              onSeeAll={() => setSelected(g)}
-            />
-          ))}
-        </div>
+      {/* Product detail sheet */}
+      {detailProduct && (
+        <ProductDetailSheet
+          product={detailProduct}
+          onClose={() => setDetailProduct(null)}
+          onBuy={() => { onBuy(detailProduct); setDetailProduct(null); }}
+        />
       )}
-    </div>
+    </>
   );
 }
