@@ -11,7 +11,12 @@ import ReviewSheet from "./pages/ReviewSheet";
 
 type Tab = "catalog" | "support" | "profile";
 interface UserT { user_id: number; balance: number; first_name: string }
-interface Product { id: string; name: string; price: number; gameName?: string }
+interface Product {
+  id: string; name: string; price: number; gameName?: string;
+  variant_label?: string;
+  variants?: { label: string; price: number }[];
+  purchase_fields?: { label: string; required: boolean }[];
+}
 
 const ADMIN_ID = Number(import.meta.env.VITE_ADMIN_ID || "6299152655");
 
@@ -28,7 +33,9 @@ export default function App() {
   const [user, setUser] = useState<UserT | null>(null);
   const [loading, setLoading] = useState(true);
   const [reviewOrderId, setReviewOrderId] = useState<string | null>(() => {
-    return new URLSearchParams(window.location.search).get("review");
+    const param = new URLSearchParams(window.location.search).get("review");
+    if (param) window.history.replaceState({}, "", window.location.pathname);
+    return param;
   });
 
   useEffect(() => {

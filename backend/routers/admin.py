@@ -127,11 +127,21 @@ class ProductCreate(BaseModel):
     icon_url: str = ""
 
 
+class VariantModel(BaseModel):
+    label: str
+    price: int
+
+class PurchaseFieldModel(BaseModel):
+    label: str
+    required: bool = False
+
 class ProductUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     price: int | None = None
     icon_url: str | None = None
+    variants: list[VariantModel] | None = None
+    purchase_fields: list[PurchaseFieldModel] | None = None
 
 
 @router.get("/games/{game_id}/products")
@@ -148,6 +158,8 @@ async def list_all_products(game_id: str, _=Depends(require_admin)):
             "icon_url": p.get("icon_url", "") or p.get("photo_id", ""),
             "sales_count": stats["count"],
             "revenue": stats["revenue"],
+            "variants": p.get("variants", []),
+            "purchase_fields": p.get("purchase_fields", []),
         })
     return result
 
@@ -160,9 +172,18 @@ async def add_product(data: ProductCreate, _=Depends(require_admin)):
 
 @router.patch("/products/{product_id}")
 async def patch_product(product_id: str, data: ProductUpdate, _=Depends(require_admin)):
-    fields = {k: v for k, v in data.model_dump().items() if v is not None}
-    if "icon_url" in fields:
-        fields["photo_id"] = fields["icon_url"]
+    raw = data.model_dump(exclude_none=True)
+    fields = {}
+    for k, v in raw.items():
+        if k == "icon_url":
+            fields["icon_url"] = v
+            fields["photo_id"] = v
+        elif k == "variants":
+            fields["variants"] = [item if isinstance(item, dict) else item for item in v]
+        elif k == "purchase_fields":
+            fields["purchase_fields"] = [item if isinstance(item, dict) else item for item in v]
+        else:
+            fields[k] = v
     if fields:
         await update_product(product_id, **fields)
     return {"ok": True}

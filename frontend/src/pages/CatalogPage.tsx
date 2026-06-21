@@ -3,10 +3,16 @@ import { Search, X, ChevronRight, ArrowLeft, ShoppingCart, Zap } from "lucide-re
 import { getGames, getProducts } from "../api";
 import ProductDetailSheet from "./ProductDetailSheet";
 
+interface Variant { label: string; price: number }
+interface PurchaseField { label: string; required: boolean }
 interface Game { id: string; name: string; description: string; photo_id: string }
-interface Product { id: string; name: string; description: string; price: number; photo_id: string }
+interface Product {
+  id: string; name: string; description: string; price: number; photo_id: string;
+  variants?: Variant[]; purchase_fields?: PurchaseField[];
+  variant_label?: string; gameName?: string;
+}
 interface Props {
-  onBuy: (product: Product & { gameName: string }) => void;
+  onBuy: (product: Product) => void;
   onTopup: () => void;
 }
 
@@ -158,9 +164,9 @@ function HorizProductCard({ product, gameId, onBuy, onDetail }: {
 
 function GameSection({ game, onBuy, onSeeAll, onDetail }: {
   game: Game;
-  onBuy: (p: Product & { gameName: string }) => void;
+  onBuy: (p: Product) => void;
   onSeeAll: () => void;
-  onDetail: (p: Product & { gameName: string }) => void;
+  onDetail: (p: Product) => void;
 }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -207,6 +213,7 @@ function GameSection({ game, onBuy, onSeeAll, onDetail }: {
               onBuy={() => onBuy({ ...p, gameName: game.name })}
               onDetail={() => onDetail({ ...p, gameName: game.name })}
             />
+
           ))}
         </div>
       )}
@@ -249,8 +256,8 @@ function ProductDetailCard({ product, onBuy, onDetail }: {
 function GameDetailPage({ game, onBack, onBuy, onDetail }: {
   game: Game;
   onBack: () => void;
-  onBuy: (product: Product & { gameName: string }) => void;
-  onDetail: (product: Product & { gameName: string }) => void;
+  onBuy: (product: Product) => void;
+  onDetail: (product: Product) => void;
 }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -343,7 +350,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
           <ProductDetailSheet
             product={detailProduct}
             onClose={() => setDetailProduct(null)}
-            onBuy={() => onBuy(detailProduct)}
+            onBuy={(p) => { onBuy(p); setDetailProduct(null); }}
           />
         )}
       </>
@@ -409,7 +416,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
         <ProductDetailSheet
           product={detailProduct}
           onClose={() => setDetailProduct(null)}
-          onBuy={() => { onBuy(detailProduct); setDetailProduct(null); }}
+          onBuy={(p) => { onBuy(p); setDetailProduct(null); }}
         />
       )}
     </>

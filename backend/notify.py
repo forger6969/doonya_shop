@@ -31,15 +31,23 @@ async def notify_admin_topup(topup_id: str, user_id: int, amount: int, method: s
         await bot.send_message(ADMIN_ID, text, parse_mode="HTML", reply_markup=kb)
 
 
-async def notify_admin_order(order_id: str, user_id: int, product_name: str, price: int):
+async def notify_admin_order(
+    order_id: str, user_id: int, product_name: str, price: int,
+    variant_label: str = "", field_answers: dict | None = None,
+):
     bot = get_bot()
     text = (
         f"🛒 <b>Новый заказ</b>\n"
         f"User: <code>{user_id}</code>\n"
-        f"Товар: <b>{product_name}</b>\n"
-        f"Цена: {price:,} сум\n"
-        f"Order ID: <code>{order_id}</code>"
+        f"Товар: <b>{product_name}</b>"
     )
+    if variant_label:
+        text += f" — {variant_label}"
+    text += f"\nЦена: {price:,} сум\nOrder ID: <code>{order_id}</code>"
+    if field_answers:
+        text += "\n"
+        for k, v in field_answers.items():
+            text += f"\n{k}: <code>{v}</code>"
     kb = InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(text="✅ Выполнен", callback_data=f"done_order:{order_id}"),
     ]])

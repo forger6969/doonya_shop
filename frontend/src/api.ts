@@ -32,8 +32,18 @@ export const submitTopup = (formData: FormData) =>
   api.post("/topup/submit", formData, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data);
 
 // ── Orders ───────────────────────────────────────────────────────────────────
-export const buyProduct = (productId: string, promoCode = "") =>
-  api.post("/orders/buy", { product_id: productId, promo_code: promoCode }).then((r) => r.data);
+export const buyProduct = (
+  productId: string,
+  promoCode = "",
+  variantLabel = "",
+  fieldAnswers: Record<string, string> = {},
+) =>
+  api.post("/orders/buy", {
+    product_id: productId,
+    promo_code: promoCode,
+    variant_label: variantLabel,
+    field_answers: fieldAnswers,
+  }).then((r) => r.data);
 export const validatePromo = (productId: string, promoCode: string) =>
   api.post("/orders/validate-promo", null, { params: { product_id: productId, promo_code: promoCode } }).then((r) => r.data);
 export const leaveReview = (data: { order_id: string; rating: number; text?: string; photo_url?: string }) =>

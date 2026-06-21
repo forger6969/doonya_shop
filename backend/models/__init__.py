@@ -134,6 +134,7 @@ async def reject_topup(topup_id: str) -> dict | None:
 async def create_order(
     user_id: int, product_id: str, game_id: str,
     amount: int, original_price: int = 0, promo_code: str = "",
+    variant_label: str = "", field_answers: dict | None = None,
 ) -> str:
     result = await db().orders.insert_one({
         "user_id": user_id,
@@ -142,6 +143,8 @@ async def create_order(
         "amount": amount,
         "original_price": original_price or amount,
         "promo_code": promo_code,
+        "variant_label": variant_label,
+        "field_answers": field_answers or {},
         "status": "pending",
         "created_at": datetime.utcnow(),
     })

@@ -33,6 +33,8 @@ async def list_products(game_id: str):
             "description": p.get("description", ""),
             "price": p["price"],
             "photo_id": p.get("photo_id", ""),
+            "variants": p.get("variants", []),
+            "purchase_fields": p.get("purchase_fields", []),
         }
         for p in products
     ]
@@ -55,6 +57,8 @@ async def product_detail(product_id: str):
         "description": p.get("description", ""),
         "price": p["price"],
         "photo_id": p.get("photo_id", ""),
+        "variants": p.get("variants", []),
+        "purchase_fields": p.get("purchase_fields", []),
         "avg_rating": avg_rating,
         "reviews_count": len(reviews),
     }

@@ -23,6 +23,8 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 class PurchaseRequest(BaseModel):
     product_id: str
     promo_code: str = ""
+    variant_label: str = ""
+    field_answers: dict = {}
 
 
 class ReviewRequest(BaseModel):
@@ -41,7 +43,24 @@ async def buy_product(req: PurchaseRequest, tg_user: dict = Depends(get_current_
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    original_price = product["price"]
+    # Determine base price: variant overrides product price
+    variants = product.get("variants", [])
+    if variants:
+        if not req.variant_label:
+            raise HTTPException(status_code=400, detail="Please select a variant")
+        variant = next((v for v in variants if v["label"] == req.variant_label), None)
+        if not variant:
+            raise HTTPException(status_code=400, detail="Invalid variant selected")
+        original_price = variant["price"]
+    else:
+        original_price = product["price"]
+
+    # Validate required purchase fields
+    purchase_fields = product.get("purchase_fields", [])
+    for f in purchase_fields:
+        if f.get("required") and not req.field_answers.get(f["label"], "").strip():
+            raise HTTPException(status_code=400, detail=f"Field required: {f['label']}")
+
     final_price = original_price
     promo = None
 
@@ -60,6 +79,8 @@ async def buy_product(req: PurchaseRequest, tg_user: dict = Depends(get_current_
         amount=final_price,
         original_price=original_price,
         promo_code=req.promo_code.upper() if req.promo_code else "",
+        variant_label=req.variant_label,
+        field_answers=req.field_answers,
     )
 
     if promo:
@@ -67,7 +88,11 @@ async def buy_product(req: PurchaseRequest, tg_user: dict = Depends(get_current_
 
     try:
         from backend.notify import notify_admin_order
-        await notify_admin_order(order_id, user_id, product["name"], final_price)
+        await notify_admin_order(
+            order_id, user_id, product["name"], final_price,
+            variant_label=req.variant_label,
+            field_answers=req.field_answers,
+        )
     except Exception:
         pass
 
@@ -115,7 +140,6 @@ async def leave_review(req: ReviewRequest, tg_user: dict = Depends(get_current_u
         raise HTTPException(status_code=404, detail="Order not found")
     if order["user_id"] != tg_user["id"]:
         raise HTTPException(status_code=403, detail="Not your order")
-    # prevent duplicate review
     existing = await db.reviews.find_one({"order_id": req.order_id, "user_id": tg_user["id"]})
     if existing:
         raise HTTPException(status_code=409, detail="Review already submitted")

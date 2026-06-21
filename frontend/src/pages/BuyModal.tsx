@@ -2,20 +2,48 @@ import { useState } from "react";
 import { ShoppingCart, Wallet, Check, Tag, X, AlertCircle } from "lucide-react";
 import { buyProduct, validatePromo } from "../api";
 
-interface Product { id: string; name: string; price: number; gameName?: string }
+interface Variant { label: string; price: number }
+interface PurchaseField { label: string; required: boolean }
+interface Product {
+  id: string; name: string; price: number; gameName?: string;
+  variant_label?: string;
+  variants?: Variant[];
+  purchase_fields?: PurchaseField[];
+}
 interface Props { product: Product; balance: number; onClose: () => void; onSuccess: () => void }
 
 export default function BuyModal({ product, balance, onClose, onSuccess }: Props) {
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+  const hasVariants = (product.variants?.length ?? 0) > 0;
+  const hasFields = (product.purchase_fields?.length ?? 0) > 0;
+
+  // Variant state — if product already has variant_label set (from detail sheet), pre-select it
+  const preSelected = product.variant_label
+    ? product.variants?.find((v) => v.label === product.variant_label) ?? null
+    : null;
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
+    preSelected ?? (hasVariants ? null : null)
+  );
+
+  // Field answers
+  const [fieldAnswers, setFieldAnswers] = useState<Record<string, string>>({});
+
+  // Promo
   const [promoCode, setPromoCode] = useState("");
   const [promoInput, setPromoInput] = useState("");
   const [discount, setDiscount] = useState(0);
   const [promoErr, setPromoErr] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
 
-  const finalPrice = Math.max(0, product.price - discount);
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const basePrice = selectedVariant ? selectedVariant.price : product.price;
+  const finalPrice = Math.max(0, basePrice - discount);
   const canAfford = balance >= finalPrice;
+  const fieldsValid = !hasFields || (product.purchase_fields ?? []).every(
+    (f) => !f.required || fieldAnswers[f.label]?.trim()
+  );
+  const canBuy = (!hasVariants || selectedVariant) && fieldsValid && canAfford;
 
   const applyPromo = async () => {
     if (!promoInput.trim()) return;
@@ -27,18 +55,16 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
     } catch (e: any) {
       setPromoErr(e?.response?.data?.detail || "Invalid promo code");
       setDiscount(0); setPromoCode("");
-    } finally {
-      setPromoLoading(false);
-    }
+    } finally { setPromoLoading(false); }
   };
 
   const clearPromo = () => { setPromoCode(""); setPromoInput(""); setDiscount(0); setPromoErr(""); };
 
   const handleBuy = async () => {
-    if (!canAfford || loading) return;
+    if (!canBuy || loading) return;
     setLoading(true);
     try {
-      await buyProduct(product.id, promoCode);
+      await buyProduct(product.id, promoCode, selectedVariant?.label ?? "", fieldAnswers);
       setDone(true);
       setTimeout(onSuccess, 1400);
     } catch (e: any) {
@@ -50,10 +76,12 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
       <div className="absolute inset-0 bg-black/70" />
-      <div className="relative w-full rounded-t-3xl flex flex-col gap-4 p-5"
+      <div
+        className="relative w-full rounded-t-3xl flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto"
         style={{ background: "#161720", border: "1px solid rgba(255,255,255,0.07)" }}
-        onClick={(e) => e.stopPropagation()}>
-        <div className="w-9 h-1 rounded-full bg-white/10 mx-auto -mt-1" />
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-9 h-1 rounded-full bg-white/10 mx-auto -mt-1 flex-shrink-0" />
 
         {done ? (
           <div className="flex flex-col items-center gap-3 py-8">
@@ -67,54 +95,104 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
           </div>
         ) : (
           <>
-            {/* Product */}
+            {/* Product name */}
             <div>
-              {product.gameName && <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-1">{product.gameName}</p>}
+              {product.gameName && (
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-1">{product.gameName}</p>
+              )}
               <p className="text-xl font-black text-white">{product.name}</p>
             </div>
 
-            {/* Price block */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.04]">
-                <div className="flex items-center gap-2 text-white/40 text-sm"><ShoppingCart className="w-4 h-4" /> Price</div>
-                <div className="flex items-center gap-2">
-                  {discount > 0 && <span className="text-[12px] line-through text-white/25">{product.price.toLocaleString()}</span>}
-                  <span className="font-black text-violet-400">{finalPrice.toLocaleString()} sum</span>
+            {/* Variant selector */}
+            {hasVariants && (
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Select variant</p>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants!.map((v) => (
+                    <button
+                      key={v.label}
+                      onClick={() => { setSelectedVariant(v); setDiscount(0); setPromoCode(""); setPromoInput(""); }}
+                      className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-colors ${
+                        selectedVariant?.label === v.label
+                          ? "bg-blue-600 text-white"
+                          : "bg-white/[0.05] text-white/60 border border-white/[0.08]"
+                      }`}
+                    >
+                      {v.label}
+                      <span className={`ml-2 text-[11px] ${selectedVariant?.label === v.label ? "text-blue-200" : "text-white/30"}`}>
+                        {v.price.toLocaleString()}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
-              {discount > 0 && (
-                <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04]">
-                  <div className="flex items-center gap-2 text-emerald-400 text-sm"><Tag className="w-4 h-4" /> Promo {promoCode}</div>
-                  <span className="text-emerald-400 font-bold text-sm">-{discount.toLocaleString()} sum</span>
-                </div>
-              )}
-              <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-2 text-white/40 text-sm"><Wallet className="w-4 h-4" /> Balance</div>
-                <span className={`font-bold text-sm ${canAfford ? "text-emerald-400" : "text-red-400"}`}>{balance.toLocaleString()} sum</span>
-              </div>
-            </div>
+            )}
 
-            {/* Promo input */}
-            {promoCode ? (
-              <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-emerald-400/20 bg-emerald-400/5">
-                <Tag className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                <span className="flex-1 text-sm font-mono font-bold text-emerald-400 tracking-widest">{promoCode}</span>
-                <button onClick={clearPromo}><X className="w-4 h-4 text-emerald-400/60" /></button>
+            {/* Purchase fields */}
+            {hasFields && (
+              <div className="flex flex-col gap-3">
+                {product.purchase_fields!.map((f) => (
+                  <div key={f.label} className="flex flex-col gap-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">
+                      {f.label}{f.required && <span className="text-red-400 ml-1">*</span>}
+                    </p>
+                    <input
+                      value={fieldAnswers[f.label] ?? ""}
+                      onChange={(e) => setFieldAnswers({ ...fieldAnswers, [f.label]: e.target.value })}
+                      placeholder={f.label}
+                      className="w-full bg-white/[0.04] border border-white/[0.07] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-blue-500/40 transition-colors"
+                    />
+                  </div>
+                ))}
               </div>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  value={promoInput}
-                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoErr(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && applyPromo()}
-                  placeholder="Promo code"
-                  className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none font-mono uppercase tracking-widest focus:border-violet-500/40 transition-colors"
-                />
-                <button onClick={applyPromo} disabled={!promoInput.trim() || promoLoading}
-                  className="px-3 py-2.5 rounded-xl bg-violet-600/20 border border-violet-500/20 text-violet-400 text-sm font-bold active:opacity-70 disabled:opacity-30">
-                  Apply
-                </button>
+            )}
+
+            {/* Price block — only show when variant is selected or no variants */}
+            {(!hasVariants || selectedVariant) && (
+              <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.04]">
+                  <div className="flex items-center gap-2 text-white/40 text-sm"><ShoppingCart className="w-4 h-4" /> Price</div>
+                  <div className="flex items-center gap-2">
+                    {discount > 0 && <span className="text-[12px] line-through text-white/25">{basePrice.toLocaleString()}</span>}
+                    <span className="font-black text-blue-400">{finalPrice.toLocaleString()} sum</span>
+                  </div>
+                </div>
+                {discount > 0 && (
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.04]">
+                    <div className="flex items-center gap-2 text-emerald-400 text-sm"><Tag className="w-4 h-4" /> {promoCode}</div>
+                    <span className="text-emerald-400 font-bold text-sm">-{discount.toLocaleString()} sum</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="flex items-center gap-2 text-white/40 text-sm"><Wallet className="w-4 h-4" /> Balance</div>
+                  <span className={`font-bold text-sm ${canAfford ? "text-emerald-400" : "text-red-400"}`}>{balance.toLocaleString()} sum</span>
+                </div>
               </div>
+            )}
+
+            {/* Promo */}
+            {(!hasVariants || selectedVariant) && (
+              promoCode ? (
+                <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-emerald-400/20 bg-emerald-400/5">
+                  <Tag className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span className="flex-1 text-sm font-mono font-bold text-emerald-400 tracking-widest">{promoCode}</span>
+                  <button onClick={clearPromo}><X className="w-4 h-4 text-emerald-400/60" /></button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={promoInput}
+                    onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoErr(""); }}
+                    onKeyDown={(e) => e.key === "Enter" && applyPromo()}
+                    placeholder="Promo code"
+                    className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none font-mono uppercase tracking-widest focus:border-blue-500/40 transition-colors"
+                  />
+                  <button onClick={applyPromo} disabled={!promoInput.trim() || promoLoading}
+                    className="px-3 py-2.5 rounded-xl bg-blue-600/20 border border-blue-500/20 text-blue-400 text-sm font-bold active:opacity-70 disabled:opacity-30">
+                    Apply
+                  </button>
+                </div>
+              )
             )}
             {promoErr && (
               <div className="flex items-center gap-2 text-red-400 text-[12px]">
@@ -122,19 +200,21 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
               </div>
             )}
 
-            {!canAfford && (
+            {!canAfford && (!hasVariants || selectedVariant) && (
               <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/15">
                 <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
                 <p className="text-red-400 text-sm">Insufficient balance. Top up to continue.</p>
               </div>
             )}
 
-            {/* Buttons */}
             <div className="flex flex-col gap-2">
-              <button onClick={handleBuy} disabled={!canAfford || loading}
+              <button
+                onClick={handleBuy}
+                disabled={!canBuy || loading}
                 className="w-full py-3.5 rounded-xl font-black text-sm text-white transition-opacity active:opacity-70 disabled:opacity-30"
-                style={{ background: canAfford ? "linear-gradient(135deg,#7c3aed,#4f46e5)" : "#1f1f2a" }}>
-                {loading ? "Processing..." : `Confirm · ${finalPrice.toLocaleString()} sum`}
+                style={{ background: canBuy ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "#1f1f2a" }}
+              >
+                {loading ? "Processing..." : canBuy ? `Confirm · ${finalPrice.toLocaleString()} sum` : hasVariants && !selectedVariant ? "Select a variant" : "Confirm"}
               </button>
               <button onClick={onClose} className="w-full py-2.5 text-sm text-white/25 font-semibold active:text-white/50">Cancel</button>
             </div>

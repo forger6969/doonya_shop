@@ -19,7 +19,9 @@ interface Stats { pending_topups: number; pending_orders: number; total_games: n
 interface Topup { id: string; user_id: number; amount: number; unique_amount: number; method: string; receipt_url: string; status: string; created_at: string }
 interface Order { id: string; user_id: number; amount: number; status: string; promo_code: string; created_at: string }
 interface Game { id: string; name: string; description: string; icon_url: string }
-interface Product { id: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number }
+interface Variant { label: string; price: number }
+interface PurchaseField { label: string; required: boolean }
+interface Product { id: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; variants: Variant[]; purchase_fields: PurchaseField[] }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
 type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos";
@@ -306,12 +308,105 @@ function Orders() {
 }
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
+function ProductEditor({ product, onSaved }: { product: Product; onSaved: () => void }) {
+  const [variants, setVariants] = useState<Variant[]>(product.variants ?? []);
+  const [fields, setFields] = useState<PurchaseField[]>(product.purchase_fields ?? []);
+  const [newVar, setNewVar] = useState({ label: "", price: "" });
+  const [newField, setNewField] = useState({ label: "", required: false });
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    await adminPatchProduct(product.id, { variants, purchase_fields: fields });
+    setSaving(false);
+    onSaved();
+  };
+
+  const addVariant = () => {
+    if (!newVar.label.trim() || !newVar.price) return;
+    setVariants([...variants, { label: newVar.label.trim(), price: Number(newVar.price) }]);
+    setNewVar({ label: "", price: "" });
+  };
+
+  const addField = () => {
+    if (!newField.label.trim()) return;
+    setFields([...fields, { label: newField.label.trim(), required: newField.required }]);
+    setNewField({ label: "", required: false });
+  };
+
+  return (
+    <div className="px-4 pb-4 flex flex-col gap-4 border-t border-[#1e2030] pt-3">
+      {/* Variants */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70 mb-2">Variants (price per option)</p>
+        <div className="flex flex-col gap-1.5">
+          {variants.map((v, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm">
+              <span className="flex-1 text-white/80">{v.label}</span>
+              <span className="text-zinc-500">{v.price.toLocaleString()} sum</span>
+              <button onClick={() => setVariants(variants.filter((_, j) => j !== i))}
+                className="w-6 h-6 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                <X className="w-3 h-3 text-red-400" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2 mt-2">
+          <input value={newVar.label} onChange={(e) => setNewVar({ ...newVar, label: e.target.value })}
+            placeholder="Label (e.g. 10 stars)" className="a-input flex-1 text-xs" />
+          <input value={newVar.price} onChange={(e) => setNewVar({ ...newVar, price: e.target.value })}
+            placeholder="Price" type="number" className="a-input w-24 text-xs" />
+          <button onClick={addVariant} disabled={!newVar.label.trim() || !newVar.price}
+            className="w-8 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
+            <Plus className="w-4 h-4 text-amber-400" />
+          </button>
+        </div>
+      </div>
+
+      {/* Purchase fields */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70 mb-2">Purchase fields (ask at checkout)</p>
+        <div className="flex flex-col gap-1.5">
+          {fields.map((f, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm">
+              <span className="flex-1 text-white/80">{f.label}</span>
+              <span className="text-[10px] text-zinc-600">{f.required ? "required" : "optional"}</span>
+              <button onClick={() => setFields(fields.filter((_, j) => j !== i))}
+                className="w-6 h-6 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                <X className="w-3 h-3 text-red-400" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2 mt-2 items-center">
+          <input value={newField.label} onChange={(e) => setNewField({ ...newField, label: e.target.value })}
+            placeholder="Field label (e.g. Player ID)" className="a-input flex-1 text-xs" />
+          <label className="flex items-center gap-1 text-[11px] text-zinc-500 flex-shrink-0 cursor-pointer">
+            <input type="checkbox" checked={newField.required} onChange={(e) => setNewField({ ...newField, required: e.target.checked })}
+              className="w-3.5 h-3.5" />
+            req
+          </label>
+          <button onClick={addField} disabled={!newField.label.trim()}
+            className="w-8 h-9 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0 disabled:opacity-30">
+            <Plus className="w-4 h-4 text-amber-400" />
+          </button>
+        </div>
+      </div>
+
+      <button onClick={save} disabled={saving} className="a-btn text-xs py-2">
+        {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Save variants & fields</>}
+      </button>
+    </div>
+  );
+}
+
 function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", desc: "", price: "", icon_url: "" });
   const [saving, setSaving] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = async () => { setLoading(true); setProducts(await adminGetProducts(game.id)); setLoading(false); };
   useEffect(() => { load(); }, [game.id]);
@@ -352,7 +447,7 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
             <UploadBtn current={form.icon_url} onDone={(url) => setForm({ ...form, icon_url: url })} />
             <div className="flex-1 flex flex-col gap-2">
               <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Product name *" className="a-input" />
-              <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Price (sum) *" type="number" className="a-input" />
+              <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Base price (sum) *" type="number" className="a-input" />
             </div>
           </div>
           <input value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder="Description (optional)" className="a-input" />
@@ -368,18 +463,30 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
           : products.map((p, i) => (
             <div key={p.id}>
               {i > 0 && <Divider />}
-              <div className="flex items-center gap-3 px-4 py-3">
-                <UploadBtn current={p.icon_url} onDone={(url) => updateIcon(p.id, url)} />
+              <div
+                className="flex items-center gap-3 px-4 py-3 active:bg-white/[0.02] cursor-pointer"
+                onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
+              >
+                <UploadBtn current={p.icon_url} onDone={(url) => { updateIcon(p.id, url); }} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-bold text-white truncate">{p.name}</p>
-                  <p className="text-[11px] text-zinc-600">{fmt(p.price)}</p>
-                  <p className="text-[10px] text-zinc-700 mt-0.5">{p.sales_count} sold · {fmtShort(p.revenue)} sum revenue</p>
+                  <p className="text-[11px] text-zinc-600">
+                    {p.variants?.length ? `${p.variants.length} variants` : fmt(p.price)}
+                    {p.purchase_fields?.length ? ` · ${p.purchase_fields.length} fields` : ""}
+                  </p>
+                  <p className="text-[10px] text-zinc-700 mt-0.5">{p.sales_count} sold · {fmtShort(p.revenue)} sum</p>
                 </div>
-                <button onClick={() => adminDeleteProduct(p.id).then(load)}
-                  className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0">
-                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <ChevronRight className={`w-4 h-4 text-zinc-700 transition-transform ${expandedId === p.id ? "rotate-90" : ""}`} />
+                  <button onClick={(e) => { e.stopPropagation(); adminDeleteProduct(p.id).then(load); }}
+                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0">
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  </button>
+                </div>
               </div>
+              {expandedId === p.id && (
+                <ProductEditor product={p} onSaved={() => { load(); setExpandedId(null); }} />
+              )}
             </div>
           ))}
       </div>

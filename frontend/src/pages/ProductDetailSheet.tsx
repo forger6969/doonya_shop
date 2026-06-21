@@ -2,17 +2,26 @@ import { useEffect, useState } from "react";
 import { X, Star, ShoppingCart } from "lucide-react";
 import { getProduct, getReviews } from "../api";
 
-interface Product { id: string; name: string; price: number; gameName?: string }
+interface Variant { label: string; price: number }
+interface PurchaseField { label: string; required: boolean }
+interface Product {
+  id: string; name: string; price: number; gameName?: string;
+  variant_label?: string;
+  variants?: Variant[];
+  purchase_fields?: PurchaseField[];
+}
 interface Detail {
   id: string; name: string; description: string; price: number;
   photo_id: string; avg_rating: number | null; reviews_count: number;
+  variants: Variant[];
+  purchase_fields: PurchaseField[];
 }
 interface Review { rating: number; text: string; photo_url: string; created_at: string }
 
 interface Props {
   product: Product;
   onClose: () => void;
-  onBuy: () => void;
+  onBuy: (p: Product) => void;
 }
 
 const PALETTES = [
@@ -47,6 +56,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [imgErr, setImgErr] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [g1, g2] = palette(product.id);
 
   useEffect(() => {
@@ -132,6 +142,31 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                 </div>
               )}
 
+              {/* Variant selector */}
+              {detail.variants.length > 0 && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Select variant</p>
+                  <div className="flex flex-wrap gap-2">
+                    {detail.variants.map((v) => (
+                      <button
+                        key={v.label}
+                        onClick={() => setSelectedVariant(v)}
+                        className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-colors ${
+                          selectedVariant?.label === v.label
+                            ? "bg-blue-600 text-white"
+                            : "bg-white/[0.05] text-white/60 border border-white/[0.08]"
+                        }`}
+                      >
+                        {v.label}
+                        <span className={`ml-2 text-[11px] ${selectedVariant?.label === v.label ? "text-blue-200" : "text-white/30"}`}>
+                          {v.price.toLocaleString()}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Price + buy */}
               <div
                 className="rounded-2xl p-4 flex items-center justify-between"
@@ -139,14 +174,28 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
               >
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400/60 mb-0.5">Price</p>
-                  <p className="text-2xl font-black text-blue-400">{detail.price.toLocaleString()} <span className="text-base text-blue-400/60">sum</span></p>
+                  <p className="text-2xl font-black text-blue-400">
+                    {(selectedVariant ? selectedVariant.price : detail.price).toLocaleString()}
+                    {" "}<span className="text-base text-blue-400/60">sum</span>
+                  </p>
                 </div>
                 <button
-                  onClick={() => { onBuy(); onClose(); }}
-                  className="flex items-center gap-2 px-5 py-3 rounded-xl font-black text-sm text-white active:opacity-70"
+                  onClick={() => {
+                    onBuy({
+                      ...product,
+                      variants: detail.variants,
+                      purchase_fields: detail.purchase_fields,
+                      variant_label: selectedVariant?.label,
+                      price: selectedVariant ? selectedVariant.price : detail.price,
+                    });
+                    onClose();
+                  }}
+                  disabled={detail.variants.length > 0 && !selectedVariant}
+                  className="flex items-center gap-2 px-5 py-3 rounded-xl font-black text-sm text-white active:opacity-70 disabled:opacity-40"
                   style={{ background: "linear-gradient(135deg,#3b82f6,#2563eb)" }}
                 >
-                  <ShoppingCart className="w-4 h-4" /> Buy
+                  <ShoppingCart className="w-4 h-4" />
+                  {detail.variants.length > 0 && !selectedVariant ? "Pick variant" : "Buy"}
                 </button>
               </div>
 
