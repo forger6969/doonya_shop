@@ -20,9 +20,8 @@ interface Stats { pending_topups: number; pending_orders: number; total_games: n
 interface Topup { id: string; user_id: number; amount: number; unique_amount: number; method: string; receipt_url: string; status: string; created_at: string }
 interface Order { id: string; user_id: number; amount: number; status: string; promo_code: string; created_at: string }
 interface Game { id: string; name: string; description: string; icon_url: string }
-interface Variant { label: string; price: number }
 interface PurchaseField { label: string; required: boolean }
-interface Product { id: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; variants: Variant[]; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
+interface Product { id: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
 type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos";
@@ -319,55 +318,16 @@ function Orders() {
 
 // ─── Catalog ──────────────────────────────────────────────────────────────────
 
-// Virtual card: represents either a standalone product or one variant of a multi-variant product
-interface AdminCard {
-  key: string;
-  product_id: string;
-  display_name: string;
-  price: number;
-  icon_url: string;
-  is_variant: boolean;
-  variant_label: string | undefined;
-  product: Product;
-}
-
-function toAdminCards(p: Product): AdminCard[] {
-  if (p.variants && p.variants.length > 0) {
-    return p.variants.map((v) => ({
-      key: `${p.id}::${v.label}`,
-      product_id: p.id,
-      display_name: v.label,
-      price: v.price,
-      icon_url: p.icon_url,
-      is_variant: true,
-      variant_label: v.label,
-      product: p,
-    }));
-  }
-  return [{
-    key: p.id,
-    product_id: p.id,
-    display_name: p.name,
-    price: p.price,
-    icon_url: p.icon_url,
-    is_variant: false,
-    variant_label: undefined,
-    product: p,
-  }];
-}
-
-// Inline editor for a single card (variant or standalone product)
-function AdminCardEditor({ card, gameId, onSaved }: { card: AdminCard; gameId: string; onSaved: () => void }) {
+function AdminCardEditor({ product, gameId: _gameId, onSaved }: { product: Product; gameId: string; onSaved: () => void }) {
   const { t } = useLang();
-  const [name, setName] = useState(card.display_name);
-  const [price, setPrice] = useState(String(card.price));
-  const [fields, setFields] = useState<PurchaseField[]>(card.product.purchase_fields ?? []);
+  const [name, setName] = useState(product.name);
+  const [price, setPrice] = useState(String(product.price));
+  const [fields, setFields] = useState<PurchaseField[]>(product.purchase_fields ?? []);
   const [newField, setNewField] = useState({ label: "", required: false });
-  // Discount state (per product, shared by all variants)
-  const [discountEnabled, setDiscountEnabled] = useState(card.product.discount_enabled ?? false);
-  const [discountPct, setDiscountPct] = useState(String(card.product.discount_percent || ""));
+  const [discountEnabled, setDiscountEnabled] = useState(product.discount_enabled ?? false);
+  const [discountPct, setDiscountPct] = useState(String(product.discount_percent || ""));
   const [discountUntil, setDiscountUntil] = useState(
-    card.product.discount_until ? card.product.discount_until.slice(0, 16) : ""
+    product.discount_until ? product.discount_until.slice(0, 16) : ""
   );
   const [saving, setSaving] = useState(false);
 
@@ -380,47 +340,12 @@ function AdminCardEditor({ card, gameId, onSaved }: { card: AdminCard; gameId: s
   const save = async () => {
     if (!name.trim() || !price) return;
     setSaving(true);
-
-    if (card.is_variant) {
-      // Extract this variant → standalone product so it gets its own independent discount
-      const remaining = card.product.variants!.filter((v) => v.label !== card.variant_label);
-      if (remaining.length === 0) {
-        await adminDeleteProduct(card.product_id);
-      } else {
-        await adminPatchProduct(card.product_id, { variants: remaining });
-        // Reset discount on parent so remaining variants don't inherit it
-        await adminSetDiscount(card.product_id, { discount_percent: 0, discount_enabled: false, discount_until: null });
-      }
-      // Create new standalone product
-      const result = await adminCreateProduct({
-        game_id: gameId,
-        name: name.trim(),
-        description: "",
-        price: Number(price),
-        icon_url: card.icon_url,
-      });
-      if (result?.product_id) {
-        if (fields.length > 0) {
-          await adminPatchProduct(result.product_id, { purchase_fields: fields });
-        }
-        if (discountEnabled && Number(discountPct) > 0) {
-          await adminSetDiscount(result.product_id, {
-            discount_percent: Number(discountPct),
-            discount_enabled: true,
-            discount_until: discountUntil ? new Date(discountUntil).toISOString() : null,
-          });
-        }
-      }
-    } else {
-      // Standalone product — patch directly
-      await adminPatchProduct(card.product_id, { name: name.trim(), price: Number(price), purchase_fields: fields });
-      await adminSetDiscount(card.product_id, {
-        discount_percent: Number(discountPct) || 0,
-        discount_enabled: discountEnabled,
-        discount_until: discountUntil ? new Date(discountUntil).toISOString() : null,
-      });
-    }
-
+    await adminPatchProduct(product.id, { name: name.trim(), price: Number(price), purchase_fields: fields });
+    await adminSetDiscount(product.id, {
+      discount_percent: Number(discountPct) || 0,
+      discount_enabled: discountEnabled,
+      discount_until: discountUntil ? new Date(discountUntil).toISOString() : null,
+    });
     setSaving(false);
     onSaved();
   };
@@ -528,13 +453,10 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
   const [formFields, setFormFields] = useState<PurchaseField[]>([]);
   const [newField, setNewField] = useState({ label: "", required: false });
   const [saving, setSaving] = useState(false);
-  const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const [splitting, setSplitting] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const load = async () => { setLoading(true); setProducts(await adminGetProducts(game.id)); setLoading(false); };
   useEffect(() => { load(); }, [game.id]);
-
-  const cards = products.flatMap(toAdminCards);
 
   const addField = () => {
     if (!newField.label.trim()) return;
@@ -556,41 +478,13 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
     setShowForm(false); setSaving(false); load();
   };
 
-  const updateCardIcon = async (card: AdminCard, url: string) => {
-    await adminPatchProduct(card.product_id, { icon_url: url });
+  const updateIcon = async (product: Product, url: string) => {
+    await adminPatchProduct(product.id, { icon_url: url });
     load();
   };
 
-  const deleteCard = async (card: AdminCard) => {
-    if (card.is_variant) {
-      const remaining = card.product.variants!.filter((v) => v.label !== card.variant_label);
-      if (remaining.length === 0) {
-        await adminDeleteProduct(card.product_id);
-      } else {
-        await adminPatchProduct(card.product_id, { variants: remaining });
-        // Reset parent discount so remaining variants aren't affected
-        await adminSetDiscount(card.product_id, { discount_percent: 0, discount_enabled: false, discount_until: null });
-      }
-    } else {
-      await adminDeleteProduct(card.product_id);
-    }
-    load();
-  };
-
-  // Extract ALL variants of a product into standalone products at once
-  const splitAllVariants = async (product: Product) => {
-    setSplitting(product.id);
-    for (const v of product.variants ?? []) {
-      const result = await adminCreateProduct({
-        game_id: game.id, name: v.label, description: "", price: v.price, icon_url: product.icon_url,
-      });
-      if (result?.product_id && (product.purchase_fields ?? []).length > 0) {
-        await adminPatchProduct(result.product_id, { purchase_fields: product.purchase_fields });
-      }
-    }
-    // Delete parent (all variants extracted)
+  const deleteProduct = async (product: Product) => {
     await adminDeleteProduct(product.id);
-    setSplitting(null);
     load();
   };
 
@@ -610,7 +504,7 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
         </button>
       </div>
 
-      {/* Simple create form — one product = one card */}
+      {/* Create form */}
       {showForm && (
         <div className="mx-4 mt-4 a-card p-4 flex flex-col gap-3">
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{t.newProduct}</p>
@@ -660,83 +554,52 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
         </div>
       )}
 
-      {/* Flat list: each card = one product or one variant */}
+      {/* Product list */}
       <div className="a-card mx-4 mt-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
-          : cards.length === 0 ? <Empty icon={Package} text={t.noProductsYet} />
-          : (() => {
-              // Track which parent products have already shown the split banner
-              const shownSplit = new Set<string>();
-              return cards.map((card, i) => {
-                // Show "Split variants" banner once per multi-variant product
-                const isFirstOfGroup = card.is_variant && !shownSplit.has(card.product_id);
-                if (card.is_variant) shownSplit.add(card.product_id);
-
-                return (
-                  <div key={card.key}>
-                    {i > 0 && <Divider />}
-
-                    {/* Split banner — shown once per grouped product */}
-                    {isFirstOfGroup && (
-                      <div className="px-4 pt-3 pb-1 flex items-center justify-between gap-2">
-                        <p className="text-[10px] text-amber-400/70 font-bold uppercase tracking-wider">
-                          ⚠ Сгруппированные варианты · скидка общая
-                        </p>
-                        <button
-                          onClick={() => splitAllVariants(card.product)}
-                          disabled={splitting === card.product_id}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-amber-400 border border-amber-400/20 active:opacity-70 disabled:opacity-40 flex-shrink-0"
-                        >
-                          {splitting === card.product_id
-                            ? <RefreshCw className="w-3 h-3 animate-spin" />
-                            : <Plus className="w-3 h-3" />
-                          }
-                          Разделить все
-                        </button>
-                      </div>
-                    )}
-
-                    <div
-                      className="flex items-center gap-3 px-4 py-3 active:bg-white/[0.02] cursor-pointer"
-                      onClick={() => setExpandedKey(expandedKey === card.key ? null : card.key)}
-                    >
-                      <UploadBtn
-                        current={card.icon_url}
-                        onDone={(url) => { updateCardIcon(card, url); }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-bold text-white truncate">{card.display_name}</p>
-                        <p className="text-[11px] text-zinc-600">
-                          {fmt(card.price)}
-                          {card.product.purchase_fields?.length
-                            ? ` · ${card.product.purchase_fields.length} ${t.fieldCount}`
-                            : ""}
-                        </p>
-                        <p className="text-[10px] text-zinc-700 mt-0.5">
-                          {card.product.sales_count} {t.sold} · {fmtShort(card.product.revenue)} sum
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <ChevronRight className={`w-4 h-4 text-zinc-700 transition-transform ${expandedKey === card.key ? "rotate-90" : ""}`} />
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteCard(card); }}
-                          className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                        </button>
-                      </div>
-                    </div>
-                    {expandedKey === card.key && (
-                      <AdminCardEditor
-                        card={card}
-                        gameId={game.id}
-                        onSaved={() => { load(); setExpandedKey(null); }}
-                      />
-                    )}
-                  </div>
-                );
-              });
-            })()
+          : products.length === 0 ? <Empty icon={Package} text={t.noProductsYet} />
+          : products.map((product, i) => (
+            <div key={product.id}>
+              {i > 0 && <Divider />}
+              <div
+                className="flex items-center gap-3 px-4 py-3 active:bg-white/[0.02] cursor-pointer"
+                onClick={() => setExpandedId(expandedId === product.id ? null : product.id)}
+              >
+                <UploadBtn
+                  current={product.icon_url}
+                  onDone={(url) => { updateIcon(product, url); }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-white truncate">{product.name}</p>
+                  <p className="text-[11px] text-zinc-600">
+                    {fmt(product.price)}
+                    {product.purchase_fields?.length
+                      ? ` · ${product.purchase_fields.length} ${t.fieldCount}`
+                      : ""}
+                  </p>
+                  <p className="text-[10px] text-zinc-700 mt-0.5">
+                    {product.sales_count} {t.sold} · {fmtShort(product.revenue)} sum
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <ChevronRight className={`w-4 h-4 text-zinc-700 transition-transform ${expandedId === product.id ? "rotate-90" : ""}`} />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteProduct(product); }}
+                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  </button>
+                </div>
+              </div>
+              {expandedId === product.id && (
+                <AdminCardEditor
+                  product={product}
+                  gameId={game.id}
+                  onSaved={() => { load(); setExpandedId(null); }}
+                />
+              )}
+            </div>
+          ))
         }
       </div>
     </div>
