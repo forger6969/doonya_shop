@@ -816,7 +816,14 @@ const NAV: { id: Section; label: string; Icon: React.ElementType }[] = [
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
-  const [section, setSection] = useState<Section>("dashboard");
+  const [section, setSection] = useState<Section>(() => {
+    const param = new URLSearchParams(window.location.search).get("section") as Section | null;
+    if (param && (["dashboard","payments","orders","catalog","analytics","promos"] as string[]).includes(param)) {
+      window.history.replaceState({}, "", window.location.pathname);
+      return param;
+    }
+    return "dashboard";
+  });
   return (
     <div className="a-shell flex flex-col min-h-dvh">
       {/* Header */}

@@ -83,7 +83,10 @@ async def submit_topup(
 
     try:
         from backend.notify import notify_admin_topup
-        await notify_admin_topup(topup_id, user_id, unique_amount, method, receipt_url)
+        await notify_admin_topup(
+            topup_id, user_id, unique_amount, method, receipt_url,
+            first_name=tg_user.get("first_name", ""),
+        )
     except Exception:
         pass
 

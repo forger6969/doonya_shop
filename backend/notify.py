@@ -12,19 +12,32 @@ def get_bot() -> Bot:
     return _bot
 
 
-async def notify_admin_topup(topup_id: str, user_id: int, amount: int, method: str, receipt_url: str = ""):
+async def notify_admin_topup(
+    topup_id: str, user_id: int, amount: int, method: str,
+    receipt_url: str = "", first_name: str = "",
+):
     bot = get_bot()
+    user_label = f"<b>{first_name}</b> (ID: <code>{user_id}</code>)" if first_name else f"ID: <code>{user_id}</code>"
     text = (
         f"💰 <b>Новое пополнение</b>\n"
-        f"User: <code>{user_id}</code>\n"
+        f"От: {user_label}\n"
         f"Сумма: <b>{amount:,} сум</b>\n"
         f"Метод: {method}\n"
         f"ID: <code>{topup_id}</code>"
     )
-    kb = InlineKeyboardMarkup(inline_keyboard=[[
+    action_row = [
         InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"confirm_topup:{topup_id}"),
         InlineKeyboardButton(text="❌ Отклонить", callback_data=f"reject_topup:{topup_id}"),
-    ]])
+    ]
+    rows = [action_row]
+    if MINI_APP_URL:
+        rows.append([
+            InlineKeyboardButton(
+                text="📱 Открыть приложение",
+                web_app=WebAppInfo(url=f"{MINI_APP_URL}?section=payments"),
+            )
+        ])
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
     if receipt_url:
         await bot.send_photo(ADMIN_ID, receipt_url, caption=text, parse_mode="HTML", reply_markup=kb)
     else:
