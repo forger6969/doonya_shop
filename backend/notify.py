@@ -1,5 +1,6 @@
 from aiogram import Bot
-from backend.config import BOT_TOKEN, ADMIN_ID
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from backend.config import BOT_TOKEN, ADMIN_ID, MINI_APP_URL
 
 _bot: Bot | None = None
 
@@ -18,14 +19,16 @@ async def notify_admin_topup(topup_id: str, user_id: int, amount: int, method: s
         f"User: <code>{user_id}</code>\n"
         f"Сумма: <b>{amount:,} сум</b>\n"
         f"Метод: {method}\n"
-        f"ID: <code>{topup_id}</code>\n\n"
-        f"✅ /confirm_{topup_id}\n"
-        f"❌ /reject_{topup_id}"
+        f"ID: <code>{topup_id}</code>"
     )
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"confirm_topup:{topup_id}"),
+        InlineKeyboardButton(text="❌ Отклонить", callback_data=f"reject_topup:{topup_id}"),
+    ]])
     if receipt_url:
-        await bot.send_photo(ADMIN_ID, receipt_url, caption=text, parse_mode="HTML")
+        await bot.send_photo(ADMIN_ID, receipt_url, caption=text, parse_mode="HTML", reply_markup=kb)
     else:
-        await bot.send_message(ADMIN_ID, text, parse_mode="HTML")
+        await bot.send_message(ADMIN_ID, text, parse_mode="HTML", reply_markup=kb)
 
 
 async def notify_admin_order(order_id: str, user_id: int, product_name: str, price: int):
@@ -35,10 +38,12 @@ async def notify_admin_order(order_id: str, user_id: int, product_name: str, pri
         f"User: <code>{user_id}</code>\n"
         f"Товар: <b>{product_name}</b>\n"
         f"Цена: {price:,} сум\n"
-        f"Order ID: <code>{order_id}</code>\n\n"
-        f"После отправки: /done_{order_id}"
+        f"Order ID: <code>{order_id}</code>"
     )
-    await bot.send_message(ADMIN_ID, text, parse_mode="HTML")
+    kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Выполнен", callback_data=f"done_order:{order_id}"),
+    ]])
+    await bot.send_message(ADMIN_ID, text, parse_mode="HTML", reply_markup=kb)
 
 
 async def notify_user_topup_confirmed(user_id: int, amount: int):
@@ -59,10 +64,18 @@ async def notify_user_topup_rejected(user_id: int):
     )
 
 
-async def notify_user_order_ready(user_id: int, order_id: str):
+async def notify_user_order_ready(user_id: int, order_id: str, product_name: str = ""):
     bot = get_bot()
+    label = f"<b>{product_name}</b>" if product_name else "Ваш заказ"
+    review_url = f"{MINI_APP_URL}?review={order_id}" if MINI_APP_URL else ""
+    kb = None
+    if review_url:
+        kb = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text="⭐ Оставить отзыв", web_app=WebAppInfo(url=review_url)),
+        ]])
     await bot.send_message(
         user_id,
-        f"🎮 Ваш заказ <code>{order_id}</code> выполнен! Проверьте почту/аккаунт.",
+        f"🎮 {label} выполнен!\n\nОставьте отзыв — это помогает другим покупателям 🙏",
         parse_mode="HTML",
+        reply_markup=kb,
     )

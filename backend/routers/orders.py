@@ -1,9 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException
+import cloudinary
+import cloudinary.uploader
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
+from bson import ObjectId
 from backend.auth import get_current_user
+from backend.database import get_db
+from backend.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from backend.models import (
     get_or_create_user, get_product, create_order,
     create_review, get_promo_by_code, apply_promo, use_promo,
+)
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
 )
 
 router = APIRouter(prefix="/orders", tags=["orders"])
@@ -16,9 +27,9 @@ class PurchaseRequest(BaseModel):
 
 class ReviewRequest(BaseModel):
     order_id: str
-    product_id: str
     rating: int
     text: str = ""
+    photo_url: str = ""
 
 
 @router.post("/buy")
@@ -98,11 +109,33 @@ async def validate_promo(
 async def leave_review(req: ReviewRequest, tg_user: dict = Depends(get_current_user)):
     if not 1 <= req.rating <= 5:
         raise HTTPException(status_code=400, detail="Rating must be 1-5")
+    db = get_db()
+    order = await db.orders.find_one({"_id": ObjectId(req.order_id)})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order["user_id"] != tg_user["id"]:
+        raise HTTPException(status_code=403, detail="Not your order")
+    # prevent duplicate review
+    existing = await db.reviews.find_one({"order_id": req.order_id, "user_id": tg_user["id"]})
+    if existing:
+        raise HTTPException(status_code=409, detail="Review already submitted")
     await create_review(
         user_id=tg_user["id"],
         order_id=req.order_id,
-        product_id=req.product_id,
+        product_id=order["product_id"],
         rating=req.rating,
         text=req.text,
+        photo_url=req.photo_url,
     )
     return {"ok": True}
+
+
+@router.post("/upload-photo")
+async def upload_review_photo(file: UploadFile = File(...), _=Depends(get_current_user)):
+    contents = await file.read()
+    result = cloudinary.uploader.upload(
+        contents,
+        folder="doonya_shop/reviews",
+        resource_type="image",
+    )
+    return {"url": result["secure_url"]}

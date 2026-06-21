@@ -162,13 +162,14 @@ async def get_user_orders(user_id: int) -> list:
 
 
 # ── Reviews ──────────────────────────────────────────────────────────────────
-async def create_review(user_id: int, order_id: str, product_id: str, rating: int, text: str) -> str:
+async def create_review(user_id: int, order_id: str, product_id: str, rating: int, text: str, photo_url: str = "") -> str:
     result = await db().reviews.insert_one({
         "user_id": user_id,
         "order_id": order_id,
         "product_id": product_id,
         "rating": rating,
         "text": text,
+        "photo_url": photo_url,
         "created_at": datetime.utcnow(),
     })
     return str(result.inserted_id)

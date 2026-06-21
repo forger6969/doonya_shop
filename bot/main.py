@@ -2,7 +2,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from backend.config import BOT_TOKEN, MINI_APP_URL, ADMIN_ID
-from backend.models import confirm_topup, reject_topup, complete_order
+from backend.models import confirm_topup, reject_topup, complete_order, get_product
+from backend.database import get_db
 from backend.notify import notify_user_topup_confirmed, notify_user_topup_rejected, notify_user_order_ready
 
 bot = Bot(token=BOT_TOKEN)
@@ -21,6 +22,70 @@ async def cmd_start(message: types.Message):
         parse_mode="HTML",
     )
 
+
+# ── Callback handlers (inline buttons) ───────────────────────────────────────
+
+@dp.callback_query(lambda c: c.data and c.data.startswith("confirm_topup:"))
+async def cb_confirm_topup(callback: types.CallbackQuery):
+    if callback.from_user.id != ADMIN_ID:
+        await callback.answer("Нет доступа", show_alert=True)
+        return
+    topup_id = callback.data.removeprefix("confirm_topup:")
+    result = await confirm_topup(topup_id)
+    if result:
+        await notify_user_topup_confirmed(result["user_id"], result["amount"])
+        try:
+            await callback.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        await callback.answer("✅ Подтверждено! Баланс пополнен.")
+    else:
+        await callback.answer("Уже обработано", show_alert=True)
+
+
+@dp.callback_query(lambda c: c.data and c.data.startswith("reject_topup:"))
+async def cb_reject_topup(callback: types.CallbackQuery):
+    if callback.from_user.id != ADMIN_ID:
+        await callback.answer("Нет доступа", show_alert=True)
+        return
+    topup_id = callback.data.removeprefix("reject_topup:")
+    result = await reject_topup(topup_id)
+    if result:
+        await notify_user_topup_rejected(result["user_id"])
+        try:
+            await callback.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        await callback.answer("❌ Отклонено.")
+    else:
+        await callback.answer("Уже обработано", show_alert=True)
+
+
+@dp.callback_query(lambda c: c.data and c.data.startswith("done_order:"))
+async def cb_done_order(callback: types.CallbackQuery):
+    if callback.from_user.id != ADMIN_ID:
+        await callback.answer("Нет доступа", show_alert=True)
+        return
+    order_id = callback.data.removeprefix("done_order:")
+    order = await complete_order(order_id)
+    if order:
+        product_name = ""
+        try:
+            p = await get_product(order["product_id"])
+            product_name = p["name"] if p else ""
+        except Exception:
+            pass
+        await notify_user_order_ready(order["user_id"], order_id, product_name)
+        try:
+            await callback.message.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+        await callback.answer("✅ Заказ выполнен, пользователь уведомлён.")
+    else:
+        await callback.answer("Заказ не найден", show_alert=True)
+
+
+# ── Legacy text command fallbacks ─────────────────────────────────────────────
 
 @dp.message(lambda m: m.text and m.text.startswith("/confirm_") and m.from_user.id == ADMIN_ID)
 async def admin_confirm(message: types.Message):

@@ -67,6 +67,7 @@ async def product_reviews(product_id: str):
         {
             "rating": r["rating"],
             "text": r.get("text", ""),
+            "photo_url": r.get("photo_url", ""),
             "created_at": r["created_at"].isoformat(),
         }
         for r in reviews

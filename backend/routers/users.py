@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from backend.auth import get_current_user
 from backend.models import get_or_create_user, get_user, get_user_orders
 from backend.database import get_db
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+class EmailSave(BaseModel):
+    email: str
 
 
 @router.post("/me")
@@ -18,7 +23,18 @@ async def get_me(tg_user: dict = Depends(get_current_user)):
         "first_name": user["first_name"],
         "username": user.get("username", ""),
         "balance": user["balance"],
+        "email": user.get("email", ""),
     }
+
+
+@router.post("/email")
+async def save_email(req: EmailSave, tg_user: dict = Depends(get_current_user)):
+    db = get_db()
+    await db.users.update_one(
+        {"user_id": tg_user["id"]},
+        {"$set": {"email": req.email}},
+    )
+    return {"ok": True}
 
 
 @router.get("/orders")

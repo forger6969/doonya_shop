@@ -12,6 +12,12 @@ api.interceptors.request.use((config) => {
 export const getMe = () => api.post("/users/me").then((r) => r.data);
 export const getOrders = () => api.get("/users/orders").then((r) => r.data);
 export const getMyTopups = () => api.get("/users/topups").then((r) => r.data);
+export const saveEmail = (email: string) => api.post("/users/email", { email }).then((r) => r.data);
+
+// ── Support ─────────────────────────────────────────────────────────────────
+export const createTicket = (data: { category: string; message: string }) =>
+  api.post("/support/ticket", data).then((r) => r.data);
+export const getMyTickets = () => api.get("/support/tickets").then((r) => r.data);
 
 // ── Catalog ──────────────────────────────────────────────────────────────────
 export const getGames = () => api.get("/catalog/games").then((r) => r.data);
@@ -30,8 +36,13 @@ export const buyProduct = (productId: string, promoCode = "") =>
   api.post("/orders/buy", { product_id: productId, promo_code: promoCode }).then((r) => r.data);
 export const validatePromo = (productId: string, promoCode: string) =>
   api.post("/orders/validate-promo", null, { params: { product_id: productId, promo_code: promoCode } }).then((r) => r.data);
-export const leaveReview = (data: { order_id: string; product_id: string; rating: number; text: string }) =>
+export const leaveReview = (data: { order_id: string; rating: number; text?: string; photo_url?: string }) =>
   api.post("/orders/review", data).then((r) => r.data);
+export const uploadReviewPhoto = (file: File) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  return api.post("/orders/upload-photo", fd, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data as { url: string });
+};
 
 // ── Admin ────────────────────────────────────────────────────────────────────
 export const adminGetStats = () => api.get("/admin/stats").then((r) => r.data);
