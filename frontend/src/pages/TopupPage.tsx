@@ -17,6 +17,7 @@ interface TopupInfo {
 }
 
 interface PendingSession {
+  v: number;
   amount: string;
   method: Method;
   info: TopupInfo;
@@ -24,6 +25,7 @@ interface PendingSession {
 }
 
 const SESSION_KEY = "topup_pending";
+const SESSION_VERSION = 2;
 const TIMER_DURATION = 10 * 60; // 600 seconds
 
 const METHODS: { id: Method; label: string; icon: string }[] = [
@@ -52,6 +54,8 @@ export default function TopupPage({ onBack }: Props) {
     if (!raw) return;
     try {
       const s: PendingSession = JSON.parse(raw);
+      // Invalidate old sessions from before cards were added
+      if (!s.v || s.v < SESSION_VERSION) { localStorage.removeItem(SESSION_KEY); return; }
       const remaining = Math.floor((s.expiresAt - Date.now()) / 1000);
       if (remaining > 0) {
         setAmount(s.amount);
@@ -99,7 +103,7 @@ export default function TopupPage({ onBack }: Props) {
       setInfo(data);
       const expiresAt = Date.now() + TIMER_DURATION * 1000;
       setTimeLeft(TIMER_DURATION);
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ amount, method: m, info: data, expiresAt } satisfies PendingSession));
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ v: SESSION_VERSION, amount, method: m, info: data, expiresAt } satisfies PendingSession));
       setStep("requisites");
     } finally {
       setLoading(false);
@@ -298,6 +302,12 @@ export default function TopupPage({ onBack }: Props) {
           <button className="btn-primary" onClick={() => setStep("receipt")}>
             Я перевёл — прикрепить чек
           </button>
+          <button
+            onClick={startOver}
+            className="w-full py-3 rounded-xl text-sm font-bold text-red-400 bg-red-400/[0.08] border border-red-400/20 active:opacity-70"
+          >
+            Отменить пополнение
+          </button>
         </div>
       )}
 
@@ -322,6 +332,12 @@ export default function TopupPage({ onBack }: Props) {
             onClick={handleSubmit}
           >
             {loading ? "Отправка..." : "Отправить на проверку"}
+          </button>
+          <button
+            onClick={startOver}
+            className="w-full py-3 rounded-xl text-sm font-bold text-red-400 bg-red-400/[0.08] border border-red-400/20 active:opacity-70"
+          >
+            Отменить пополнение
           </button>
         </div>
       )}
