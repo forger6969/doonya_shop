@@ -7,7 +7,7 @@ interface Variant { label: string; price: number }
 interface PurchaseField { label: string; required: boolean }
 interface Game { id: string; name: string; description: string; photo_id: string }
 interface Product {
-  id: string; name: string; description: string; price: number; photo_id: string;
+  id: string; name: string; description?: string; price: number; photo_id?: string;
   variants?: Variant[]; purchase_fields?: PurchaseField[];
   variant_label?: string; gameName?: string;
 }
@@ -331,7 +331,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Game | null>(null);
   const [query, setQuery] = useState("");
-  const [detailProduct, setDetailProduct] = useState<(Product & { gameName: string }) | null>(null);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     getGames().then((g) => { setGames(g); setLoading(false); });
@@ -344,7 +344,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
           game={selected}
           onBack={() => setSelected(null)}
           onBuy={(p) => { onBuy(p); }}
-          onDetail={setDetailProduct}
+          onDetail={(p) => setDetailProduct(p)}
         />
         {detailProduct && (
           <ProductDetailSheet
@@ -404,7 +404,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
                 game={g}
                 onBuy={onBuy}
                 onSeeAll={() => setSelected(g)}
-                onDetail={setDetailProduct}
+                onDetail={(p) => setDetailProduct(p)}
               />
             ))}
           </div>
