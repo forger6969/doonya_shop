@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Grid2x2, MessageCircle, User } from "lucide-react";
 import { getMe } from "./api";
 import { useLang } from "./i18n";
@@ -24,6 +24,26 @@ const ADMIN_IDS = new Set([
   7004667100,
 ]);
 
+const TOPUP_SESSION_KEY = "topup_pending";
+const TOPUP_SESSION_VERSION = 2;
+
+function fmtTime(s: number) {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function readPendingSession(): { expiresAt: number } | null {
+  try {
+    const raw = localStorage.getItem(TOPUP_SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!s.v || s.v < TOPUP_SESSION_VERSION) { localStorage.removeItem(TOPUP_SESSION_KEY); return null; }
+    if (s.expiresAt <= Date.now()) { localStorage.removeItem(TOPUP_SESSION_KEY); return null; }
+    return { expiresAt: s.expiresAt };
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
   const { t } = useLang();
   const NAV: { id: Tab; Icon: React.ElementType; label: string }[] = [
@@ -37,6 +57,9 @@ export default function App() {
   const [buyProduct, setBuyProduct] = useState<Product | null>(null);
   const [user, setUser] = useState<UserT | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingTimeLeft, setPendingTimeLeft] = useState(0);
+  const pendingTimerRef = useRef<number>(0);
+
   const [reviewOrderId, setReviewOrderId] = useState<string | null>(() => {
     const param = new URLSearchParams(window.location.search).get("review");
     if (param) window.history.replaceState({}, "", window.location.pathname);
@@ -47,8 +70,38 @@ export default function App() {
     getMe().then(setUser).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
+  // Pending topup indicator timer — only active on main screen
+  useEffect(() => {
+    if (showTopup) {
+      // TopupPage owns the timer; stop ours
+      window.clearInterval(pendingTimerRef.current);
+      setPendingTimeLeft(0);
+      return;
+    }
+
+    const session = readPendingSession();
+    if (!session) { setPendingTimeLeft(0); return; }
+
+    const tick = () => {
+      const left = Math.floor((session.expiresAt - Date.now()) / 1000);
+      if (left <= 0) {
+        window.clearInterval(pendingTimerRef.current);
+        localStorage.removeItem(TOPUP_SESSION_KEY);
+        setPendingTimeLeft(0);
+      } else {
+        setPendingTimeLeft(left);
+      }
+    };
+
+    tick(); // immediate first update
+    pendingTimerRef.current = window.setInterval(tick, 1000);
+    return () => window.clearInterval(pendingTimerRef.current);
+  }, [showTopup]);
+
   const refreshUser = () => getMe().then(setUser).catch(() => {});
   const isAdmin = user?.user_id != null && ADMIN_IDS.has(user.user_id);
+
+  const openPendingTopup = () => setShowTopup(true);
 
   if (loading) {
     return (
@@ -67,6 +120,10 @@ export default function App() {
       </div>
     );
   }
+
+  const hasPending = pendingTimeLeft > 0;
+  const timerUrgent = pendingTimeLeft < 120;
+  const timerWarn   = pendingTimeLeft < 300;
 
   return (
     <div className="flex flex-col min-h-dvh">
@@ -90,6 +147,60 @@ export default function App() {
           </button>
         )}
       </header>
+
+      {/* Pending topup indicator */}
+      {hasPending && (
+        <button
+          onClick={openPendingTopup}
+          className="mx-4 mb-2 flex items-center gap-3 px-4 py-3 rounded-2xl active:opacity-75 relative overflow-hidden"
+          style={{
+            background: timerUrgent
+              ? "rgba(239,68,68,0.10)"
+              : timerWarn
+              ? "rgba(234,179,8,0.10)"
+              : "rgba(251,146,60,0.10)",
+            border: `1px solid ${timerUrgent ? "rgba(239,68,68,0.30)" : timerWarn ? "rgba(234,179,8,0.30)" : "rgba(251,146,60,0.30)"}`,
+          }}
+        >
+          {/* Pulsing circle */}
+          <div className="relative flex-shrink-0 w-9 h-9">
+            {/* Ping ring */}
+            <div
+              className="absolute inset-0 rounded-full animate-ping"
+              style={{
+                background: timerUrgent ? "rgba(239,68,68,0.25)" : timerWarn ? "rgba(234,179,8,0.25)" : "rgba(251,146,60,0.25)",
+              }}
+            />
+            {/* Solid circle */}
+            <div
+              className="absolute inset-0 rounded-full flex items-center justify-center"
+              style={{
+                background: timerUrgent ? "rgba(239,68,68,0.20)" : timerWarn ? "rgba(234,179,8,0.20)" : "rgba(251,146,60,0.20)",
+              }}
+            >
+              <span className="text-base">⏳</span>
+            </div>
+          </div>
+
+          {/* Text */}
+          <div className="flex-1 text-left min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider"
+              style={{ color: timerUrgent ? "#f87171" : timerWarn ? "#facc15" : "#fb923c" }}>
+              Незавершённое пополнение
+            </p>
+            <p className="font-black text-white text-sm mt-0.5">
+              {fmtTime(pendingTimeLeft)}{" "}
+              <span className="font-normal text-white/40 text-xs">осталось</span>
+            </p>
+          </div>
+
+          {/* Arrow */}
+          <span className="text-lg font-bold flex-shrink-0"
+            style={{ color: timerUrgent ? "#f87171" : timerWarn ? "#facc15" : "#fb923c" }}>
+            ›
+          </span>
+        </button>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pb-24">
