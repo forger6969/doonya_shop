@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Search, X, ChevronRight, ArrowLeft, ShoppingCart, Zap } from "lucide-react";
 import { getGames, getProducts } from "../api";
+import { useLang } from "../i18n";
 import ProductDetailSheet from "./ProductDetailSheet";
 
 interface Variant { label: string; price: number }
@@ -42,10 +43,10 @@ function initials(name: string) {
 
 // ─── Static banners ──────────────────────────────────────────────────────────
 
-const BANNERS = [
-  { title: "Top Up Balance", sub: "Instant top-up via card, Payme or ATM", action: "Top Up Now", grad: ["#3b82f6", "#2563eb"] },
-  { title: "Fast Delivery", sub: "Orders processed within minutes", action: "Browse Games", grad: ["#059669", "#0891B2"] },
-  { title: "Best Prices", sub: "No markup. Official rates guaranteed", action: "Shop Now", grad: ["#DC2626", "#9333EA"] },
+const BANNER_GRADS = [
+  ["#3b82f6", "#2563eb"],
+  ["#059669", "#0891B2"],
+  ["#DC2626", "#9333EA"],
 ];
 
 // ─── Components ──────────────────────────────────────────────────────────────
@@ -75,7 +76,14 @@ function GameIcon({ game, size }: { game: Game; size: "sm" | "md" | "lg" }) {
 }
 
 function BannerCarousel({ onTopup }: { onTopup: () => void }) {
+  const { t } = useLang();
   const [active, setActive] = useState(0);
+
+  const banners = [
+    { title: t.topUpBalance, sub: "Instant top-up via card, Payme or ATM", action: t.topUpNow, grad: BANNER_GRADS[0] },
+    { title: t.fastDelivery, sub: "Orders processed within minutes", action: t.browseGames, grad: BANNER_GRADS[1] },
+    { title: t.bestPrices, sub: "No markup. Official rates guaranteed", action: t.shopNow, grad: BANNER_GRADS[2] },
+  ];
 
   return (
     <div className="relative -mx-4">
@@ -86,7 +94,7 @@ function BannerCarousel({ onTopup }: { onTopup: () => void }) {
           setActive(Math.round(el.scrollLeft / el.offsetWidth));
         }}
       >
-        {BANNERS.map((b, i) => (
+        {banners.map((b, i) => (
           <button
             key={i}
             onClick={() => { if (i === 0) onTopup(); }}
@@ -115,7 +123,7 @@ function BannerCarousel({ onTopup }: { onTopup: () => void }) {
         ))}
       </div>
       <div className="flex justify-center gap-1.5 mt-2">
-        {BANNERS.map((_, i) => (
+        {banners.map((_, i) => (
           <div
             key={i}
             className={`rounded-full transition-all ${active === i ? "w-4 h-1.5 bg-blue-400" : "w-1.5 h-1.5 bg-white/20"}`}
@@ -132,6 +140,7 @@ function HorizProductCard({ product, gameId, onBuy, onDetail }: {
   onBuy: () => void;
   onDetail: () => void;
 }) {
+  const { t } = useLang();
   const [g1, g2] = palette(gameId + product.id);
   return (
     <div
@@ -154,7 +163,7 @@ function HorizProductCard({ product, gameId, onBuy, onDetail }: {
             onClick={(e) => { e.stopPropagation(); onBuy(); }}
             className="px-2 py-1 rounded-lg bg-blue-600 text-[10px] font-bold text-white active:opacity-70"
           >
-            Buy
+            {t.buy}
           </button>
         </div>
       </div>
@@ -168,6 +177,7 @@ function GameSection({ game, onBuy, onSeeAll, onDetail }: {
   onSeeAll: () => void;
   onDetail: (p: Product) => void;
 }) {
+  const { t } = useLang();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -185,14 +195,14 @@ function GameSection({ game, onBuy, onSeeAll, onDetail }: {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-black text-white leading-tight">{game.name}</p>
           {!loading && (
-            <p className="text-[11px] text-white/30 mt-0.5">{products.length} products</p>
+            <p className="text-[11px] text-white/30 mt-0.5">{products.length} {t.products}</p>
           )}
         </div>
         <button
           onClick={onSeeAll}
           className="flex items-center gap-0.5 text-blue-400 text-xs font-bold active:opacity-70 flex-shrink-0"
         >
-          All <ChevronRight className="w-3.5 h-3.5" />
+          {t.all} <ChevronRight className="w-3.5 h-3.5" />
         </button>
       </div>
 
@@ -228,6 +238,7 @@ function ProductDetailCard({ product, onBuy, onDetail }: {
   onBuy: () => void;
   onDetail: () => void;
 }) {
+  const { t } = useLang();
   return (
     <div
       className="rounded-2xl overflow-hidden flex flex-col active:opacity-80"
@@ -246,7 +257,7 @@ function ProductDetailCard({ product, onBuy, onDetail }: {
           onClick={(e) => { e.stopPropagation(); onBuy(); }}
           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 text-[11px] font-bold text-white active:opacity-70"
         >
-          <ShoppingCart className="w-3 h-3" /> Buy
+          <ShoppingCart className="w-3 h-3" /> {t.buy}
         </button>
       </div>
     </div>
@@ -259,6 +270,7 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
   onBuy: (product: Product) => void;
   onDetail: (product: Product) => void;
 }) {
+  const { t } = useLang();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [g1, g2] = palette(game.id);
@@ -300,12 +312,12 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
         ) : products.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-14 text-white/25">
             <ShoppingCart className="w-10 h-10" />
-            <p className="text-sm">Products coming soon</p>
+            <p className="text-sm">{t.comingSoon}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">
-              {products.length} products
+              {products.length} {t.products}
             </p>
             <div className="grid grid-cols-2 gap-3">
               {products.map((p) => (
@@ -327,6 +339,7 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function CatalogPage({ onBuy, onTopup }: Props) {
+  const { t } = useLang();
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Game | null>(null);
@@ -370,7 +383,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search games..."
+            placeholder={t.searchGames}
             className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder-white/25 outline-none focus:border-blue-500/40 transition-colors"
           />
           {query && (
@@ -391,12 +404,12 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-14 text-white/25">
             <Search className="w-8 h-8" />
-            <p className="text-sm">Nothing found for "{query}"</p>
+            <p className="text-sm">{t.nothingFound} "{query}"</p>
           </div>
         ) : (
           <div className="flex flex-col gap-7">
             {query && (
-              <p className="text-sm font-bold text-white">Results ({filtered.length})</p>
+              <p className="text-sm font-bold text-white">{t.results} ({filtered.length})</p>
             )}
             {filtered.map((g) => (
               <GameSection

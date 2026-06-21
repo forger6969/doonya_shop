@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Grid2x2, MessageCircle, User } from "lucide-react";
 import { getMe } from "./api";
+import { useLang } from "./i18n";
 import CatalogPage from "./pages/CatalogPage";
 import ProfilePage from "./pages/ProfilePage";
 import SupportPage from "./pages/SupportPage";
@@ -20,13 +21,14 @@ interface Product {
 
 const ADMIN_ID = Number(import.meta.env.VITE_ADMIN_ID || "6299152655");
 
-const NAV: { id: Tab; Icon: React.ElementType; label: string }[] = [
-  { id: "catalog", Icon: Grid2x2, label: "Shop" },
-  { id: "support", Icon: MessageCircle, label: "Support" },
-  { id: "profile", Icon: User, label: "Profile" },
-];
-
 export default function App() {
+  const { t } = useLang();
+  const NAV: { id: Tab; Icon: React.ElementType; label: string }[] = [
+    { id: "catalog", Icon: Grid2x2, label: t.shop },
+    { id: "support", Icon: MessageCircle, label: t.support },
+    { id: "profile", Icon: User, label: t.profile },
+  ];
+
   const [tab, setTab] = useState<Tab>("catalog");
   const [showTopup, setShowTopup] = useState(false);
   const [buyProduct, setBuyProduct] = useState<Product | null>(null);

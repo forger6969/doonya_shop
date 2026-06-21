@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { MessageCircle, Send, CheckCircle } from "lucide-react";
 import { createTicket, getMyTickets } from "../api";
+import { useLang } from "../i18n";
 
 const CATEGORIES = ["Payment", "Order", "Technical", "Other"];
 
@@ -20,6 +21,7 @@ interface Ticket {
 }
 
 export default function SupportPage() {
+  const { t } = useLang();
   const [category, setCategory] = useState("Payment");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -55,8 +57,8 @@ export default function SupportPage() {
           <MessageCircle className="w-4 h-4 text-blue-400" />
         </div>
         <div>
-          <h1 className="text-base font-black text-white leading-none">Support</h1>
-          <p className="text-[11px] text-white/30 mt-0.5">We reply within a few hours</p>
+          <h1 className="text-base font-black text-white leading-none">{t.support}</h1>
+          <p className="text-[11px] text-white/30 mt-0.5">{t.requestSentDesc}</p>
         </div>
       </div>
 
@@ -70,7 +72,7 @@ export default function SupportPage() {
               view === v ? "bg-blue-600 text-white" : "text-white/40"
             }`}
           >
-            {v === "form" ? "New Request" : `History (${tickets.length})`}
+            {v === "form" ? t.newRequest : `${t.history} (${tickets.length})`}
           </button>
         ))}
       </div>
@@ -103,7 +105,7 @@ export default function SupportPage() {
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value.slice(0, 1000))}
-              placeholder="Describe your issue in detail..."
+              placeholder={t.yourMessage}
               rows={5}
               className="w-full bg-white/[0.04] border border-white/[0.07] rounded-xl px-3.5 py-3 text-sm text-white placeholder-white/20 outline-none resize-none focus:border-blue-500/40 transition-colors"
             />
@@ -113,7 +115,7 @@ export default function SupportPage() {
           {sent && (
             <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
               <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <p className="text-emerald-400 text-sm font-semibold">Ticket submitted! We'll reply soon.</p>
+              <p className="text-emerald-400 text-sm font-semibold">{t.sentSuccess} {t.requestSentDesc}</p>
             </div>
           )}
 
@@ -124,7 +126,7 @@ export default function SupportPage() {
             style={{ background: "linear-gradient(135deg,#3b82f6,#2563eb)" }}
           >
             <Send className="w-4 h-4" />
-            {sending ? "Sending..." : "Send Request"}
+            {sending ? t.sending : t.send}
           </button>
         </>
       )}
@@ -134,7 +136,7 @@ export default function SupportPage() {
           {tickets.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-14 text-white/20">
               <MessageCircle className="w-10 h-10" />
-              <p className="text-sm">No tickets yet</p>
+              <p className="text-sm">{t.noOrders}</p>
             </div>
           ) : (
             tickets.map((t) => (

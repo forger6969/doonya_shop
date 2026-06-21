@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ShoppingCart, Wallet, Check, Tag, X, AlertCircle } from "lucide-react";
 import { buyProduct, validatePromo } from "../api";
+import { useLang } from "../i18n";
 
 interface Variant { label: string; price: number }
 interface PurchaseField { label: string; required: boolean }
@@ -13,6 +14,7 @@ interface Product {
 interface Props { product: Product; balance: number; onClose: () => void; onSuccess: () => void }
 
 export default function BuyModal({ product, balance, onClose, onSuccess }: Props) {
+  const { t } = useLang();
   const hasVariants = (product.variants?.length ?? 0) > 0;
   const hasFields = (product.purchase_fields?.length ?? 0) > 0;
 
@@ -89,8 +91,8 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
               <Check className="w-9 h-9 text-emerald-400" />
             </div>
             <div className="text-center">
-              <p className="text-xl font-black text-white">Order placed!</p>
-              <p className="text-white/40 text-sm mt-1">Processing shortly</p>
+              <p className="text-xl font-black text-white">{t.orderPlaced}</p>
+              <p className="text-white/40 text-sm mt-1">{t.processingShortly}</p>
             </div>
           </div>
         ) : (
@@ -106,7 +108,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
             {/* Variant selector */}
             {hasVariants && (
               <div className="flex flex-col gap-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Select variant</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{t.selectVariant}</p>
                 <div className="flex flex-wrap gap-2">
                   {product.variants!.map((v) => (
                     <button
@@ -151,7 +153,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
             {(!hasVariants || selectedVariant) && (
               <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.04]">
-                  <div className="flex items-center gap-2 text-white/40 text-sm"><ShoppingCart className="w-4 h-4" /> Price</div>
+                  <div className="flex items-center gap-2 text-white/40 text-sm"><ShoppingCart className="w-4 h-4" /> {t.price}</div>
                   <div className="flex items-center gap-2">
                     {discount > 0 && <span className="text-[12px] line-through text-white/25">{basePrice.toLocaleString()}</span>}
                     <span className="font-black text-blue-400">{finalPrice.toLocaleString()} sum</span>
@@ -164,7 +166,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                   </div>
                 )}
                 <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2 text-white/40 text-sm"><Wallet className="w-4 h-4" /> Balance</div>
+                  <div className="flex items-center gap-2 text-white/40 text-sm"><Wallet className="w-4 h-4" /> {t.balance}</div>
                   <span className={`font-bold text-sm ${canAfford ? "text-emerald-400" : "text-red-400"}`}>{balance.toLocaleString()} sum</span>
                 </div>
               </div>
@@ -184,12 +186,12 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                     value={promoInput}
                     onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoErr(""); }}
                     onKeyDown={(e) => e.key === "Enter" && applyPromo()}
-                    placeholder="Promo code"
+                    placeholder={t.promoCode}
                     className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none font-mono uppercase tracking-widest focus:border-blue-500/40 transition-colors"
                   />
                   <button onClick={applyPromo} disabled={!promoInput.trim() || promoLoading}
                     className="px-3 py-2.5 rounded-xl bg-blue-600/20 border border-blue-500/20 text-blue-400 text-sm font-bold active:opacity-70 disabled:opacity-30">
-                    Apply
+                    {t.apply}
                   </button>
                 </div>
               )
@@ -203,7 +205,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
             {!canAfford && (!hasVariants || selectedVariant) && (
               <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/15">
                 <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-                <p className="text-red-400 text-sm">Insufficient balance. Top up to continue.</p>
+                <p className="text-red-400 text-sm">{t.insufficientBalance}</p>
               </div>
             )}
 
@@ -214,9 +216,9 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                 className="w-full py-3.5 rounded-xl font-black text-sm text-white transition-opacity active:opacity-70 disabled:opacity-30"
                 style={{ background: canBuy ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "#1f1f2a" }}
               >
-                {loading ? "Processing..." : canBuy ? `Confirm · ${finalPrice.toLocaleString()} sum` : hasVariants && !selectedVariant ? "Select a variant" : "Confirm"}
+                {loading ? t.processingShortly : canBuy ? `${t.confirm} · ${finalPrice.toLocaleString()} sum` : hasVariants && !selectedVariant ? t.pickVariant : t.confirm}
               </button>
-              <button onClick={onClose} className="w-full py-2.5 text-sm text-white/25 font-semibold active:text-white/50">Cancel</button>
+              <button onClick={onClose} className="w-full py-2.5 text-sm text-white/25 font-semibold active:text-white/50">{t.cancel}</button>
             </div>
           </>
         )}

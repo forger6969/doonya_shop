@@ -3,16 +3,17 @@ import {
   LayoutDashboard, CreditCard, ShoppingBag, Gamepad2,
   BarChart2, Tag, Check, X, ChevronLeft, Plus, Trash2,
   RefreshCw, Eye, ChevronRight, TrendingUp, Users,
-  Upload, AlertCircle, ToggleLeft, ToggleRight, Package,
+  Upload, AlertCircle, ToggleLeft, ToggleRight, Package, Camera,
 } from "lucide-react";
 import {
-  adminGetStats, adminUpload,
+  adminGetStats, adminUpload, getMe, uploadAvatar,
   adminGetTopups, adminGetOrders, adminConfirmTopup, adminRejectTopup, adminCompleteOrder,
   adminGetGames, adminGetProducts, adminCreateGame, adminPatchGame, adminDeleteGame,
   adminCreateProduct, adminPatchProduct, adminDeleteProduct,
   adminSalesStats, adminProductStats, adminUserStats,
   adminGetPromos, adminCreatePromo, adminDeletePromo, adminTogglePromo,
 } from "../api";
+import { useLang, type Lang } from "../i18n";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Stats { pending_topups: number; pending_orders: number; total_games: number; total_products: number; total_revenue: number }
@@ -86,31 +87,32 @@ function UploadBtn({ current, onDone }: { current: string; onDone: (url: string)
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function Dashboard({ onNav }: { onNav: (s: Section) => void }) {
+  const { t } = useLang();
   const [stats, setStats] = useState<Stats | null>(null);
   useEffect(() => { adminGetStats().then(setStats); }, []);
 
   const cards = stats ? [
-    { label: "Pending Topups",  value: stats.pending_topups,  icon: CreditCard, color: "text-amber-400", bg: "bg-amber-400/10", to: "payments" as Section },
-    { label: "Pending Orders",  value: stats.pending_orders,  icon: ShoppingBag, color: "text-violet-400", bg: "bg-violet-400/10", to: "orders" as Section },
-    { label: "Total Games",     value: stats.total_games,     icon: Gamepad2, color: "text-sky-400", bg: "bg-sky-400/10", to: "catalog" as Section },
-    { label: "Total Products",  value: stats.total_products,  icon: Package, color: "text-emerald-400", bg: "bg-emerald-400/10", to: "catalog" as Section },
+    { label: t.pendingTopups,  value: stats.pending_topups,  icon: CreditCard, color: "text-amber-400", bg: "bg-amber-400/10", to: "payments" as Section },
+    { label: t.pendingOrders,  value: stats.pending_orders,  icon: ShoppingBag, color: "text-violet-400", bg: "bg-violet-400/10", to: "orders" as Section },
+    { label: t.totalGames,     value: stats.total_games,     icon: Gamepad2, color: "text-sky-400", bg: "bg-sky-400/10", to: "catalog" as Section },
+    { label: t.totalProducts,  value: stats.total_products,  icon: Package, color: "text-emerald-400", bg: "bg-emerald-400/10", to: "catalog" as Section },
   ] : [];
 
   return (
     <div className="p-4 flex flex-col gap-4">
       <div>
-        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">Overview</p>
-        <h2 className="text-xl font-black text-white mt-0.5">Dashboard</h2>
+        <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">{t.overview}</p>
+        <h2 className="text-xl font-black text-white mt-0.5">{t.adHome}</h2>
       </div>
 
       {!stats ? <div className="flex justify-center py-10"><Spin /></div> : <>
         {/* Revenue hero */}
         <div className="rounded-2xl p-5" style={{ background: "linear-gradient(135deg, #1a0533, #0d1a3a)" }}>
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40">Total Revenue</p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{t.totalRevenue}</p>
           <p className="text-3xl font-black text-white mt-1">{fmtShort(stats.total_revenue)} sum</p>
           <div className="flex items-center gap-1 mt-2">
             <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-[11px] text-emerald-400 font-semibold">All time</span>
+            <span className="text-[11px] text-emerald-400 font-semibold">{t.allTime}</span>
           </div>
         </div>
 
@@ -132,8 +134,8 @@ function Dashboard({ onNav }: { onNav: (s: Section) => void }) {
 
         {/* Quick links */}
         {[
-          { label: "View Analytics", icon: BarChart2, to: "analytics" as Section, color: "text-sky-400" },
-          { label: "Promo Codes",    icon: Tag,       to: "promos" as Section,    color: "text-violet-400" },
+          { label: t.viewAnalytics, icon: BarChart2, to: "analytics" as Section, color: "text-sky-400" },
+          { label: t.promoCodes,    icon: Tag,       to: "promos" as Section,    color: "text-violet-400" },
         ].map(({ label, icon: Icon, to, color }) => (
           <button key={to} onClick={() => onNav(to)}
             className="a-card px-4 py-3 flex items-center gap-3 active:opacity-70">
@@ -149,6 +151,7 @@ function Dashboard({ onNav }: { onNav: (s: Section) => void }) {
 
 // ─── Payments ─────────────────────────────────────────────────────────────────
 function TopupDetail({ topup, onBack, onDone }: { topup: Topup; onBack: () => void; onDone: () => void }) {
+  const { t } = useLang();
   const [loading, setLoading] = useState(false);
   const handle = async (action: "confirm" | "reject") => {
     setLoading(true);
@@ -162,7 +165,7 @@ function TopupDetail({ topup, onBack, onDone }: { topup: Topup; onBack: () => vo
         <button onClick={onBack} className="a-card w-8 h-8 flex items-center justify-center active:opacity-70">
           <ChevronLeft className="w-4 h-4 text-zinc-400" />
         </button>
-        <span className="flex-1 text-sm font-bold text-white">Payment Detail</span>
+        <span className="flex-1 text-sm font-bold text-white">{t.paymentDetail}</span>
         <Badge status={topup.status} />
       </div>
       <div className="flex flex-col gap-0 mx-4 mt-4 a-card overflow-hidden">
@@ -188,11 +191,11 @@ function TopupDetail({ topup, onBack, onDone }: { topup: Topup; onBack: () => vo
         <div className="flex gap-3 px-4 mt-4">
           <button onClick={() => handle("reject")} disabled={loading}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-red-400 border border-red-400/20 active:opacity-70 disabled:opacity-40">
-            <X className="w-4 h-4" /> Reject
+            <X className="w-4 h-4" /> {t.reject}
           </button>
           <button onClick={() => handle("confirm")} disabled={loading}
             className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-emerald-400 border border-emerald-400/20 active:opacity-70 disabled:opacity-40">
-            <Check className="w-4 h-4" /> Approve
+            <Check className="w-4 h-4" /> {t.approve}
           </button>
         </div>
       )}
@@ -886,18 +889,9 @@ function Promos() {
   );
 }
 
-// ─── Nav ──────────────────────────────────────────────────────────────────────
-const NAV: { id: Section; label: string; Icon: React.ElementType }[] = [
-  { id: "dashboard", label: "Home",     Icon: LayoutDashboard },
-  { id: "payments",  label: "Pay",      Icon: CreditCard },
-  { id: "orders",    label: "Orders",   Icon: ShoppingBag },
-  { id: "catalog",   label: "Catalog",  Icon: Gamepad2 },
-  { id: "analytics", label: "Stats",    Icon: BarChart2 },
-  { id: "promos",    label: "Promos",   Icon: Tag },
-];
-
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
+  const { t, lang, setLang } = useLang();
   const [section, setSection] = useState<Section>(() => {
     const param = new URLSearchParams(window.location.search).get("section") as Section | null;
     if (param && (["dashboard","payments","orders","catalog","analytics","promos"] as string[]).includes(param)) {
@@ -906,11 +900,83 @@ export default function AdminPage() {
     }
     return "dashboard";
   });
+  const [adminAvatarUrl, setAdminAvatarUrl] = useState("");
+  const [adminName, setAdminName] = useState("A");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    getMe().then((u: { first_name: string; avatar_url?: string }) => {
+      setAdminName(u.first_name?.[0] ?? "A");
+      setAdminAvatarUrl(u.avatar_url ?? "");
+    }).catch(() => {});
+  }, []);
+
+  const handleAdminAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { url } = await uploadAvatar(file);
+      setAdminAvatarUrl(url);
+    } catch {
+      window.Telegram?.WebApp?.showAlert("Failed to upload avatar");
+    } finally {
+      setAvatarUploading(false);
+      if (avatarRef.current) avatarRef.current.value = "";
+    }
+  };
+
+  const NAV: { id: Section; label: string; Icon: React.ElementType }[] = [
+    { id: "dashboard", label: t.adHome,    Icon: LayoutDashboard },
+    { id: "payments",  label: t.adPay,     Icon: CreditCard },
+    { id: "orders",    label: t.adOrders,  Icon: ShoppingBag },
+    { id: "catalog",   label: t.adCatalog, Icon: Gamepad2 },
+    { id: "analytics", label: t.adStats,   Icon: BarChart2 },
+    { id: "promos",    label: t.adPromos,  Icon: Tag },
+  ];
+
   return (
     <div className="a-shell flex flex-col min-h-dvh">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a1c27]" style={{ background: "#0d0e14" }}>
-        <span className="text-[13px] font-black tracking-wider text-white">ADMIN</span>
+      <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#1a1c27]" style={{ background: "#0d0e14" }}>
+        {/* Avatar */}
+        <div className="relative flex-shrink-0">
+          <div
+            onClick={() => avatarRef.current?.click()}
+            className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center cursor-pointer active:opacity-70"
+            style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}
+          >
+            {adminAvatarUrl
+              ? <img src={adminAvatarUrl} className="w-full h-full object-cover" alt="admin avatar" />
+              : <span className="text-white text-xs font-black">{adminName}</span>
+            }
+            {avatarUploading && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <RefreshCw className="w-3.5 h-3.5 text-white animate-spin" />
+              </div>
+            )}
+          </div>
+          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-500 flex items-center justify-center border border-[#0d0e14]">
+            <Camera className="w-2 h-2 text-white" />
+          </div>
+          <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAdminAvatar} />
+        </div>
+
+        <span className="text-[13px] font-black tracking-wider text-white flex-1">ADMIN</span>
+
+        {/* Language toggle */}
+        <div className="flex bg-white/[0.04] rounded-lg p-0.5 gap-0.5">
+          {(["ru", "uz"] as Lang[]).map((l) => (
+            <button key={l} onClick={() => setLang(l)}
+              className={`px-2 py-1 rounded-md text-[10px] font-black uppercase transition-colors ${
+                lang === l ? "bg-amber-500 text-white" : "text-zinc-600"
+              }`}>
+              {l}
+            </button>
+          ))}
+        </div>
+
         <span className="px-2 py-0.5 rounded-md bg-amber-400/10 text-amber-400 text-[10px] font-black uppercase tracking-widest">Superuser</span>
       </div>
 

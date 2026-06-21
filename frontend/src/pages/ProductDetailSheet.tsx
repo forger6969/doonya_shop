@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X, Star, ShoppingCart } from "lucide-react";
 import { getProduct, getReviews } from "../api";
+import { useLang } from "../i18n";
 
 interface Variant { label: string; price: number }
 interface PurchaseField { label: string; required: boolean }
@@ -52,6 +53,7 @@ function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) 
 }
 
 export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
+  const { t } = useLang();
   const [detail, setDetail] = useState<Detail | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +139,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                   className="rounded-2xl p-4"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
                 >
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5">Description</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/25 mb-1.5">{t.description}</p>
                   <p className="text-sm text-white/70 leading-relaxed">{detail.description}</p>
                 </div>
               )}
@@ -145,7 +147,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
               {/* Variant selector */}
               {detail.variants.length > 0 && (
                 <div className="flex flex-col gap-2">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Select variant</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{t.selectVariant}</p>
                   <div className="flex flex-wrap gap-2">
                     {detail.variants.map((v) => (
                       <button
@@ -173,7 +175,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                 style={{ background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)" }}
               >
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400/60 mb-0.5">Price</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400/60 mb-0.5">{t.price}</p>
                   <p className="text-2xl font-black text-blue-400">
                     {(selectedVariant ? selectedVariant.price : detail.price).toLocaleString()}
                     {" "}<span className="text-base text-blue-400/60">sum</span>
@@ -195,7 +197,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                   style={{ background: "linear-gradient(135deg,#3b82f6,#2563eb)" }}
                 >
                   <ShoppingCart className="w-4 h-4" />
-                  {detail.variants.length > 0 && !selectedVariant ? "Pick variant" : "Buy"}
+                  {detail.variants.length > 0 && !selectedVariant ? t.pickVariant : t.buy}
                 </button>
               </div>
 
@@ -203,7 +205,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
               {reviews.length > 0 && (
                 <div className="flex flex-col gap-3">
                   <p className="text-sm font-black text-white">
-                    Reviews <span className="text-white/30 font-bold">({reviews.length})</span>
+                    {t.reviews} <span className="text-white/30 font-bold">({reviews.length})</span>
                   </p>
                   {reviews.map((r, i) => (
                     <div
@@ -241,7 +243,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
               {reviews.length === 0 && (
                 <div className="flex flex-col items-center gap-2 py-6 text-white/20">
                   <Star className="w-8 h-8" />
-                  <p className="text-sm">No reviews yet</p>
+                  <p className="text-sm">{t.noReviews}</p>
                 </div>
               )}
             </div>

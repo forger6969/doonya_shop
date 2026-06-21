@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Star, Camera, X, CheckCircle, Loader } from "lucide-react";
 import { leaveReview, uploadReviewPhoto } from "../api";
+import { useLang } from "../i18n";
 
 interface Props {
   orderId: string;
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function ReviewSheet({ orderId, onClose }: Props) {
+  const { t } = useLang();
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [text, setText] = useState("");
@@ -60,7 +62,7 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
     }
   };
 
-  const LABELS = ["", "Ужасно", "Плохо", "Нормально", "Хорошо", "Отлично"];
+  const LABELS = ["", t.awful, t.bad, t.okay, t.good, t.excellent];
   const activeRating = hovered || rating;
 
   return (
@@ -79,8 +81,8 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
               <CheckCircle className="w-9 h-9 text-emerald-400" />
             </div>
             <div className="text-center">
-              <p className="text-xl font-black text-white">Спасибо за отзыв!</p>
-              <p className="text-white/40 text-sm mt-1">Это помогает другим покупателям</p>
+              <p className="text-xl font-black text-white">{t.thankYou}</p>
+              <p className="text-white/40 text-sm mt-1">{t.helpedOthers}</p>
             </div>
           </div>
         ) : (
@@ -88,8 +90,8 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-lg font-black text-white">Оставить отзыв</p>
-                <p className="text-xs text-white/30 mt-0.5">Поделитесь своим опытом</p>
+                <p className="text-lg font-black text-white">{t.leaveReview}</p>
+                <p className="text-xs text-white/30 mt-0.5">{t.shareExperience}</p>
               </div>
               <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center">
                 <X className="w-4 h-4 text-white/50" />
@@ -157,7 +159,7 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
                   onClick={() => fileRef.current?.click()}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white/50 border border-white/[0.08] bg-white/[0.03] active:opacity-70"
                 >
-                  <Camera className="w-4 h-4" /> Прикрепить фото
+                  <Camera className="w-4 h-4" /> {t.attachPhoto}
                 </button>
               )}
               <input
@@ -176,7 +178,7 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
               className="w-full py-3.5 rounded-xl font-black text-sm text-white disabled:opacity-30 active:opacity-70"
               style={{ background: rating ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "#1f2030" }}
             >
-              {submitting ? "Отправка..." : "Отправить отзыв"}
+              {submitting ? t.sending : t.sendReview}
             </button>
           </>
         )}

@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
-import { User, CheckCircle } from "lucide-react";
-import { getMe, getOrders, getMyTopups, saveEmail } from "../api";
+import { useEffect, useRef, useState } from "react";
+import { User, CheckCircle, Camera, Loader } from "lucide-react";
+import { getMe, getOrders, getMyTopups, saveEmail, uploadAvatar } from "../api";
+import { useLang, type Lang } from "../i18n";
 
-interface UserT { user_id: number; first_name: string; username: string; balance: number; email?: string }
+interface UserT { user_id: number; first_name: string; username: string; balance: number; email?: string; avatar_url?: string }
 interface Order { id: string; amount: number; status: string; created_at: string }
 interface Topup { id: string; amount: number; method: string; status: string; created_at: string }
 
 interface Props { onTopup: () => void }
 
 export default function ProfilePage({ onTopup }: Props) {
+  const { t, lang, setLang } = useLang();
   const [user, setUser] = useState<UserT | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [topups, setTopups] = useState<Topup[]>([]);
@@ -16,6 +18,8 @@ export default function ProfilePage({ onTopup }: Props) {
   const [email, setEmail] = useState("");
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailSaved, setEmailSaved] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getMe().then((u: UserT) => { setUser(u); setEmail(u.email ?? ""); });
@@ -37,6 +41,21 @@ export default function ProfilePage({ onTopup }: Props) {
     }
   };
 
+  const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { url } = await uploadAvatar(file);
+      setUser((u) => u ? { ...u, avatar_url: url } : u);
+    } catch {
+      window.Telegram?.WebApp?.showAlert("Failed to upload avatar");
+    } finally {
+      setAvatarUploading(false);
+      if (avatarRef.current) avatarRef.current.value = "";
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-40">
@@ -49,11 +68,28 @@ export default function ProfilePage({ onTopup }: Props) {
     <div className="flex flex-col gap-5 pb-8">
       {/* Avatar + name */}
       <div className="flex flex-col items-center gap-3 pt-5 pb-2">
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black"
-          style={{ background: "linear-gradient(135deg,#3b82f6,#7c3aed)" }}
-        >
-          <span className="text-white">{user.first_name[0]}</span>
+        <div className="relative">
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black overflow-hidden"
+            style={{ background: "linear-gradient(135deg,#3b82f6,#7c3aed)" }}
+          >
+            {user.avatar_url
+              ? <img src={user.avatar_url} className="w-full h-full object-cover" alt="avatar" />
+              : <span className="text-white">{user.first_name[0]}</span>
+            }
+            {avatarUploading && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <Loader className="w-6 h-6 text-white animate-spin" />
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => avatarRef.current?.click()}
+            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center border-2 border-[#0a0a0e] active:opacity-70"
+          >
+            <Camera className="w-3.5 h-3.5 text-white" />
+          </button>
+          <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
         </div>
         <div className="text-center">
           <p className="font-black text-xl text-white">{user.first_name}</p>
@@ -70,7 +106,7 @@ export default function ProfilePage({ onTopup }: Props) {
         }}
       >
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-1">Balance</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-1">{t.balance}</p>
           <p className="text-3xl font-black text-white">
             {user.balance.toLocaleString()}{" "}
             <span className="text-lg font-bold text-white/30">sum</span>
@@ -81,21 +117,21 @@ export default function ProfilePage({ onTopup }: Props) {
           className="w-full py-3.5 rounded-xl font-black text-sm text-white active:opacity-70"
           style={{ background: "linear-gradient(135deg,#3b82f6,#2563eb)" }}
         >
-          + Top Up Balance
+          + {t.topUpBalance}
         </button>
       </div>
 
       {/* Tabs */}
       <div className="flex bg-white/[0.04] rounded-xl p-1 gap-1">
-        {(["orders", "topups", "settings"] as const).map((t) => (
+        {(["orders", "topups", "settings"] as const).map((tb) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tb}
+            onClick={() => setTab(tb)}
             className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${
-              tab === t ? "bg-blue-600 text-white" : "text-white/40"
+              tab === tb ? "bg-blue-600 text-white" : "text-white/40"
             }`}
           >
-            {t === "orders" ? "Orders" : t === "topups" ? "Payments" : "Settings"}
+            {tb === "orders" ? t.orders : tb === "topups" ? t.payments : t.settings}
           </button>
         ))}
       </div>
@@ -104,7 +140,7 @@ export default function ProfilePage({ onTopup }: Props) {
       {tab === "orders" && (
         <div className="flex flex-col gap-2">
           {orders.length === 0 ? (
-            <p className="text-center text-white/25 text-sm py-10">No orders yet</p>
+            <p className="text-center text-white/25 text-sm py-10">{t.noOrders}</p>
           ) : (
             orders.map((o) => (
               <div
@@ -115,7 +151,7 @@ export default function ProfilePage({ onTopup }: Props) {
                 <div>
                   <p className="text-sm font-bold text-white">Order</p>
                   <p className="text-[11px] text-white/30 mt-0.5">
-                    {new Date(o.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    {new Date(o.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'uz-UZ', { month: "short", day: "numeric" })}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
@@ -140,32 +176,32 @@ export default function ProfilePage({ onTopup }: Props) {
       {tab === "topups" && (
         <div className="flex flex-col gap-2">
           {topups.length === 0 ? (
-            <p className="text-center text-white/25 text-sm py-10">No payments yet</p>
+            <p className="text-center text-white/25 text-sm py-10">{t.noPayments}</p>
           ) : (
-            topups.map((t) => (
+            topups.map((tp) => (
               <div
-                key={t.id}
+                key={tp.id}
                 className="rounded-2xl px-4 py-3 flex justify-between items-center"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
               >
                 <div>
-                  <p className="text-sm font-bold text-white capitalize">{t.method}</p>
+                  <p className="text-sm font-bold text-white capitalize">{tp.method}</p>
                   <p className="text-[11px] text-white/30 mt-0.5">
-                    {new Date(t.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    {new Date(tp.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'uz-UZ', { month: "short", day: "numeric" })}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                  <span className="text-sm font-black text-blue-400">+{t.amount.toLocaleString()} sum</span>
+                  <span className="text-sm font-black text-blue-400">+{tp.amount.toLocaleString()} sum</span>
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      t.status === "confirmed"
+                      tp.status === "confirmed"
                         ? "bg-emerald-500/15 text-emerald-400"
-                        : t.status === "rejected"
+                        : tp.status === "rejected"
                         ? "bg-red-500/15 text-red-400"
                         : "bg-yellow-500/15 text-yellow-400"
                     }`}
                   >
-                    {t.status}
+                    {tp.status}
                   </span>
                 </div>
               </div>
@@ -177,9 +213,27 @@ export default function ProfilePage({ onTopup }: Props) {
       {/* Settings */}
       {tab === "settings" && (
         <div className="flex flex-col gap-5">
+          {/* Language switcher */}
+          <div className="flex flex-col gap-2.5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{t.language}</p>
+            <div className="flex bg-white/[0.04] rounded-xl p-1 gap-1">
+              {(["ru", "uz"] as Lang[]).map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${
+                    lang === l ? "bg-blue-600 text-white" : "text-white/30"
+                  }`}
+                >
+                  {l === "ru" ? "🇷🇺 Русский" : "🇺🇿 O'zbekcha"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Email */}
           <div className="flex flex-col gap-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">Email address</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{t.emailAddress}</p>
             <div className="flex gap-2">
               <input
                 value={email}
@@ -194,15 +248,15 @@ export default function ProfilePage({ onTopup }: Props) {
                 className="px-4 py-2.5 rounded-xl text-xs font-black disabled:opacity-30 active:opacity-70 transition-opacity"
                 style={{ background: emailSaved ? "#10b981" : "#3b82f6", color: "#fff" }}
               >
-                {emailSaved ? "Saved!" : "Save"}
+                {emailSaved ? t.saved : t.save}
               </button>
             </div>
             {emailSaved && (
               <div className="flex items-center gap-2 text-emerald-400 text-xs">
-                <CheckCircle className="w-3.5 h-3.5" /> Email saved successfully
+                <CheckCircle className="w-3.5 h-3.5" /> {t.emailHint}
               </div>
             )}
-            <p className="text-[11px] text-white/20">Receive order updates to your email</p>
+            <p className="text-[11px] text-white/20">{t.emailHint}</p>
           </div>
 
           {/* Telegram account */}
@@ -215,7 +269,7 @@ export default function ProfilePage({ onTopup }: Props) {
             </div>
             <div className="min-w-0">
               <p className="text-[10px] text-white/30 font-semibold uppercase tracking-wider mb-0.5">
-                Telegram Account
+                {t.telegramAccount}
               </p>
               <p className="text-sm font-bold text-white truncate">
                 {user.first_name}

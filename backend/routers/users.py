@@ -1,8 +1,17 @@
-from fastapi import APIRouter, Depends
+import cloudinary
+import cloudinary.uploader
+from fastapi import APIRouter, Depends, UploadFile, File
 from pydantic import BaseModel
 from backend.auth import get_current_user
 from backend.models import get_or_create_user, get_user, get_user_orders
 from backend.database import get_db
+from backend.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+
+cloudinary.config(
+    cloud_name=CLOUDINARY_CLOUD_NAME,
+    api_key=CLOUDINARY_API_KEY,
+    api_secret=CLOUDINARY_API_SECRET,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -24,7 +33,23 @@ async def get_me(tg_user: dict = Depends(get_current_user)):
         "username": user.get("username", ""),
         "balance": user["balance"],
         "email": user.get("email", ""),
+        "avatar_url": user.get("avatar_url", ""),
     }
+
+
+@router.post("/avatar")
+async def upload_avatar(file: UploadFile = File(...), tg_user: dict = Depends(get_current_user)):
+    db = get_db()
+    contents = await file.read()
+    result = cloudinary.uploader.upload(
+        contents,
+        folder="doonya_shop/avatars",
+        public_id=f"user_{tg_user['id']}",
+        resource_type="image",
+    )
+    url = result["secure_url"]
+    await db.users.update_one({"user_id": tg_user["id"]}, {"$set": {"avatar_url": url}})
+    return {"url": url}
 
 
 @router.post("/email")

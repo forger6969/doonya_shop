@@ -13,6 +13,11 @@ export const getMe = () => api.post("/users/me").then((r) => r.data);
 export const getOrders = () => api.get("/users/orders").then((r) => r.data);
 export const getMyTopups = () => api.get("/users/topups").then((r) => r.data);
 export const saveEmail = (email: string) => api.post("/users/email", { email }).then((r) => r.data);
+export const uploadAvatar = (file: File) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  return api.post("/users/avatar", fd, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data as { url: string });
+};
 
 // ── Support ─────────────────────────────────────────────────────────────────
 export const createTicket = (data: { category: string; message: string }) =>
