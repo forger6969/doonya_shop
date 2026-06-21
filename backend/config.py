@@ -13,7 +13,8 @@ CARD_REQUISITES: str = os.getenv("CARD_REQUISITES", "8600 1234 5678 9012")
 CARD_HOLDER: str = os.getenv("CARD_HOLDER", "NYX SHOP")
 UZCARD_REQUISITES: str = os.getenv("UZCARD_REQUISITES", "5614 6868 1494 1939")
 UZCARD_HOLDER: str = os.getenv("UZCARD_HOLDER", "H.D")
-PAYME_PHONE: str = os.getenv("PAYME_PHONE", "+998901234567")
+VISA_REQUISITES: str = os.getenv("VISA_REQUISITES", "4413 5976 0450 1484")
+VISA_HOLDER: str = os.getenv("VISA_HOLDER", "H.D")
 
 # Multi-admin support
 ADMIN_IDS: set = {ADMIN_ID} | {

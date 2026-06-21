@@ -2,13 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { Clock, Copy } from "lucide-react";
 import { getTopupInfo, submitTopup } from "../api";
 
-type Method = "card" | "uzcard" | "payme" | "atm";
+type Method = "card" | "uzcard" | "visa" | "atm";
 type Step = "amount" | "method" | "requisites" | "receipt" | "done" | "expired";
+
+interface CardInfo { requisites: string; holder: string; type: string }
 
 interface TopupInfo {
   method: Method;
   requisites?: string;
   holder?: string;
+  cards?: CardInfo[];
   amount: number;
   note: string;
 }
@@ -26,7 +29,7 @@ const TIMER_DURATION = 10 * 60; // 600 seconds
 const METHODS: { id: Method; label: string; icon: string }[] = [
   { id: "card",   label: "Банковская карта", icon: "💳" },
   { id: "uzcard", label: "Uzcard",           icon: "🏦" },
-  { id: "payme",  label: "Payme",            icon: "📱" },
+  { id: "visa",   label: "Visa",             icon: "💠" },
   { id: "atm",    label: "Банкомат",         icon: "🏧" },
 ];
 
@@ -223,36 +226,72 @@ export default function TopupPage({ onBack }: Props) {
             <span className="text-white/35 text-sm">осталось</span>
           </div>
 
-          <div className="card flex flex-col gap-3">
-            {info.requisites && (
-              <div className="flex justify-between items-center">
-                <span className="text-white/50 text-sm">Реквизиты</span>
+          {info.cards ? (
+            // ATM — multiple cards
+            <div className="flex flex-col gap-3">
+              {info.cards.map((c) => (
+                <div key={c.type} className="card flex flex-col gap-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{c.type}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-white/50 text-sm">Карта</span>
+                    <button
+                      className="font-mono font-bold text-purple-300 active:opacity-70 flex items-center gap-1.5"
+                      onClick={() => copy(c.requisites)}
+                    >
+                      {c.requisites}
+                      <Copy className="w-3.5 h-3.5 opacity-50" />
+                    </button>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/50 text-sm">Получатель</span>
+                    <span className="font-medium">{c.holder}</span>
+                  </div>
+                </div>
+              ))}
+              <div className="card flex justify-between items-center">
+                <span className="text-white/50 text-sm">Сумма к переводу</span>
                 <button
-                  className="font-mono font-bold text-purple-300 active:opacity-70 flex items-center gap-1.5"
-                  onClick={() => copy(info.requisites!)}
+                  className="text-xl font-bold text-yellow-400 active:opacity-70 flex items-center gap-1.5"
+                  onClick={() => copy(String(info.amount))}
                 >
-                  {info.requisites}
+                  {info.amount.toLocaleString()} сум
                   <Copy className="w-3.5 h-3.5 opacity-50" />
                 </button>
               </div>
-            )}
-            {info.holder && (
-              <div className="flex justify-between">
-                <span className="text-white/50 text-sm">Получатель</span>
-                <span className="font-medium">{info.holder}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center border-t border-white/10 pt-3 mt-1">
-              <span className="text-white/50 text-sm">Сумма к переводу</span>
-              <button
-                className="text-xl font-bold text-yellow-400 active:opacity-70 flex items-center gap-1.5"
-                onClick={() => copy(String(info.amount))}
-              >
-                {info.amount.toLocaleString()} сум
-                <Copy className="w-3.5 h-3.5 opacity-50" />
-              </button>
             </div>
-          </div>
+          ) : (
+            // Single card (card / uzcard / visa)
+            <div className="card flex flex-col gap-3">
+              {info.requisites && (
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-sm">Реквизиты</span>
+                  <button
+                    className="font-mono font-bold text-purple-300 active:opacity-70 flex items-center gap-1.5"
+                    onClick={() => copy(info.requisites!)}
+                  >
+                    {info.requisites}
+                    <Copy className="w-3.5 h-3.5 opacity-50" />
+                  </button>
+                </div>
+              )}
+              {info.holder && (
+                <div className="flex justify-between">
+                  <span className="text-white/50 text-sm">Получатель</span>
+                  <span className="font-medium">{info.holder}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center border-t border-white/10 pt-3 mt-1">
+                <span className="text-white/50 text-sm">Сумма к переводу</span>
+                <button
+                  className="text-xl font-bold text-yellow-400 active:opacity-70 flex items-center gap-1.5"
+                  onClick={() => copy(String(info.amount))}
+                >
+                  {info.amount.toLocaleString()} сум
+                  <Copy className="w-3.5 h-3.5 opacity-50" />
+                </button>
+              </div>
+            </div>
+          )}
 
           <p className="text-white/40 text-xs text-center">{info.note}</p>
 

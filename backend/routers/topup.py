@@ -4,7 +4,7 @@ import cloudinary.uploader
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from backend.auth import get_current_user
 from backend.models import get_or_create_user, create_topup
-from backend.config import CARD_REQUISITES, CARD_HOLDER, UZCARD_REQUISITES, UZCARD_HOLDER, PAYME_PHONE
+from backend.config import CARD_REQUISITES, CARD_HOLDER, UZCARD_REQUISITES, UZCARD_HOLDER, VISA_REQUISITES, VISA_HOLDER
 from backend.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 
 router = APIRouter(prefix="/topup", tags=["topup"])
@@ -44,19 +44,24 @@ async def topup_methods(amount: int, method: str):
             "amount": exact,
             "note": f"Переведите ровно {exact:,} сум на Uzcard. По этой сумме мы идентифицируем ваш платёж.",
         }
-    elif method == "payme":
+    elif method == "visa":
         exact = _unique_amount(amount)
         return {
-            "method": "payme",
-            "requisites": PAYME_PHONE,
+            "method": "visa",
+            "requisites": VISA_REQUISITES,
+            "holder": VISA_HOLDER,
             "amount": exact,
-            "note": f"Переведите ровно {exact:,} сум через Payme.",
+            "note": f"Переведите ровно {exact:,} сум на Visa. По этой сумме мы идентифицируем ваш платёж.",
         }
     elif method == "atm":
         exact = _round_amount(amount)
         return {
             "method": "atm",
             "amount": exact,
+            "cards": [
+                {"requisites": UZCARD_REQUISITES, "holder": UZCARD_HOLDER, "type": "Uzcard"},
+                {"requisites": VISA_REQUISITES, "holder": VISA_HOLDER, "type": "Visa"},
+            ],
             "note": f"Внесите ровно {exact:,} сум через банкомат и прикрепите чек.",
         }
     raise HTTPException(status_code=400, detail="Unknown method")
