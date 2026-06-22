@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 import { Grid2x2, MessageCircle, User, Bell, Moon, Sun } from "lucide-react";
-import { getMe } from "./api";
+import { getMe, getMyOrderChats } from "./api";
 import { useLang } from "./i18n";
 import CatalogPage from "./pages/CatalogPage";
 import ProfilePage from "./pages/ProfilePage";
-import SupportPage from "./pages/SupportPage";
 import SupportAgentPage from "./pages/SupportAgentPage";
+import OrderChatsPage from "./pages/OrderChatsPage";
 import TopupPage from "./pages/TopupPage";
 import AdminPage from "./pages/AdminPage";
 import BuyModal from "./pages/BuyModal";
@@ -13,7 +13,7 @@ import ReviewSheet from "./pages/ReviewSheet";
 import NotificationSheet, { useNotifications } from "./pages/NotificationSheet";
 import OrderChatSheet from "./pages/OrderChatSheet";
 
-type Tab = "catalog" | "support" | "profile";
+type Tab = "catalog" | "chats" | "profile";
 interface UserT { user_id: number; balance: number; first_name: string }
 interface Product {
   id: string; name: string; price: number; gameName?: string;
@@ -53,7 +53,7 @@ export default function App() {
   const { t } = useLang();
   const NAV: { id: Tab; Icon: React.ElementType; label: string }[] = [
     { id: "catalog", Icon: Grid2x2, label: t.shop },
-    { id: "support", Icon: MessageCircle, label: t.support },
+    { id: "chats", Icon: MessageCircle, label: "Чаты" },
     { id: "profile", Icon: User, label: t.profile },
   ];
 
@@ -82,6 +82,7 @@ export default function App() {
   });
 
   const [orderChat, setOrderChat] = useState<{ orderId: string; productName?: string } | null>(null);
+  const [chatUnread, setChatUnread] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const { notifs, unreadCount, markAllRead, addTopupExpired } = useNotifications(
     (orderId) => setReviewOrderId(orderId),
@@ -90,6 +91,20 @@ export default function App() {
   useEffect(() => {
     getMe().then(setUser).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  // Poll unread order chat count for badge
+  useEffect(() => {
+    if (!user) return;
+    const refresh = () =>
+      getMyOrderChats()
+        .then((chats) =>
+          setChatUnread(chats.reduce((s, c) => s + (c.unread_by_user || 0), 0))
+        )
+        .catch(() => {});
+    refresh();
+    const id = window.setInterval(refresh, 30000);
+    return () => window.clearInterval(id);
+  }, [user?.user_id]);
 
   // Pending topup indicator timer — only active on main screen
   useEffect(() => {
@@ -266,7 +281,9 @@ export default function App() {
         {tab === "catalog" && (
           <CatalogPage onBuy={setBuyProduct} onTopup={() => setShowTopup(true)} />
         )}
-        {tab === "support" && <SupportPage />}
+        {tab === "chats" && (
+          <OrderChatsPage onOpenChat={(orderId, productName) => setOrderChat({ orderId, productName })} />
+        )}
         {tab === "profile" && (
           <ProfilePage
             onTopup={() => setShowTopup(true)}
@@ -287,21 +304,23 @@ export default function App() {
         <div className="flex">
           {NAV.map(({ id, Icon, label }) => {
             const active = tab === id;
+            const badge = id === "chats" && chatUnread > 0 ? chatUnread : 0;
             return (
               <button
                 key={id}
-                onClick={() => setTab(id)}
+                onClick={() => { setTab(id); if (id === "chats") setChatUnread(0); }}
                 className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
               >
-                <div
-                  className="flex items-center justify-center transition-all"
-                  style={active ? {
-                    background: "rgba(236,72,153,0.15)",
-                    borderRadius: 20,
-                    padding: "4px 14px",
-                  } : { padding: "4px 14px" }}
+                <div className="relative flex items-center justify-center transition-all"
+                  style={active ? { background: "rgba(236,72,153,0.15)", borderRadius: 20, padding: "4px 14px" } : { padding: "4px 14px" }}
                 >
                   <Icon className="w-4 h-4" style={{ color: active ? "#EC4899" : "var(--text-muted)" }} />
+                  {badge > 0 && (
+                    <div className="absolute -top-1 -right-0 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
+                      style={{ background: "#EC4899" }}>
+                      <span className="text-[8px] font-black text-white leading-none">{badge > 9 ? "9+" : badge}</span>
+                    </div>
+                  )}
                 </div>
                 <span className="text-[10px] font-bold tracking-wide" style={{ color: active ? "#EC4899" : "var(--text-muted)" }}>
                   {label}
