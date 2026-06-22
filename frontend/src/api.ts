@@ -122,3 +122,9 @@ export const getSupportWsUrl = () => {
   const base = import.meta.env.VITE_API_URL || "http://localhost:8000";
   return base.replace(/^http/, "ws") + "/support/ws";
 };
+
+// Notify WS URL helper
+export const getNotifyWsUrl = () => {
+  const base = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  return base.replace(/^http/, "ws") + "/notify/ws";
+};

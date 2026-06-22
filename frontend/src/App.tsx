@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Grid2x2, MessageCircle, User } from "lucide-react";
+import { Grid2x2, MessageCircle, User, Bell } from "lucide-react";
 import { getMe } from "./api";
 import { useLang } from "./i18n";
 import CatalogPage from "./pages/CatalogPage";
@@ -10,6 +10,7 @@ import TopupPage from "./pages/TopupPage";
 import AdminPage from "./pages/AdminPage";
 import BuyModal from "./pages/BuyModal";
 import ReviewSheet from "./pages/ReviewSheet";
+import NotificationSheet, { useNotifications } from "./pages/NotificationSheet";
 
 type Tab = "catalog" | "support" | "profile";
 interface UserT { user_id: number; balance: number; first_name: string }
@@ -69,6 +70,11 @@ export default function App() {
     return param;
   });
 
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { notifs, unreadCount, markAllRead, addTopupExpired } = useNotifications(
+    (orderId) => setReviewOrderId(orderId),
+  );
+
   useEffect(() => {
     getMe().then(setUser).catch(() => {}).finally(() => setLoading(false));
   }, []);
@@ -91,6 +97,7 @@ export default function App() {
         window.clearInterval(pendingTimerRef.current);
         localStorage.removeItem(TOPUP_SESSION_KEY);
         setPendingTimeLeft(0);
+        addTopupExpired();
       } else {
         setPendingTimeLeft(left);
       }
@@ -228,22 +235,30 @@ export default function App() {
               onClick={() => setTab(id)}
               className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
             >
-              <div
-                className={`w-8 h-6 flex items-center justify-center rounded-lg transition-colors ${
-                  tab === id ? "bg-blue-600" : ""
-                }`}
-              >
+              <div className={`w-8 h-6 flex items-center justify-center rounded-lg transition-colors ${tab === id ? "bg-blue-600" : ""}`}>
                 <Icon className={`w-4 h-4 ${tab === id ? "text-white" : "text-white/25"}`} />
               </div>
-              <span
-                className={`text-[10px] font-bold tracking-wide ${
-                  tab === id ? "text-blue-400" : "text-white/20"
-                }`}
-              >
+              <span className={`text-[10px] font-bold tracking-wide ${tab === id ? "text-blue-400" : "text-white/20"}`}>
                 {label}
               </span>
             </button>
           ))}
+
+          {/* Notifications bell */}
+          <button
+            onClick={() => { setShowNotifications(true); markAllRead(); }}
+            className="flex-1 flex flex-col items-center gap-1 py-3 relative"
+          >
+            <div className="relative w-8 h-6 flex items-center justify-center rounded-lg">
+              <Bell className="w-4 h-4 text-white/25" />
+              {unreadCount > 0 && (
+                <div className="absolute -top-1 -right-1 min-w-[14px] h-[14px] rounded-full bg-red-500 flex items-center justify-center px-0.5">
+                  <span className="text-[8px] font-black text-white leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                </div>
+              )}
+            </div>
+            <span className="text-[10px] font-bold tracking-wide text-white/20">Уведомления</span>
+          </button>
         </div>
       </nav>
 
@@ -257,13 +272,21 @@ export default function App() {
         />
       )}
 
-      {/* Review sheet (opened via bot notification deep link) */}
+      {/* Review sheet (opened via bot notification deep link or WS notification) */}
       {reviewOrderId && !isAdmin && (
         <ReviewSheet
           orderId={reviewOrderId}
           onClose={() => setReviewOrderId(null)}
         />
       )}
+
+      {/* Notification sheet */}
+      <NotificationSheet
+        open={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifs={notifs}
+        onReviewOrder={(orderId) => { setReviewOrderId(orderId); }}
+      />
     </div>
   );
 }

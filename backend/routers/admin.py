@@ -292,6 +292,14 @@ async def confirm(topup_id: str, _=Depends(require_admin)):
         await notify_user_topup_confirmed(result["user_id"], result["amount"])
     except Exception:
         pass
+    try:
+        from backend.routers.notifications import notify_manager
+        await notify_manager.send(result["user_id"], {
+            "type": "topup_confirmed",
+            "amount": result["amount"],
+        })
+    except Exception:
+        pass
     return {"ok": True}
 
 
@@ -303,6 +311,13 @@ async def reject(topup_id: str, _=Depends(require_admin)):
     try:
         from backend.notify import notify_user_topup_rejected
         await notify_user_topup_rejected(result["user_id"])
+    except Exception:
+        pass
+    try:
+        from backend.routers.notifications import notify_manager
+        await notify_manager.send(result["user_id"], {
+            "type": "topup_rejected",
+        })
     except Exception:
         pass
     return {"ok": True}
@@ -336,6 +351,19 @@ async def complete(order_id: str, _=Depends(require_admin)):
     try:
         from backend.notify import notify_user_order_ready
         await notify_user_order_ready(order["user_id"], order_id)
+    except Exception:
+        pass
+    try:
+        from backend.routers.notifications import notify_manager
+        db = get_db()
+        from bson import ObjectId
+        product = await db.products.find_one({"_id": ObjectId(order["product_id"])})
+        product_name = product["name"] if product else ""
+        await notify_manager.send(order["user_id"], {
+            "type": "order_ready",
+            "order_id": order_id,
+            "product_name": product_name,
+        })
     except Exception:
         pass
     return {"ok": True}
