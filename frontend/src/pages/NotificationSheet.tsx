@@ -16,6 +16,20 @@ export interface AppNotification {
 
 const STORAGE_KEY = "doonya_notifications";
 const MAX_NOTIFS = 50;
+const REVIEWED_KEY = "doonya_reviewed_orders";
+
+function loadReviewedOrders(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(REVIEWED_KEY) || "[]")); }
+  catch { return new Set(); }
+}
+
+export function markOrderReviewed(orderId: string) {
+  try {
+    const s = loadReviewedOrders();
+    s.add(orderId);
+    localStorage.setItem(REVIEWED_KEY, JSON.stringify([...s].slice(0, 200)));
+  } catch {}
+}
 
 export function loadNotifications(): AppNotification[] {
   try {
@@ -68,6 +82,8 @@ export function makeNotification(type: NotifType, extra?: { order_id?: string; a
 export function useNotifications(onOrderReady: (orderId: string) => void) {
   const [notifs, setNotifs] = useState<AppNotification[]>(loadNotifications);
   const wsRef = useRef<WebSocket | null>(null);
+  // Tracks order IDs for which ReviewSheet was already opened (persisted across reconnects)
+  const reviewedRef = useRef<Set<string>>(loadReviewedOrders());
 
   const unreadCount = notifs.filter((n) => !n.read).length;
 
@@ -109,7 +125,6 @@ export function useNotifications(onOrderReady: (orderId: string) => void) {
             amount: msg.amount,
             product_name: msg.product_name,
           });
-          // Deduplicate by order_id for order_ready notifications
           setNotifs((prev) => {
             if (
               msg.type === "order_ready" &&
@@ -122,7 +137,8 @@ export function useNotifications(onOrderReady: (orderId: string) => void) {
             saveNotifications(next);
             return next;
           });
-          if (msg.type === "order_ready" && msg.order_id) {
+          // Only open ReviewSheet if user hasn't reviewed this order yet
+          if (msg.type === "order_ready" && msg.order_id && !reviewedRef.current.has(msg.order_id)) {
             onOrderReady(msg.order_id);
           }
         } catch { /* ignore */ }

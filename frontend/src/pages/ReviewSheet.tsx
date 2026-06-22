@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Star, Camera, X, CheckCircle, Loader } from "lucide-react";
 import { leaveReview, uploadReviewPhoto } from "../api";
+import { markOrderReviewed } from "./NotificationSheet";
 import { useLang } from "../i18n";
 
 interface Props {
@@ -47,11 +48,13 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
     setSubmitting(true);
     try {
       await leaveReview({ order_id: orderId, rating, text: text.trim(), photo_url: photoUrl });
+      markOrderReviewed(orderId);
       setDone(true);
       setTimeout(onClose, 2200);
     } catch (e: any) {
       const msg = e?.response?.data?.detail;
       if (msg === "Review already submitted") {
+        markOrderReviewed(orderId);
         window.Telegram?.WebApp?.showAlert("Вы уже оставили отзыв на этот заказ.");
         onClose();
       } else {
