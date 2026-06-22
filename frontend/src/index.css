@@ -11,20 +11,20 @@
   --tg-button-text: var(--tg-theme-button-text-color, #ffffff);
   --tg-secondary: var(--tg-theme-secondary-bg-color, #0D1020);
 
-  /* Gaming design system */
-  --bg: #07080F;
-  --bg-raised: #0D1020;
-  --bg-surface: #121526;
-  --accent: #F97316;
-  --accent-glow: rgba(249,115,22,0.25);
-  --violet: #8B5CF6;
-  --cyan: #22D3EE;
-  --success: #10B981;
-  --error: #EF4444;
-  --border: rgba(255,255,255,0.07);
-  --text: #F0F2FA;
-  --text-dim: rgba(240,242,250,0.45);
-  --text-muted: rgba(240,242,250,0.18);
+  /* Anime design system */
+  --bg: #080510;
+  --bg-raised: #100D1E;
+  --bg-surface: #15112A;
+  --accent: #EC4899;
+  --accent-glow: rgba(236,72,153,0.35);
+  --violet: #A855F7;
+  --cyan: #FBBF24;
+  --success: #34D399;
+  --error: #F87171;
+  --border: rgba(168,85,247,0.10);
+  --text: #F5F0FF;
+  --text-dim: rgba(245,240,255,0.45);
+  --text-muted: rgba(245,240,255,0.18);
 }
 
 * { box-sizing: border-box; }
@@ -50,29 +50,29 @@ body {
 
 .s-card {
   background: var(--bg-raised);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(168,85,247,0.12);
   border-radius: 18px;
 }
 
 .s-surface {
   background: var(--bg-surface);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(168,85,247,0.10);
   border-radius: 14px;
 }
 
 .s-input {
   width: 100%;
   background: var(--bg-surface);
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid rgba(168,85,247,0.15);
   border-radius: 14px;
-  padding: 10px 14px;
+  padding: 12px 16px;
   font-size: 14px;
   color: var(--text);
   outline: none;
   transition: border-color 0.15s;
 }
 .s-input::placeholder { color: var(--text-muted); }
-.s-input:focus { border-color: rgba(249,115,22,0.40); }
+.s-input:focus { border-color: rgba(236,72,153,0.50); }
 
 .s-btn {
   display: flex;
@@ -84,8 +84,9 @@ body {
   font-size: 15px;
   font-weight: 900;
   color: #fff;
-  background: linear-gradient(135deg, #F97316, #EA580C);
-  box-shadow: 0 4px 20px rgba(249,115,22,0.35);
+  border: none;
+  background: linear-gradient(135deg, #EC4899, #A855F7);
+  box-shadow: 0 4px 20px rgba(236,72,153,0.35);
   transition: opacity 0.15s;
 }
 .s-btn:active { opacity: 0.75; }
@@ -95,13 +96,14 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 12px;
   font-size: 13px;
   font-weight: 900;
   color: #fff;
-  background: linear-gradient(135deg, #F97316, #EA580C);
-  box-shadow: 0 2px 10px rgba(249,115,22,0.25);
+  border: none;
+  background: linear-gradient(135deg, #EC4899, #A855F7);
+  box-shadow: 0 2px 10px rgba(236,72,153,0.25);
   transition: opacity 0.15s;
 }
 .s-btn-sm:active { opacity: 0.75; }
@@ -111,11 +113,11 @@ body {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: rgba(245,240,255,0.25);
 }
 
 .s-price {
-  color: var(--cyan);
+  color: #FBBF24;
   font-weight: 900;
 }
 
@@ -125,8 +127,9 @@ body {
   border-radius: 99px;
   font-size: 10px;
   font-weight: 700;
-  background: rgba(16,185,129,0.15);
-  color: #10B981;
+  background: rgba(52,211,153,0.12);
+  color: #34D399;
+  border: 1px solid rgba(52,211,153,0.20);
 }
 
 .s-badge-warn {
@@ -135,8 +138,9 @@ body {
   border-radius: 99px;
   font-size: 10px;
   font-weight: 700;
-  background: rgba(234,179,8,0.15);
-  color: #EAB308;
+  background: rgba(251,191,36,0.12);
+  color: #FBBF24;
+  border: 1px solid rgba(251,191,36,0.20);
 }
 
 .s-badge-error {
@@ -145,8 +149,9 @@ body {
   border-radius: 99px;
   font-size: 10px;
   font-weight: 700;
-  background: rgba(239,68,68,0.15);
-  color: #EF4444;
+  background: rgba(248,113,113,0.12);
+  color: #F87171;
+  border: 1px solid rgba(248,113,113,0.20);
 }
 
 .s-badge-pending {
@@ -155,8 +160,9 @@ body {
   border-radius: 99px;
   font-size: 10px;
   font-weight: 700;
-  background: rgba(249,115,22,0.15);
-  color: #F97316;
+  background: rgba(236,72,153,0.12);
+  color: #EC4899;
+  border: 1px solid rgba(236,72,153,0.20);
 }
 
 /* ── Legacy classes (kept for backward compat) ───────── */

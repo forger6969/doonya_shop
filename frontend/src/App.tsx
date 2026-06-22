@@ -116,7 +116,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-dvh">
-        <div className="w-8 h-8 rounded-full animate-spin" style={{ border: "2px solid rgba(249,115,22,0.15)", borderTopColor: "#F97316" }} />
+        <div className="w-8 h-8 rounded-full animate-spin" style={{ border: "2px solid rgba(236,72,153,0.15)", borderTopColor: "#EC4899" }} />
       </div>
     );
   }
@@ -137,13 +137,13 @@ export default function App() {
   const timerWarn   = pendingTimeLeft < 300;
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg, #07080F)" }}>
+    <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg, #080510)" }}>
       {/* Header */}
       <header
         className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0"
         style={{
-          background: "var(--bg-raised, #0D1020)",
-          borderBottom: "1px solid var(--border, rgba(255,255,255,0.07))",
+          background: "rgba(8,5,16,0.95)",
+          borderBottom: "1px solid rgba(168,85,247,0.12)",
           backdropFilter: "blur(20px)",
         }}
       >
@@ -151,8 +151,8 @@ export default function App() {
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{
-              background: "linear-gradient(135deg,#F97316,#EA580C)",
-              boxShadow: "0 0 16px rgba(249,115,22,0.4)",
+              background: "linear-gradient(135deg,#EC4899,#A855F7)",
+              boxShadow: "0 0 16px rgba(236,72,153,0.50)",
             }}
           >
             <Grid2x2 className="w-4 h-4 text-white" />
@@ -160,7 +160,7 @@ export default function App() {
           <span
             className="font-black text-[16px] tracking-tight"
             style={{
-              background: "linear-gradient(135deg,#F97316,#FB923C)",
+              background: "linear-gradient(135deg,#EC4899,#A855F7)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}
@@ -173,11 +173,11 @@ export default function App() {
             onClick={() => setShowTopup(true)}
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-70"
             style={{
-              background: "rgba(34,211,238,0.10)",
-              border: "1px solid rgba(34,211,238,0.20)",
+              background: "rgba(251,191,36,0.10)",
+              border: "1px solid rgba(251,191,36,0.20)",
             }}
           >
-            <span className="text-xs font-black" style={{ color: "#22D3EE" }}>
+            <span className="text-xs font-black" style={{ color: "#FBBF24" }}>
               {user.balance.toLocaleString()} sum
             </span>
           </button>
@@ -244,9 +244,9 @@ export default function App() {
       <nav
         className="fixed bottom-0 left-0 right-0 pb-safe"
         style={{
-          background: "rgba(7,8,15,0.96)",
+          background: "rgba(8,5,16,0.97)",
           backdropFilter: "blur(24px)",
-          borderTop: "1px solid rgba(255,255,255,0.07)",
+          borderTop: "1px solid rgba(168,85,247,0.10)",
         }}
       >
         <div className="flex">
@@ -261,14 +261,14 @@ export default function App() {
                 <div
                   className="flex items-center justify-center transition-all"
                   style={active ? {
-                    background: "rgba(249,115,22,0.15)",
+                    background: "rgba(236,72,153,0.15)",
                     borderRadius: 20,
                     padding: "4px 14px",
                   } : { padding: "4px 14px" }}
                 >
-                  <Icon className="w-4 h-4" style={{ color: active ? "#F97316" : "rgba(240,242,250,0.25)" }} />
+                  <Icon className="w-4 h-4" style={{ color: active ? "#EC4899" : "rgba(245,240,255,0.20)" }} />
                 </div>
-                <span className="text-[10px] font-bold tracking-wide" style={{ color: active ? "#F97316" : "rgba(240,242,250,0.20)" }}>
+                <span className="text-[10px] font-bold tracking-wide" style={{ color: active ? "#EC4899" : "rgba(245,240,255,0.20)" }}>
                   {label}
                 </span>
               </button>
@@ -281,17 +281,17 @@ export default function App() {
             className="flex-1 flex flex-col items-center gap-1 py-3 relative"
           >
             <div className="relative flex items-center justify-center" style={{ padding: "4px 14px" }}>
-              <Bell className="w-4 h-4" style={{ color: "rgba(240,242,250,0.25)" }} />
+              <Bell className="w-4 h-4" style={{ color: "rgba(245,240,255,0.20)" }} />
               {unreadCount > 0 && (
                 <div
                   className="absolute -top-1 -right-0 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
-                  style={{ background: "#EF4444" }}
+                  style={{ background: "#EC4899" }}
                 >
                   <span className="text-[8px] font-black text-white leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-bold tracking-wide" style={{ color: "rgba(240,242,250,0.20)" }}>Уведомления</span>
+            <span className="text-[10px] font-bold tracking-wide" style={{ color: "rgba(245,240,255,0.20)" }}>Уведомления</span>
           </button>
         </div>
       </nav>

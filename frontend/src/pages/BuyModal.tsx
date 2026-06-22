@@ -78,8 +78,9 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
       <div
         className="relative w-full rounded-t-3xl flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto"
         style={{
-          background: "var(--bg-raised, #0D1020)",
-          borderTop: "1px solid rgba(255,255,255,0.07)",
+          background: "#100D1E",
+          borderTop: "1px solid rgba(168,85,247,0.15)",
+          borderRadius: "24px 24px 0 0",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -118,17 +119,17 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                         onClick={() => { setSelectedVariant(v); setDiscount(0); setPromoCode(""); setPromoInput(""); }}
                         className="px-3.5 py-2 rounded-xl text-sm font-bold transition-colors"
                         style={active ? {
-                          background: "rgba(249,115,22,0.15)",
-                          border: "1px solid rgba(249,115,22,0.35)",
-                          color: "#F97316",
+                          background: "rgba(236,72,153,0.12)",
+                          border: "1px solid rgba(236,72,153,0.35)",
+                          color: "#EC4899",
                         } : {
-                          background: "var(--bg-surface, #121526)",
-                          border: "1px solid var(--border, rgba(255,255,255,0.07))",
-                          color: "rgba(240,242,250,0.60)",
+                          background: "#15112A",
+                          border: "1px solid rgba(168,85,247,0.12)",
+                          color: "rgba(245,240,255,0.50)",
                         }}
                       >
                         {v.label}
-                        <span className="ml-2 text-[11px]" style={{ color: active ? "rgba(249,115,22,0.6)" : "rgba(240,242,250,0.30)" }}>
+                        <span className="ml-2 text-[11px]" style={{ color: active ? "rgba(236,72,153,0.7)" : "rgba(245,240,255,0.25)" }}>
                           {v.price.toLocaleString()}
                         </span>
                       </button>
@@ -161,7 +162,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
             {(!hasVariants || selectedVariant) && (
               <div
                 className="rounded-2xl overflow-hidden"
-                style={{ background: "var(--bg-surface, #121526)", border: "1px solid var(--border, rgba(255,255,255,0.07))" }}
+                style={{ background: "#15112A", border: "1px solid rgba(168,85,247,0.12)" }}
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.04]">
                   <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-dim)" }}>
@@ -169,7 +170,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                   </div>
                   <div className="flex items-center gap-2">
                     {discount > 0 && <span className="text-[12px] line-through" style={{ color: "var(--text-muted)" }}>{basePrice.toLocaleString()}</span>}
-                    <span className="font-black text-[1.1rem]" style={{ color: "var(--cyan, #22D3EE)", fontWeight: 900 }}>
+                    <span className="font-black text-[1.1rem]" style={{ color: "#FBBF24", fontWeight: 900 }}>
                       {finalPrice.toLocaleString()} sum
                     </span>
                   </div>
@@ -214,9 +215,9 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                     disabled={!promoInput.trim() || promoLoading}
                     className="px-3 py-2.5 rounded-xl text-sm font-bold active:opacity-70 disabled:opacity-30 flex-shrink-0"
                     style={{
-                      background: "rgba(139,92,246,0.15)",
-                      border: "1px solid rgba(139,92,246,0.25)",
-                      color: "#A78BFA",
+                      background: "rgba(168,85,247,0.15)",
+                      border: "1px solid rgba(168,85,247,0.25)",
+                      color: "#C084FC",
                     }}
                   >
                     {t.apply}
@@ -245,8 +246,8 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                 style={{
                   padding: 16,
                   borderRadius: 16,
-                  background: canBuy ? "linear-gradient(135deg,#F97316,#EA580C)" : "var(--bg-surface, #121526)",
-                  boxShadow: canBuy ? "0 4px 20px rgba(249,115,22,0.35)" : "none",
+                  background: canBuy ? "linear-gradient(135deg,#EC4899,#A855F7)" : "#15112A",
+                  boxShadow: canBuy ? "0 4px 24px rgba(236,72,153,0.40)" : "none",
                 }}
               >
                 {loading ? t.processingShortly : canBuy ? `${t.confirm} · ${finalPrice.toLocaleString()} sum` : hasVariants && !selectedVariant ? t.pickVariant : t.confirm}

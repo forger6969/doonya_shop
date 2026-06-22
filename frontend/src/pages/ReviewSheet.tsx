@@ -71,8 +71,8 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
       <div
         className="relative w-full flex flex-col gap-5 p-5 pb-8"
         style={{
-          background: "#0D1020",
-          borderTop: "1px solid rgba(255,255,255,0.07)",
+          background: "#100D1E",
+          borderTop: "1px solid rgba(168,85,247,0.15)",
           borderRadius: "24px 24px 0 0",
         }}
       >
@@ -119,15 +119,15 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
                   >
                     <Star
                       className={`w-11 h-11 transition-colors ${
-                        i <= activeRating ? "fill-orange-400 text-orange-400" : ""
+                        i <= activeRating ? "fill-pink-400 text-pink-400" : ""
                       }`}
-                      style={i > activeRating ? { color: "rgba(255,255,255,0.15)" } : undefined}
+                      style={i > activeRating ? { color: "rgba(245,240,255,0.15)" } : undefined}
                     />
                   </button>
                 ))}
               </div>
               {activeRating > 0 && (
-                <p className="text-sm font-bold" style={{ color: "#F97316" }}>{LABELS[activeRating]}</p>
+                <p className="text-sm font-bold" style={{ color: "#EC4899" }}>{LABELS[activeRating]}</p>
               )}
             </div>
 
@@ -139,13 +139,13 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
               rows={3}
               className="w-full rounded-2xl px-3.5 py-3 text-sm text-white outline-none resize-none transition-colors"
               style={{
-                background: "var(--bg-surface, #121526)",
-                border: "1px solid rgba(255,255,255,0.07)",
+                background: "#15112A",
+                border: "1px solid rgba(168,85,247,0.15)",
                 borderRadius: 14,
                 color: "var(--text)",
               }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(249,115,22,0.40)"; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(236,72,153,0.40)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(168,85,247,0.15)"; }}
             />
 
             {/* Photo */}
@@ -176,9 +176,9 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
                   onClick={() => fileRef.current?.click()}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold active:opacity-70"
                   style={{
-                    background: "rgba(139,92,246,0.08)",
-                    border: "1px solid rgba(139,92,246,0.18)",
-                    color: "#A78BFA",
+                    background: "rgba(168,85,247,0.10)",
+                    border: "1px solid rgba(168,85,247,0.20)",
+                    color: "#C084FC",
                   }}
                 >
                   <Camera className="w-4 h-4" /> {t.attachPhoto}
@@ -201,8 +201,8 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
               style={{
                 padding: 16,
                 borderRadius: 16,
-                background: rating ? "linear-gradient(135deg,#F97316,#EA580C)" : "var(--bg-surface, #121526)",
-                boxShadow: rating ? "0 4px 20px rgba(249,115,22,0.30)" : "none",
+                background: rating ? "linear-gradient(135deg,#EC4899,#A855F7)" : "#15112A",
+                boxShadow: rating ? "0 4px 20px rgba(236,72,153,0.35)" : "none",
               }}
             >
               {submitting ? t.sending : t.sendReview}
