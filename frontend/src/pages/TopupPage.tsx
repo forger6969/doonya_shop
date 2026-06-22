@@ -26,7 +26,7 @@ interface PendingSession {
 
 const SESSION_KEY = "topup_pending";
 const SESSION_VERSION = 2;
-const TIMER_DURATION = 10 * 60; // 600 seconds
+const TIMER_DURATION = 10 * 60;
 
 const METHODS: { id: Method; label: string; icon: string }[] = [
   { id: "uzcard", label: "Uzcard",  icon: "🏦" },
@@ -48,13 +48,11 @@ export default function TopupPage({ onBack }: Props) {
   const [timeLeft, setTimeLeft] = useState(0);
   const intervalRef = useRef<number>(0);
 
-  // Restore pending session on mount
   useEffect(() => {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return;
     try {
       const s: PendingSession = JSON.parse(raw);
-      // Invalidate old sessions from before cards were added
       if (!s.v || s.v < SESSION_VERSION) { localStorage.removeItem(SESSION_KEY); return; }
       const remaining = Math.floor((s.expiresAt - Date.now()) / 1000);
       if (remaining > 0) {
@@ -71,7 +69,6 @@ export default function TopupPage({ onBack }: Props) {
     }
   }, []);
 
-  // Countdown — only runs on requisites step
   useEffect(() => {
     if (step !== "requisites") return;
     intervalRef.current = window.setInterval(() => {
@@ -144,19 +141,19 @@ export default function TopupPage({ onBack }: Props) {
   };
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-  const timerColor = timeLeft < 120 ? "text-red-400" : timeLeft < 300 ? "text-yellow-400" : "text-emerald-400";
-  const timerBorder = timeLeft < 120 ? "border-red-400/20" : timeLeft < 300 ? "border-yellow-400/20" : "border-white/[0.07]";
+  const timerColor = timeLeft < 120 ? "#EF4444" : timeLeft < 300 ? "#EAB308" : "#10B981";
+  const timerBorderColor = timeLeft < 120 ? "rgba(239,68,68,0.20)" : timeLeft < 300 ? "rgba(234,179,8,0.20)" : "rgba(255,255,255,0.07)";
 
   if (step === "done") return (
     <div className="flex flex-col items-center gap-6 py-12 text-center">
       <div className="text-6xl">✅</div>
       <div>
-        <p className="text-xl font-bold">Заявка отправлена!</p>
-        <p className="text-white/50 mt-2 text-sm">
+        <p className="text-xl font-black text-white">Заявка отправлена!</p>
+        <p className="text-sm mt-2" style={{ color: "var(--text-dim)" }}>
           Мы проверим оплату и начислим баланс в течение нескольких минут.
         </p>
       </div>
-      <button className="btn-primary max-w-xs" onClick={onBack}>На главную</button>
+      <button className="s-btn max-w-xs" onClick={onBack}>На главную</button>
     </div>
   );
 
@@ -164,29 +161,36 @@ export default function TopupPage({ onBack }: Props) {
     <div className="flex flex-col items-center gap-6 py-12 text-center">
       <div className="text-6xl">⏰</div>
       <div>
-        <p className="text-xl font-bold text-red-400">Время вышло</p>
-        <p className="text-white/50 mt-2 text-sm">
+        <p className="text-xl font-black text-red-400">Время вышло</p>
+        <p className="text-sm mt-2" style={{ color: "var(--text-dim)" }}>
           Сессия оплаты истекла. Начните заново — сумма будет новой.
         </p>
       </div>
-      <button className="btn-primary max-w-xs" onClick={startOver}>Начать заново</button>
+      <button className="s-btn max-w-xs" onClick={startOver}>Начать заново</button>
     </div>
   );
 
   return (
     <div className="flex flex-col gap-4">
-      <button className="flex items-center gap-2 text-sm text-white/60 active:opacity-70 w-fit" onClick={onBack}>
+      <button
+        className="flex items-center gap-2 text-sm active:opacity-70 w-fit"
+        style={{ color: "var(--text-dim)" }}
+        onClick={onBack}
+      >
         ← Назад
       </button>
-      <h2 className="text-lg font-bold">💰 Пополнение баланса</h2>
+      <h2 className="text-xl font-black text-white">💰 Пополнение баланса</h2>
 
       {step === "amount" && (
         <div className="flex flex-col gap-4">
-          <div className="card flex flex-col gap-2">
-            <label className="text-sm text-white/50">Сумма пополнения (сум)</label>
+          <div
+            className="flex flex-col gap-2 rounded-2xl p-5"
+            style={{ background: "var(--bg-raised, #0D1020)", border: "1px solid var(--border, rgba(255,255,255,0.07))" }}
+          >
+            <label className="s-label">Сумма пополнения (сум)</label>
             <input
               type="number"
-              className="bg-transparent text-2xl font-bold outline-none placeholder:text-white/20 w-full"
+              className="bg-transparent text-3xl font-black outline-none placeholder:text-white/20 w-full text-white"
               placeholder="10 000"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -197,20 +201,19 @@ export default function TopupPage({ onBack }: Props) {
           {/* Legal disclaimer */}
           <div
             className="rounded-2xl p-4 flex flex-col gap-3"
-            style={{ background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.18)" }}
+            style={{ background: "rgba(249,115,22,0.05)", border: "1px solid rgba(249,115,22,0.15)" }}
           >
             <div className="flex items-start gap-2">
               <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
-              <p className="text-[12px] leading-relaxed text-white/60">
+              <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-dim)" }}>
                 Пополненные средства являются внутренним балансом магазина и{" "}
-                <span className="text-yellow-400 font-semibold">не подлежат возврату</span>.
+                <span className="font-semibold" style={{ color: "#F97316" }}>не подлежат возврату</span>.
                 Баланс нельзя вывести на карту или счёт — он используется
                 исключительно для покупок в Doonya Shop.
                 Перед пополнением убедитесь, что вы хотите приобрести товары в нашем магазине.
               </p>
             </div>
 
-            {/* Checkbox */}
             <button
               onClick={() => setAgreed((v) => !v)}
               className="flex items-center gap-3 active:opacity-70"
@@ -218,17 +221,17 @@ export default function TopupPage({ onBack }: Props) {
               <div
                 className="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-colors"
                 style={{
-                  background: agreed ? "#eab308" : "transparent",
-                  border: agreed ? "1.5px solid #eab308" : "1.5px solid rgba(255,255,255,0.25)",
+                  background: agreed ? "#F97316" : "transparent",
+                  border: agreed ? "1.5px solid #F97316" : "1.5px solid rgba(255,255,255,0.25)",
                 }}
               >
                 {agreed && (
-                  <svg className="w-3 h-3 text-black" viewBox="0 0 12 12" fill="none">
+                  <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
                     <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 )}
               </div>
-              <span className="text-[12px] text-white/70 text-left leading-snug">
+              <span className="text-[12px] text-left leading-snug" style={{ color: "var(--text-dim)" }}>
                 Я понимаю, что средства не возвращаются и не выводятся
               </span>
             </button>
@@ -236,10 +239,10 @@ export default function TopupPage({ onBack }: Props) {
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
-            className="btn-primary"
+            className="s-btn"
             disabled={!agreed}
             onClick={handleAmountNext}
-            style={!agreed ? { opacity: 0.35, cursor: "not-allowed" } : undefined}
+            style={!agreed ? { opacity: 0.35, cursor: "not-allowed", boxShadow: "none", background: "var(--bg-surface)" } : undefined}
           >
             Продолжить
           </button>
@@ -248,21 +251,28 @@ export default function TopupPage({ onBack }: Props) {
 
       {step === "method" && (
         <div className="flex flex-col gap-3">
-          <p className="text-white/50 text-sm">Выберите способ оплаты</p>
+          <p className="text-sm" style={{ color: "var(--text-dim)" }}>Выберите способ оплаты</p>
           {loading ? (
             <div className="flex justify-center py-6">
-              <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+              <div
+                className="w-8 h-8 rounded-full animate-spin"
+                style={{ border: "2px solid rgba(249,115,22,0.15)", borderTopColor: "#F97316" }}
+              />
             </div>
           ) : (
             METHODS.map((m) => (
               <button
                 key={m.id}
-                className="card text-left flex items-center gap-4 active:opacity-70"
+                className="text-left flex items-center gap-4 active:opacity-70 p-4 rounded-2xl"
+                style={{
+                  background: "var(--bg-raised, #0D1020)",
+                  border: "1px solid var(--border, rgba(255,255,255,0.07))",
+                }}
                 onClick={() => handleMethod(m.id)}
               >
                 <span className="text-2xl">{m.icon}</span>
-                <span className="font-medium">{m.label}</span>
-                <span className="ml-auto text-white/40">›</span>
+                <span className="font-bold text-white">{m.label}</span>
+                <span className="ml-auto" style={{ color: "var(--text-muted)" }}>›</span>
               </button>
             ))
           )}
@@ -272,22 +282,32 @@ export default function TopupPage({ onBack }: Props) {
       {step === "requisites" && info && (
         <div className="flex flex-col gap-4">
           {/* Timer */}
-          <div className={`flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] border ${timerBorder}`}>
-            <Clock className={`w-4 h-4 ${timerColor}`} />
-            <span className={`font-mono font-bold text-xl ${timerColor}`}>{fmt(timeLeft)}</span>
-            <span className="text-white/35 text-sm">осталось</span>
+          <div
+            className="flex items-center justify-center gap-2 py-3 rounded-2xl"
+            style={{
+              background: "var(--bg-raised, #0D1020)",
+              border: `1px solid ${timerBorderColor}`,
+            }}
+          >
+            <Clock className="w-4 h-4" style={{ color: timerColor }} />
+            <span className="font-mono font-black text-xl" style={{ color: timerColor }}>{fmt(timeLeft)}</span>
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>осталось</span>
           </div>
 
           {info.cards ? (
-            // ATM — multiple cards
             <div className="flex flex-col gap-3">
               {info.cards.map((c) => (
-                <div key={c.type} className="card flex flex-col gap-2">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{c.type}</p>
+                <div
+                  key={c.type}
+                  className="flex flex-col gap-2 rounded-2xl p-4"
+                  style={{ background: "var(--bg-raised, #0D1020)", border: "1px solid var(--border, rgba(255,255,255,0.07))" }}
+                >
+                  <p className="s-label">{c.type}</p>
                   <div className="flex justify-between items-center">
-                    <span className="text-white/50 text-sm">Карта</span>
+                    <span className="text-sm" style={{ color: "var(--text-dim)" }}>Карта</span>
                     <button
-                      className="font-mono font-bold text-purple-300 active:opacity-70 flex items-center gap-1.5"
+                      className="font-mono font-bold active:opacity-70 flex items-center gap-1.5"
+                      style={{ color: "#A78BFA" }}
                       onClick={() => copy(c.requisites)}
                     >
                       {c.requisites}
@@ -295,15 +315,19 @@ export default function TopupPage({ onBack }: Props) {
                     </button>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-white/50 text-sm">Получатель</span>
-                    <span className="font-medium">{c.holder}</span>
+                    <span className="text-sm" style={{ color: "var(--text-dim)" }}>Получатель</span>
+                    <span className="font-medium text-white">{c.holder}</span>
                   </div>
                 </div>
               ))}
-              <div className="card flex justify-between items-center">
-                <span className="text-white/50 text-sm">Сумма к переводу</span>
+              <div
+                className="flex justify-between items-center rounded-2xl p-4"
+                style={{ background: "var(--bg-raised, #0D1020)", border: "1px solid var(--border, rgba(255,255,255,0.07))" }}
+              >
+                <span className="text-sm" style={{ color: "var(--text-dim)" }}>Сумма к переводу</span>
                 <button
-                  className="text-xl font-bold text-yellow-400 active:opacity-70 flex items-center gap-1.5"
+                  className="text-xl font-black active:opacity-70 flex items-center gap-1.5"
+                  style={{ color: "#F97316" }}
                   onClick={() => copy(String(info.amount))}
                 >
                   {info.amount.toLocaleString()} сум
@@ -312,13 +336,16 @@ export default function TopupPage({ onBack }: Props) {
               </div>
             </div>
           ) : (
-            // Single card (card / uzcard / visa)
-            <div className="card flex flex-col gap-3">
+            <div
+              className="flex flex-col gap-3 rounded-2xl p-4"
+              style={{ background: "var(--bg-raised, #0D1020)", border: "1px solid var(--border, rgba(255,255,255,0.07))" }}
+            >
               {info.requisites && (
                 <div className="flex justify-between items-center">
-                  <span className="text-white/50 text-sm">Реквизиты</span>
+                  <span className="text-sm" style={{ color: "var(--text-dim)" }}>Реквизиты</span>
                   <button
-                    className="font-mono font-bold text-purple-300 active:opacity-70 flex items-center gap-1.5"
+                    className="font-mono font-bold active:opacity-70 flex items-center gap-1.5"
+                    style={{ color: "#A78BFA" }}
                     onClick={() => copy(info.requisites!)}
                   >
                     {info.requisites}
@@ -328,14 +355,18 @@ export default function TopupPage({ onBack }: Props) {
               )}
               {info.holder && (
                 <div className="flex justify-between">
-                  <span className="text-white/50 text-sm">Получатель</span>
-                  <span className="font-medium">{info.holder}</span>
+                  <span className="text-sm" style={{ color: "var(--text-dim)" }}>Получатель</span>
+                  <span className="font-medium text-white">{info.holder}</span>
                 </div>
               )}
-              <div className="flex justify-between items-center border-t border-white/10 pt-3 mt-1">
-                <span className="text-white/50 text-sm">Сумма к переводу</span>
+              <div
+                className="flex justify-between items-center pt-3 mt-1"
+                style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <span className="text-sm" style={{ color: "var(--text-dim)" }}>Сумма к переводу</span>
                 <button
-                  className="text-xl font-bold text-yellow-400 active:opacity-70 flex items-center gap-1.5"
+                  className="text-xl font-black active:opacity-70 flex items-center gap-1.5"
+                  style={{ color: "#F97316" }}
                   onClick={() => copy(String(info.amount))}
                 >
                   {info.amount.toLocaleString()} сум
@@ -345,14 +376,15 @@ export default function TopupPage({ onBack }: Props) {
             </div>
           )}
 
-          <p className="text-white/40 text-xs text-center">{info.note}</p>
+          <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>{info.note}</p>
 
-          <button className="btn-primary" onClick={() => setStep("receipt")}>
+          <button className="s-btn" onClick={() => setStep("receipt")}>
             Я перевёл — прикрепить чек
           </button>
           <button
             onClick={startOver}
-            className="w-full py-3 rounded-xl text-sm font-bold text-red-400 bg-red-400/[0.08] border border-red-400/20 active:opacity-70"
+            className="w-full py-3 rounded-xl text-sm font-bold text-red-400 active:opacity-70"
+            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.20)" }}
           >
             Отменить пополнение
           </button>
@@ -361,10 +393,17 @@ export default function TopupPage({ onBack }: Props) {
 
       {step === "receipt" && (
         <div className="flex flex-col gap-4">
-          <p className="text-white/60 text-sm">Прикрепите скриншот или фото чека об оплате</p>
-          <label className="card flex flex-col items-center gap-3 py-8 cursor-pointer border-dashed border-2 border-white/20 active:opacity-70">
+          <p className="text-sm" style={{ color: "var(--text-dim)" }}>Прикрепите скриншот или фото чека об оплате</p>
+          <label
+            className="flex flex-col items-center gap-3 py-8 cursor-pointer active:opacity-70 rounded-2xl"
+            style={{
+              background: file ? "rgba(249,115,22,0.05)" : "rgba(139,92,246,0.05)",
+              border: `1.5px dashed ${file ? "rgba(249,115,22,0.35)" : "rgba(139,92,246,0.25)"}`,
+              borderRadius: 16,
+            }}
+          >
             <span className="text-4xl">{file ? "📎" : "📷"}</span>
-            <span className="text-sm text-white/60">
+            <span className="text-sm" style={{ color: file ? "#F97316" : "#A78BFA" }}>
               {file ? file.name : "Нажмите чтобы выбрать файл"}
             </span>
             <input
@@ -375,15 +414,17 @@ export default function TopupPage({ onBack }: Props) {
             />
           </label>
           <button
-            className="btn-primary"
+            className="s-btn"
             disabled={!file || loading}
             onClick={handleSubmit}
+            style={!file || loading ? { opacity: 0.35, boxShadow: "none", background: "var(--bg-surface)" } : undefined}
           >
             {loading ? "Отправка..." : "Отправить на проверку"}
           </button>
           <button
             onClick={startOver}
-            className="w-full py-3 rounded-xl text-sm font-bold text-red-400 bg-red-400/[0.08] border border-red-400/20 active:opacity-70"
+            className="w-full py-3 rounded-xl text-sm font-bold text-red-400 active:opacity-70"
+            style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.20)" }}
           >
             Отменить пополнение
           </button>

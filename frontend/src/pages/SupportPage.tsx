@@ -74,15 +74,26 @@ export default function SupportPage() {
   return (
     <div className="flex flex-col" style={{ height: "calc(100dvh - 80px)" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-          <MessageCircle className="w-4 h-4 text-blue-400" />
+      <div
+        className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+      >
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: "rgba(249,115,22,0.12)" }}
+        >
+          <MessageCircle className="w-4 h-4" style={{ color: "#F97316" }} />
         </div>
         <div className="flex-1">
           <p className="text-sm font-black text-white">Поддержка</p>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <div className={`w-1.5 h-1.5 rounded-full transition-colors ${connected ? "bg-emerald-400" : "bg-white/20"}`} />
-            <p className="text-[11px] text-white/40">{connected ? "Онлайн" : "Подключение..."}</p>
+            <div
+              className="w-1.5 h-1.5 rounded-full transition-colors"
+              style={{ background: connected ? "#10B981" : "rgba(255,255,255,0.20)" }}
+            />
+            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+              {connected ? "Онлайн" : "Подключение..."}
+            </p>
           </div>
         </div>
       </div>
@@ -90,7 +101,7 @@ export default function SupportPage() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center gap-3 py-14 text-white/20">
+          <div className="flex flex-col items-center gap-3 py-14" style={{ color: "var(--text-muted)" }}>
             <MessageCircle className="w-10 h-10" />
             <p className="text-sm text-center leading-relaxed">
               Напишите нам — обычно отвечаем в течение нескольких минут
@@ -105,17 +116,25 @@ export default function SupportPage() {
                 className="max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed"
                 style={
                   isUser
-                    ? { background: "linear-gradient(135deg,#3b82f6,#2563eb)", borderBottomRightRadius: 4 }
-                    : { background: "rgba(255,255,255,0.08)", borderBottomLeftRadius: 4 }
+                    ? {
+                        background: "linear-gradient(135deg,rgba(249,115,22,0.20),rgba(234,88,12,0.15))",
+                        border: "1px solid rgba(249,115,22,0.20)",
+                        borderBottomRightRadius: 4,
+                      }
+                    : {
+                        background: "var(--bg-raised, #0D1020)",
+                        border: "1px solid var(--border, rgba(255,255,255,0.07))",
+                        borderBottomLeftRadius: 4,
+                      }
                 }
               >
                 {!isUser && (
-                  <p className="text-[10px] font-bold text-blue-400 mb-1 uppercase tracking-wider">
+                  <p className="text-[10px] font-bold mb-1 uppercase tracking-wider" style={{ color: "#F97316" }}>
                     Поддержка
                   </p>
                 )}
                 <p className="text-white/90 break-words">{msg.text}</p>
-                <p className={`text-[10px] mt-1 ${isUser ? "text-white/40 text-right" : "text-white/30"}`}>
+                <p className={`text-[10px] mt-1 ${isUser ? "text-right" : ""}`} style={{ color: "rgba(240,242,250,0.30)" }}>
                   {fmt(msg.ts)}
                 </p>
               </div>
@@ -126,25 +145,40 @@ export default function SupportPage() {
       </div>
 
       {/* Input */}
-      <div className="px-4 py-3 flex items-end gap-2 flex-shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <div
+        className="px-4 py-3 flex items-end gap-2 flex-shrink-0"
+        style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          background: "var(--bg-raised, #0D1020)",
+        }}
+      >
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value.slice(0, 1000))}
           onKeyDown={handleKey}
           placeholder="Напишите сообщение..."
           rows={1}
-          className="flex-1 bg-white/[0.06] border border-white/[0.08] rounded-2xl px-3.5 py-2.5 text-sm text-white placeholder-white/25 outline-none resize-none focus:border-blue-500/40 transition-colors"
-          style={{ maxHeight: 120, minHeight: 44 }}
+          className="flex-1 rounded-2xl px-3.5 py-2.5 text-sm text-white outline-none resize-none transition-colors"
+          style={{
+            background: "var(--bg-surface, #121526)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            maxHeight: 120,
+            minHeight: 44,
+            color: "var(--text)",
+          }}
           onInput={(e) => {
             const el = e.currentTarget;
             el.style.height = "auto";
             el.style.height = Math.min(el.scrollHeight, 120) + "px";
           }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(249,115,22,0.35)"; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; }}
         />
         <button
           onClick={send}
           disabled={!text.trim() || !connected || sending}
-          className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 active:opacity-70 disabled:opacity-30 transition-opacity"
+          className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:opacity-70 disabled:opacity-30 transition-opacity"
+          style={{ background: "linear-gradient(135deg,#F97316,#EA580C)" }}
         >
           {sending
             ? <Loader2 className="w-4 h-4 text-white animate-spin" />

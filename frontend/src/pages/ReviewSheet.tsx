@@ -69,20 +69,24 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-end">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
       <div
-        className="relative w-full rounded-t-3xl flex flex-col gap-5 p-5 pb-8"
-        style={{ background: "#161720", border: "1px solid rgba(255,255,255,0.07)" }}
+        className="relative w-full flex flex-col gap-5 p-5 pb-8"
+        style={{
+          background: "#0D1020",
+          borderTop: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: "24px 24px 0 0",
+        }}
       >
         {/* Drag handle */}
         <div className="w-9 h-1 rounded-full bg-white/10 mx-auto -mt-1" />
 
         {done ? (
           <div className="flex flex-col items-center gap-3 py-8">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.15)" }}>
               <CheckCircle className="w-9 h-9 text-emerald-400" />
             </div>
             <div className="text-center">
               <p className="text-xl font-black text-white">{t.thankYou}</p>
-              <p className="text-white/40 text-sm mt-1">{t.helpedOthers}</p>
+              <p className="text-sm mt-1" style={{ color: "var(--text-dim)" }}>{t.helpedOthers}</p>
             </div>
           </div>
         ) : (
@@ -91,16 +95,20 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-lg font-black text-white">{t.leaveReview}</p>
-                <p className="text-xs text-white/30 mt-0.5">{t.shareExperience}</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>{t.shareExperience}</p>
               </div>
-              <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center">
-                <X className="w-4 h-4 text-white/50" />
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "rgba(255,255,255,0.06)" }}
+              >
+                <X className="w-4 h-4" style={{ color: "rgba(240,242,250,0.50)" }} />
               </button>
             </div>
 
             {/* Stars */}
             <div className="flex flex-col items-center gap-3">
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 {[1, 2, 3, 4, 5].map((i) => (
                   <button
                     key={i}
@@ -110,15 +118,16 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
                     className="active:scale-90 transition-transform"
                   >
                     <Star
-                      className={`w-10 h-10 transition-colors ${
-                        i <= activeRating ? "fill-yellow-400 text-yellow-400" : "text-white/20"
+                      className={`w-11 h-11 transition-colors ${
+                        i <= activeRating ? "fill-orange-400 text-orange-400" : ""
                       }`}
+                      style={i > activeRating ? { color: "rgba(255,255,255,0.15)" } : undefined}
                     />
                   </button>
                 ))}
               </div>
               {activeRating > 0 && (
-                <p className="text-sm font-bold text-yellow-400">{LABELS[activeRating]}</p>
+                <p className="text-sm font-bold" style={{ color: "#F97316" }}>{LABELS[activeRating]}</p>
               )}
             </div>
 
@@ -128,7 +137,15 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
               onChange={(e) => setText(e.target.value.slice(0, 500))}
               placeholder="Расскажите о своём опыте (необязательно)..."
               rows={3}
-              className="w-full bg-white/[0.04] border border-white/[0.07] rounded-xl px-3.5 py-3 text-sm text-white placeholder-white/20 outline-none resize-none focus:border-blue-500/30 transition-colors"
+              className="w-full rounded-2xl px-3.5 py-3 text-sm text-white outline-none resize-none transition-colors"
+              style={{
+                background: "var(--bg-surface, #121526)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: 14,
+                color: "var(--text)",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(249,115,22,0.40)"; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; }}
             />
 
             {/* Photo */}
@@ -157,7 +174,12 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
               ) : (
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white/50 border border-white/[0.08] bg-white/[0.03] active:opacity-70"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold active:opacity-70"
+                  style={{
+                    background: "rgba(139,92,246,0.08)",
+                    border: "1px solid rgba(139,92,246,0.18)",
+                    color: "#A78BFA",
+                  }}
                 >
                   <Camera className="w-4 h-4" /> {t.attachPhoto}
                 </button>
@@ -175,8 +197,13 @@ export default function ReviewSheet({ orderId, onClose }: Props) {
             <button
               onClick={handleSubmit}
               disabled={!rating || submitting || uploading}
-              className="w-full py-3.5 rounded-xl font-black text-sm text-white disabled:opacity-30 active:opacity-70"
-              style={{ background: rating ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "#1f2030" }}
+              className="w-full font-black text-sm text-white disabled:opacity-30 active:opacity-70"
+              style={{
+                padding: 16,
+                borderRadius: 16,
+                background: rating ? "linear-gradient(135deg,#F97316,#EA580C)" : "var(--bg-surface, #121526)",
+                boxShadow: rating ? "0 4px 20px rgba(249,115,22,0.30)" : "none",
+              }}
             >
               {submitting ? t.sending : t.sendReview}
             </button>

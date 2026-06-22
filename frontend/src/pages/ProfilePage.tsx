@@ -59,10 +59,25 @@ export default function ProfilePage({ onTopup }: Props) {
   if (!user) {
     return (
       <div className="flex items-center justify-center h-40">
-        <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div
+          className="w-7 h-7 rounded-full animate-spin"
+          style={{ border: "2px solid rgba(249,115,22,0.15)", borderTopColor: "#F97316" }}
+        />
       </div>
     );
   }
+
+  const orderStatusBadge = (status: string) => {
+    if (status === "completed") return <span className="s-badge-success">{status}</span>;
+    if (status === "pending") return <span className="s-badge-pending">{status}</span>;
+    return <span className="s-badge-error">{status}</span>;
+  };
+
+  const topupStatusBadge = (status: string) => {
+    if (status === "confirmed") return <span className="s-badge-success">{status}</span>;
+    if (status === "rejected") return <span className="s-badge-error">{status}</span>;
+    return <span className="s-badge-pending">{status}</span>;
+  };
 
   return (
     <div className="flex flex-col gap-5 pb-8">
@@ -70,8 +85,8 @@ export default function ProfilePage({ onTopup }: Props) {
       <div className="flex flex-col items-center gap-3 pt-5 pb-2">
         <div className="relative">
           <div
-            className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black overflow-hidden"
-            style={{ background: "linear-gradient(135deg,#3b82f6,#7c3aed)" }}
+            className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black overflow-hidden relative"
+            style={{ background: "linear-gradient(135deg,#F97316,#8B5CF6)" }}
           >
             {user.avatar_url
               ? <img src={user.avatar_url} className="w-full h-full object-cover" alt="avatar" />
@@ -85,7 +100,11 @@ export default function ProfilePage({ onTopup }: Props) {
           </div>
           <button
             onClick={() => avatarRef.current?.click()}
-            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center border-2 border-[#0a0a0e] active:opacity-70"
+            className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center active:opacity-70"
+            style={{
+              background: "linear-gradient(135deg,#F97316,#EA580C)",
+              border: "2px solid var(--bg, #07080F)",
+            }}
           >
             <Camera className="w-3.5 h-3.5 text-white" />
           </button>
@@ -93,7 +112,7 @@ export default function ProfilePage({ onTopup }: Props) {
         </div>
         <div className="text-center">
           <p className="font-black text-xl text-white">{user.first_name}</p>
-          {user.username && <p className="text-white/40 text-sm mt-0.5">@{user.username}</p>}
+          {user.username && <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>@{user.username}</p>}
         </div>
       </div>
 
@@ -101,70 +120,79 @@ export default function ProfilePage({ onTopup }: Props) {
       <div
         className="rounded-2xl p-5 flex flex-col gap-4"
         style={{
-          background: "linear-gradient(135deg,rgba(59,130,246,0.12),rgba(124,58,237,0.08))",
-          border: "1px solid rgba(59,130,246,0.18)",
+          background: "var(--bg-raised, #0D1020)",
+          border: "1px solid rgba(34,211,238,0.12)",
         }}
       >
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-1">{t.balance}</p>
+          <p className="s-label mb-1">{t.balance}</p>
           <p className="text-3xl font-black text-white">
             {user.balance.toLocaleString()}{" "}
-            <span className="text-lg font-bold text-white/30">sum</span>
+            <span className="text-lg font-bold" style={{ color: "var(--text-muted)" }}>sum</span>
           </p>
         </div>
         <button
           onClick={onTopup}
-          className="w-full py-3.5 rounded-xl font-black text-sm text-white active:opacity-70"
-          style={{ background: "linear-gradient(135deg,#3b82f6,#2563eb)" }}
+          className="w-full py-3.5 rounded-2xl font-black text-sm text-white active:opacity-70"
+          style={{
+            background: "linear-gradient(135deg,#F97316,#EA580C)",
+            boxShadow: "0 4px 16px rgba(249,115,22,0.30)",
+          }}
         >
           + {t.topUpBalance}
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white/[0.04] rounded-xl p-1 gap-1">
-        {(["orders", "topups", "settings"] as const).map((tb) => (
-          <button
-            key={tb}
-            onClick={() => setTab(tb)}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-colors ${
-              tab === tb ? "bg-blue-600 text-white" : "text-white/40"
-            }`}
-          >
-            {tb === "orders" ? t.orders : tb === "topups" ? t.payments : t.settings}
-          </button>
-        ))}
+      <div
+        className="flex p-1 gap-1 rounded-2xl"
+        style={{ background: "var(--bg-surface, #121526)" }}
+      >
+        {(["orders", "topups", "settings"] as const).map((tb) => {
+          const active = tab === tb;
+          return (
+            <button
+              key={tb}
+              onClick={() => setTab(tb)}
+              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+              style={active ? {
+                background: "rgba(249,115,22,0.15)",
+                borderRadius: 10,
+                color: "#F97316",
+              } : {
+                color: "rgba(240,242,250,0.35)",
+              }}
+            >
+              {tb === "orders" ? t.orders : tb === "topups" ? t.payments : t.settings}
+            </button>
+          );
+        })}
       </div>
 
       {/* Orders */}
       {tab === "orders" && (
         <div className="flex flex-col gap-2">
           {orders.length === 0 ? (
-            <p className="text-center text-white/25 text-sm py-10">{t.noOrders}</p>
+            <p className="text-center text-sm py-10" style={{ color: "var(--text-muted)" }}>{t.noOrders}</p>
           ) : (
             orders.map((o) => (
               <div
                 key={o.id}
                 className="rounded-2xl px-4 py-3 flex justify-between items-center"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+                style={{
+                  background: "var(--bg-raised, #0D1020)",
+                  border: "1px solid var(--border, rgba(255,255,255,0.07))",
+                }}
               >
                 <div>
                   <p className="text-sm font-bold text-white">Order</p>
-                  <p className="text-[11px] text-white/30 mt-0.5">
+                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
                     {new Date(o.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'uz-UZ', { month: "short", day: "numeric" })}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                  <span className="text-sm font-black text-blue-400">{o.amount.toLocaleString()} sum</span>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      o.status === "completed"
-                        ? "bg-emerald-500/15 text-emerald-400"
-                        : "bg-yellow-500/15 text-yellow-400"
-                    }`}
-                  >
-                    {o.status}
-                  </span>
+                  <span className="text-sm font-black s-price">{o.amount.toLocaleString()} sum</span>
+                  {orderStatusBadge(o.status)}
                 </div>
               </div>
             ))
@@ -176,33 +204,26 @@ export default function ProfilePage({ onTopup }: Props) {
       {tab === "topups" && (
         <div className="flex flex-col gap-2">
           {topups.length === 0 ? (
-            <p className="text-center text-white/25 text-sm py-10">{t.noPayments}</p>
+            <p className="text-center text-sm py-10" style={{ color: "var(--text-muted)" }}>{t.noPayments}</p>
           ) : (
             topups.map((tp) => (
               <div
                 key={tp.id}
                 className="rounded-2xl px-4 py-3 flex justify-between items-center"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+                style={{
+                  background: "var(--bg-raised, #0D1020)",
+                  border: "1px solid var(--border, rgba(255,255,255,0.07))",
+                }}
               >
                 <div>
                   <p className="text-sm font-bold text-white capitalize">{tp.method}</p>
-                  <p className="text-[11px] text-white/30 mt-0.5">
+                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
                     {new Date(tp.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'uz-UZ', { month: "short", day: "numeric" })}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5">
-                  <span className="text-sm font-black text-blue-400">+{tp.amount.toLocaleString()} sum</span>
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      tp.status === "confirmed"
-                        ? "bg-emerald-500/15 text-emerald-400"
-                        : tp.status === "rejected"
-                        ? "bg-red-500/15 text-red-400"
-                        : "bg-yellow-500/15 text-yellow-400"
-                    }`}
-                  >
-                    {tp.status}
-                  </span>
+                  <span className="text-sm font-black s-price">+{tp.amount.toLocaleString()} sum</span>
+                  {topupStatusBadge(tp.status)}
                 </div>
               </div>
             ))
@@ -215,38 +236,49 @@ export default function ProfilePage({ onTopup }: Props) {
         <div className="flex flex-col gap-5">
           {/* Language switcher */}
           <div className="flex flex-col gap-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{t.language}</p>
-            <div className="flex bg-white/[0.04] rounded-xl p-1 gap-1">
-              {(["ru", "uz"] as Lang[]).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => setLang(l)}
-                  className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${
-                    lang === l ? "bg-blue-600 text-white" : "text-white/30"
-                  }`}
-                >
-                  {l === "ru" ? "🇷🇺 Русский" : "🇺🇿 O'zbekcha"}
-                </button>
-              ))}
+            <p className="s-label">{t.language}</p>
+            <div
+              className="flex p-1 gap-1 rounded-xl"
+              style={{ background: "var(--bg-surface, #121526)" }}
+            >
+              {(["ru", "uz"] as Lang[]).map((l) => {
+                const active = lang === l;
+                return (
+                  <button
+                    key={l}
+                    onClick={() => setLang(l)}
+                    className="flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-colors"
+                    style={active ? {
+                      background: "rgba(249,115,22,0.15)",
+                      borderRadius: 10,
+                      color: "#F97316",
+                    } : {
+                      color: "rgba(240,242,250,0.30)",
+                    }}
+                  >
+                    {l === "ru" ? "🇷🇺 Русский" : "🇺🇿 O'zbekcha"}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Email */}
           <div className="flex flex-col gap-2.5">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{t.emailAddress}</p>
+            <p className="s-label">{t.emailAddress}</p>
             <div className="flex gap-2">
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 type="email"
-                className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-blue-500/40 transition-colors"
+                className="s-input flex-1"
               />
               <button
                 onClick={handleSaveEmail}
                 disabled={!email.trim() || emailSaving}
-                className="px-4 py-2.5 rounded-xl text-xs font-black disabled:opacity-30 active:opacity-70 transition-opacity"
-                style={{ background: emailSaved ? "#10b981" : "#3b82f6", color: "#fff" }}
+                className="px-4 py-2.5 rounded-xl text-xs font-black disabled:opacity-30 active:opacity-70 transition-opacity flex-shrink-0"
+                style={{ background: emailSaved ? "#10B981" : "linear-gradient(135deg,#F97316,#EA580C)", color: "#fff" }}
               >
                 {emailSaved ? t.saved : t.save}
               </button>
@@ -256,21 +288,25 @@ export default function ProfilePage({ onTopup }: Props) {
                 <CheckCircle className="w-3.5 h-3.5" /> {t.emailHint}
               </div>
             )}
-            <p className="text-[11px] text-white/20">{t.emailHint}</p>
+            <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t.emailHint}</p>
           </div>
 
           {/* Telegram account */}
           <div
             className="rounded-2xl p-4 flex items-center gap-3"
-            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+            style={{
+              background: "var(--bg-raised, #0D1020)",
+              border: "1px solid var(--border, rgba(255,255,255,0.07))",
+            }}
           >
-            <div className="w-10 h-10 rounded-full bg-blue-500/15 flex items-center justify-center flex-shrink-0">
-              <User className="w-5 h-5 text-blue-400" />
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: "rgba(249,115,22,0.12)" }}
+            >
+              <User className="w-5 h-5" style={{ color: "#F97316" }} />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] text-white/30 font-semibold uppercase tracking-wider mb-0.5">
-                {t.telegramAccount}
-              </p>
+              <p className="s-label mb-0.5">{t.telegramAccount}</p>
               <p className="text-sm font-bold text-white truncate">
                 {user.first_name}
                 {user.username ? ` (@${user.username})` : ""}

@@ -18,7 +18,6 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
   const hasVariants = (product.variants?.length ?? 0) > 0;
   const hasFields = (product.purchase_fields?.length ?? 0) > 0;
 
-  // Variant state — if product already has variant_label set (from detail sheet), pre-select it
   const preSelected = product.variant_label
     ? product.variants?.find((v) => v.label === product.variant_label) ?? null
     : null;
@@ -26,10 +25,8 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
     preSelected ?? (hasVariants ? null : null)
   );
 
-  // Field answers
   const [fieldAnswers, setFieldAnswers] = useState<Record<string, string>>({});
 
-  // Promo
   const [promoCode, setPromoCode] = useState("");
   const [promoInput, setPromoInput] = useState("");
   const [discount, setDiscount] = useState(0);
@@ -80,19 +77,22 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
       <div className="absolute inset-0 bg-black/70" />
       <div
         className="relative w-full rounded-t-3xl flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto"
-        style={{ background: "#161720", border: "1px solid rgba(255,255,255,0.07)" }}
+        style={{
+          background: "var(--bg-raised, #0D1020)",
+          borderTop: "1px solid rgba(255,255,255,0.07)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-9 h-1 rounded-full bg-white/10 mx-auto -mt-1 flex-shrink-0" />
 
         {done ? (
           <div className="flex flex-col items-center gap-3 py-8">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.15)" }}>
               <Check className="w-9 h-9 text-emerald-400" />
             </div>
             <div className="text-center">
               <p className="text-xl font-black text-white">{t.orderPlaced}</p>
-              <p className="text-white/40 text-sm mt-1">{t.processingShortly}</p>
+              <p className="text-sm mt-1" style={{ color: "var(--text-dim)" }}>{t.processingShortly}</p>
             </div>
           </div>
         ) : (
@@ -100,32 +100,40 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
             {/* Product name */}
             <div>
               {product.gameName && (
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-1">{product.gameName}</p>
+                <p className="s-label mb-1">{product.gameName}</p>
               )}
-              <p className="text-xl font-black text-white">{product.name}</p>
+              <p className="text-2xl font-black text-white">{product.name}</p>
             </div>
 
             {/* Variant selector */}
             {hasVariants && (
               <div className="flex flex-col gap-2">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">{t.selectVariant}</p>
+                <p className="s-label">{t.selectVariant}</p>
                 <div className="flex flex-wrap gap-2">
-                  {product.variants!.map((v) => (
-                    <button
-                      key={v.label}
-                      onClick={() => { setSelectedVariant(v); setDiscount(0); setPromoCode(""); setPromoInput(""); }}
-                      className={`px-3.5 py-2 rounded-xl text-sm font-bold transition-colors ${
-                        selectedVariant?.label === v.label
-                          ? "bg-blue-600 text-white"
-                          : "bg-white/[0.05] text-white/60 border border-white/[0.08]"
-                      }`}
-                    >
-                      {v.label}
-                      <span className={`ml-2 text-[11px] ${selectedVariant?.label === v.label ? "text-blue-200" : "text-white/30"}`}>
-                        {v.price.toLocaleString()}
-                      </span>
-                    </button>
-                  ))}
+                  {product.variants!.map((v) => {
+                    const active = selectedVariant?.label === v.label;
+                    return (
+                      <button
+                        key={v.label}
+                        onClick={() => { setSelectedVariant(v); setDiscount(0); setPromoCode(""); setPromoInput(""); }}
+                        className="px-3.5 py-2 rounded-xl text-sm font-bold transition-colors"
+                        style={active ? {
+                          background: "rgba(249,115,22,0.15)",
+                          border: "1px solid rgba(249,115,22,0.35)",
+                          color: "#F97316",
+                        } : {
+                          background: "var(--bg-surface, #121526)",
+                          border: "1px solid var(--border, rgba(255,255,255,0.07))",
+                          color: "rgba(240,242,250,0.60)",
+                        }}
+                      >
+                        {v.label}
+                        <span className="ml-2 text-[11px]" style={{ color: active ? "rgba(249,115,22,0.6)" : "rgba(240,242,250,0.30)" }}>
+                          {v.price.toLocaleString()}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -135,28 +143,35 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
               <div className="flex flex-col gap-3">
                 {product.purchase_fields!.map((f) => (
                   <div key={f.label} className="flex flex-col gap-1.5">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">
+                    <p className="s-label">
                       {f.label}{f.required && <span className="text-red-400 ml-1">*</span>}
                     </p>
                     <input
                       value={fieldAnswers[f.label] ?? ""}
                       onChange={(e) => setFieldAnswers({ ...fieldAnswers, [f.label]: e.target.value })}
                       placeholder={f.label}
-                      className="w-full bg-white/[0.04] border border-white/[0.07] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-white/20 outline-none focus:border-blue-500/40 transition-colors"
+                      className="s-input"
                     />
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Price block — only show when variant is selected or no variants */}
+            {/* Price block */}
             {(!hasVariants || selectedVariant) && (
-              <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ background: "var(--bg-surface, #121526)", border: "1px solid var(--border, rgba(255,255,255,0.07))" }}
+              >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.04]">
-                  <div className="flex items-center gap-2 text-white/40 text-sm"><ShoppingCart className="w-4 h-4" /> {t.price}</div>
+                  <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-dim)" }}>
+                    <ShoppingCart className="w-4 h-4" /> {t.price}
+                  </div>
                   <div className="flex items-center gap-2">
-                    {discount > 0 && <span className="text-[12px] line-through text-white/25">{basePrice.toLocaleString()}</span>}
-                    <span className="font-black text-blue-400">{finalPrice.toLocaleString()} sum</span>
+                    {discount > 0 && <span className="text-[12px] line-through" style={{ color: "var(--text-muted)" }}>{basePrice.toLocaleString()}</span>}
+                    <span className="font-black text-[1.1rem]" style={{ color: "var(--cyan, #22D3EE)", fontWeight: 900 }}>
+                      {finalPrice.toLocaleString()} sum
+                    </span>
                   </div>
                 </div>
                 {discount > 0 && (
@@ -166,8 +181,12 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                   </div>
                 )}
                 <div className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2 text-white/40 text-sm"><Wallet className="w-4 h-4" /> {t.balance}</div>
-                  <span className={`font-bold text-sm ${canAfford ? "text-emerald-400" : "text-red-400"}`}>{balance.toLocaleString()} sum</span>
+                  <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-dim)" }}>
+                    <Wallet className="w-4 h-4" /> {t.balance}
+                  </div>
+                  <span className={`font-bold text-sm ${canAfford ? "text-emerald-400" : "text-red-400"}`}>
+                    {balance.toLocaleString()} sum
+                  </span>
                 </div>
               </div>
             )}
@@ -187,10 +206,19 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                     onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoErr(""); }}
                     onKeyDown={(e) => e.key === "Enter" && applyPromo()}
                     placeholder={t.promoCode}
-                    className="flex-1 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5 text-sm text-white placeholder-white/20 outline-none font-mono uppercase tracking-widest focus:border-blue-500/40 transition-colors"
+                    className="s-input flex-1 font-mono uppercase tracking-widest"
+                    style={{ borderRadius: 14 }}
                   />
-                  <button onClick={applyPromo} disabled={!promoInput.trim() || promoLoading}
-                    className="px-3 py-2.5 rounded-xl bg-blue-600/20 border border-blue-500/20 text-blue-400 text-sm font-bold active:opacity-70 disabled:opacity-30">
+                  <button
+                    onClick={applyPromo}
+                    disabled={!promoInput.trim() || promoLoading}
+                    className="px-3 py-2.5 rounded-xl text-sm font-bold active:opacity-70 disabled:opacity-30 flex-shrink-0"
+                    style={{
+                      background: "rgba(139,92,246,0.15)",
+                      border: "1px solid rgba(139,92,246,0.25)",
+                      color: "#A78BFA",
+                    }}
+                  >
                     {t.apply}
                   </button>
                 </div>
@@ -213,12 +241,23 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
               <button
                 onClick={handleBuy}
                 disabled={!canBuy || loading}
-                className="w-full py-3.5 rounded-xl font-black text-sm text-white transition-opacity active:opacity-70 disabled:opacity-30"
-                style={{ background: canBuy ? "linear-gradient(135deg,#3b82f6,#2563eb)" : "#1f1f2a" }}
+                className="w-full font-black text-[15px] text-white transition-opacity active:opacity-70 disabled:opacity-30"
+                style={{
+                  padding: 16,
+                  borderRadius: 16,
+                  background: canBuy ? "linear-gradient(135deg,#F97316,#EA580C)" : "var(--bg-surface, #121526)",
+                  boxShadow: canBuy ? "0 4px 20px rgba(249,115,22,0.35)" : "none",
+                }}
               >
                 {loading ? t.processingShortly : canBuy ? `${t.confirm} · ${finalPrice.toLocaleString()} sum` : hasVariants && !selectedVariant ? t.pickVariant : t.confirm}
               </button>
-              <button onClick={onClose} className="w-full py-2.5 text-sm text-white/25 font-semibold active:text-white/50">{t.cancel}</button>
+              <button
+                onClick={onClose}
+                className="w-full py-2.5 text-[13px] font-semibold active:opacity-50"
+                style={{ color: "rgba(240,242,250,0.25)" }}
+              >
+                {t.cancel}
+              </button>
             </div>
           </>
         )}

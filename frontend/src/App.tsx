@@ -82,7 +82,6 @@ export default function App() {
   // Pending topup indicator timer — only active on main screen
   useEffect(() => {
     if (showTopup) {
-      // TopupPage owns the timer; stop ours
       window.clearInterval(pendingTimerRef.current);
       setPendingTimeLeft(0);
       return;
@@ -103,7 +102,7 @@ export default function App() {
       }
     };
 
-    tick(); // immediate first update
+    tick();
     pendingTimerRef.current = window.setInterval(tick, 1000);
     return () => window.clearInterval(pendingTimerRef.current);
   }, [showTopup]);
@@ -117,7 +116,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-dvh">
-        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 rounded-full animate-spin" style={{ border: "2px solid rgba(249,115,22,0.15)", borderTopColor: "#F97316" }} />
       </div>
     );
   }
@@ -127,7 +126,7 @@ export default function App() {
 
   if (showTopup) {
     return (
-      <div className="min-h-dvh p-4 pb-8">
+      <div className="min-h-dvh p-4 pb-8" style={{ background: "var(--bg, #07080F)" }}>
         <TopupPage onBack={() => { setShowTopup(false); refreshUser(); }} />
       </div>
     );
@@ -138,22 +137,47 @@ export default function App() {
   const timerWarn   = pendingTimeLeft < 300;
 
   return (
-    <div className="flex flex-col min-h-dvh">
+    <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg, #07080F)" }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+      <header
+        className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0"
+        style={{
+          background: "var(--bg-raised, #0D1020)",
+          borderBottom: "1px solid var(--border, rgba(255,255,255,0.07))",
+          backdropFilter: "blur(20px)",
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{
+              background: "linear-gradient(135deg,#F97316,#EA580C)",
+              boxShadow: "0 0 16px rgba(249,115,22,0.4)",
+            }}
+          >
             <Grid2x2 className="w-4 h-4 text-white" />
           </div>
-          <span className="font-black text-[15px] tracking-tight text-white">Doonya Shop</span>
+          <span
+            className="font-black text-[16px] tracking-tight"
+            style={{
+              background: "linear-gradient(135deg,#F97316,#FB923C)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Doonya Shop
+          </span>
         </div>
         {user && (
           <button
             onClick={() => setShowTopup(true)}
             className="flex items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-70"
-            style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.25)" }}
+            style={{
+              background: "rgba(34,211,238,0.10)",
+              border: "1px solid rgba(34,211,238,0.20)",
+            }}
           >
-            <span className="text-xs font-black" style={{ color: "#93c5fd" }}>
+            <span className="text-xs font-black" style={{ color: "#22D3EE" }}>
               {user.balance.toLocaleString()} sum
             </span>
           </button>
@@ -164,37 +188,32 @@ export default function App() {
       {hasPending && (
         <button
           onClick={openPendingTopup}
-          className="mx-4 mb-2 flex items-center gap-3 px-4 py-3 rounded-2xl active:opacity-75 relative overflow-hidden"
+          className="mx-4 mt-3 flex items-center gap-3 px-4 py-3 rounded-2xl active:opacity-75 relative overflow-hidden"
           style={{
             background: timerUrgent
               ? "rgba(239,68,68,0.10)"
               : timerWarn
               ? "rgba(234,179,8,0.10)"
-              : "rgba(251,146,60,0.10)",
-            border: `1px solid ${timerUrgent ? "rgba(239,68,68,0.30)" : timerWarn ? "rgba(234,179,8,0.30)" : "rgba(251,146,60,0.30)"}`,
+              : "rgba(249,115,22,0.10)",
+            border: `1px solid ${timerUrgent ? "rgba(239,68,68,0.30)" : timerWarn ? "rgba(234,179,8,0.30)" : "rgba(249,115,22,0.30)"}`,
           }}
         >
-          {/* Pulsing circle */}
           <div className="relative flex-shrink-0 w-9 h-9">
-            {/* Ping ring */}
             <div
               className="absolute inset-0 rounded-full animate-ping"
               style={{
-                background: timerUrgent ? "rgba(239,68,68,0.25)" : timerWarn ? "rgba(234,179,8,0.25)" : "rgba(251,146,60,0.25)",
+                background: timerUrgent ? "rgba(239,68,68,0.25)" : timerWarn ? "rgba(234,179,8,0.25)" : "rgba(249,115,22,0.25)",
               }}
             />
-            {/* Solid circle */}
             <div
               className="absolute inset-0 rounded-full flex items-center justify-center"
               style={{
-                background: timerUrgent ? "rgba(239,68,68,0.20)" : timerWarn ? "rgba(234,179,8,0.20)" : "rgba(251,146,60,0.20)",
+                background: timerUrgent ? "rgba(239,68,68,0.20)" : timerWarn ? "rgba(234,179,8,0.20)" : "rgba(249,115,22,0.20)",
               }}
             >
               <span className="text-base">⏳</span>
             </div>
           </div>
-
-          {/* Text */}
           <div className="flex-1 text-left min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-wider"
               style={{ color: timerUrgent ? "#f87171" : timerWarn ? "#facc15" : "#fb923c" }}>
@@ -205,8 +224,6 @@ export default function App() {
               <span className="font-normal text-white/40 text-xs">осталось</span>
             </p>
           </div>
-
-          {/* Arrow */}
           <span className="text-lg font-bold flex-shrink-0"
             style={{ color: timerUrgent ? "#f87171" : timerWarn ? "#facc15" : "#fb923c" }}>
             ›
@@ -225,39 +242,56 @@ export default function App() {
 
       {/* Bottom nav */}
       <nav
-        className="fixed bottom-0 left-0 right-0 pb-safe border-t border-white/[0.06]"
-        style={{ background: "rgba(10,10,14,0.96)", backdropFilter: "blur(24px)" }}
+        className="fixed bottom-0 left-0 right-0 pb-safe"
+        style={{
+          background: "rgba(7,8,15,0.96)",
+          backdropFilter: "blur(24px)",
+          borderTop: "1px solid rgba(255,255,255,0.07)",
+        }}
       >
         <div className="flex">
-          {NAV.map(({ id, Icon, label }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
-            >
-              <div className={`w-8 h-6 flex items-center justify-center rounded-lg transition-colors ${tab === id ? "bg-blue-600" : ""}`}>
-                <Icon className={`w-4 h-4 ${tab === id ? "text-white" : "text-white/25"}`} />
-              </div>
-              <span className={`text-[10px] font-bold tracking-wide ${tab === id ? "text-blue-400" : "text-white/20"}`}>
-                {label}
-              </span>
-            </button>
-          ))}
+          {NAV.map(({ id, Icon, label }) => {
+            const active = tab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
+              >
+                <div
+                  className="flex items-center justify-center transition-all"
+                  style={active ? {
+                    background: "rgba(249,115,22,0.15)",
+                    borderRadius: 20,
+                    padding: "4px 14px",
+                  } : { padding: "4px 14px" }}
+                >
+                  <Icon className="w-4 h-4" style={{ color: active ? "#F97316" : "rgba(240,242,250,0.25)" }} />
+                </div>
+                <span className="text-[10px] font-bold tracking-wide" style={{ color: active ? "#F97316" : "rgba(240,242,250,0.20)" }}>
+                  {label}
+                </span>
+              </button>
+            );
+          })}
 
           {/* Notifications bell */}
           <button
             onClick={() => { setShowNotifications(true); markAllRead(); }}
             className="flex-1 flex flex-col items-center gap-1 py-3 relative"
           >
-            <div className="relative w-8 h-6 flex items-center justify-center rounded-lg">
-              <Bell className="w-4 h-4 text-white/25" />
+            <div className="relative flex items-center justify-center" style={{ padding: "4px 14px" }}>
+              <Bell className="w-4 h-4" style={{ color: "rgba(240,242,250,0.25)" }} />
               {unreadCount > 0 && (
-                <div className="absolute -top-1 -right-1 min-w-[14px] h-[14px] rounded-full bg-red-500 flex items-center justify-center px-0.5">
+                <div
+                  className="absolute -top-1 -right-0 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
+                  style={{ background: "#EF4444" }}
+                >
                   <span className="text-[8px] font-black text-white leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-bold tracking-wide text-white/20">Уведомления</span>
+            <span className="text-[10px] font-bold tracking-wide" style={{ color: "rgba(240,242,250,0.20)" }}>Уведомления</span>
           </button>
         </div>
       </nav>
@@ -272,7 +306,7 @@ export default function App() {
         />
       )}
 
-      {/* Review sheet (opened via bot notification deep link or WS notification) */}
+      {/* Review sheet */}
       {reviewOrderId && !isAdmin && (
         <ReviewSheet
           orderId={reviewOrderId}

@@ -150,10 +150,17 @@ export function useNotifications(onOrderReady: (orderId: string) => void) {
 // ── UI ────────────────────────────────────────────────────────────────────────
 
 function NotifIcon({ type }: { type: NotifType }) {
-  if (type === "order_ready") return <ShoppingBag className="w-5 h-5 text-blue-400" />;
-  if (type === "topup_confirmed") return <CheckCircle className="w-5 h-5 text-green-400" />;
+  if (type === "order_ready") return <ShoppingBag className="w-5 h-5 text-orange-400" />;
+  if (type === "topup_confirmed") return <CheckCircle className="w-5 h-5 text-emerald-400" />;
   if (type === "topup_rejected") return <XCircle className="w-5 h-5 text-red-400" />;
-  return <Clock className="w-5 h-5 text-orange-400" />;
+  return <Clock className="w-5 h-5 text-amber-400" />;
+}
+
+function notifIconBg(type: NotifType): string {
+  if (type === "order_ready") return "rgba(249,115,22,0.10)";
+  if (type === "topup_confirmed") return "rgba(16,185,129,0.10)";
+  if (type === "topup_rejected") return "rgba(239,68,68,0.10)";
+  return "rgba(245,158,11,0.10)";
 }
 
 function fmtTs(ts: number) {
@@ -185,7 +192,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
         className={`fixed bottom-0 left-0 right-0 z-50 flex flex-col transition-transform duration-300 ease-out ${open ? "translate-y-0" : "translate-y-full"}`}
         style={{
           maxHeight: "80dvh",
-          background: "rgba(13,14,26,0.98)",
+          background: "#0D1020",
           borderTop: "1px solid rgba(255,255,255,0.08)",
           borderRadius: "20px 20px 0 0",
           backdropFilter: "blur(24px)",
@@ -193,29 +200,34 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
+          <div className="w-10 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }} />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-white/50" />
+            <Bell className="w-4 h-4" style={{ color: "rgba(240,242,250,0.4)" }} />
             <p className="text-[15px] font-black text-white">Уведомления</p>
             {notifs.filter((n) => !n.read).length > 0 && (
-              <div className="bg-blue-600 rounded-full px-2 py-0.5">
+              <div className="rounded-full px-2 py-0.5"
+                style={{ background: "linear-gradient(135deg,#F97316,#EA580C)" }}>
                 <span className="text-[10px] font-black text-white">{notifs.filter((n) => !n.read).length}</span>
               </div>
             )}
           </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-full bg-white/[0.06] flex items-center justify-center active:opacity-70">
-            <X className="w-3.5 h-3.5 text-white/50" />
+          <button onClick={onClose}
+            className="w-7 h-7 rounded-full flex items-center justify-center active:opacity-70"
+            style={{ background: "rgba(255,255,255,0.06)" }}>
+            <X className="w-3.5 h-3.5" style={{ color: "rgba(240,242,250,0.45)" }} />
           </button>
         </div>
 
         {/* List */}
         <div className="flex-1 overflow-y-auto">
           {notifs.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-white/25">
+            <div className="flex flex-col items-center gap-3 py-16"
+              style={{ color: "rgba(240,242,250,0.2)" }}>
               <Bell className="w-10 h-10" />
               <p className="text-sm">Уведомлений пока нет</p>
             </div>
@@ -224,29 +236,37 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
               {notifs.map((n) => (
                 <div
                   key={n.id}
-                  className={`flex items-start gap-3 px-4 py-4 ${!n.read ? "bg-white/[0.03]" : ""}`}
+                  className={`flex items-start gap-3 px-4 py-4 ${!n.read ? "bg-white/[0.02]" : ""}`}
                 >
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                    style={{ background: "rgba(255,255,255,0.06)" }}>
+                    style={{ background: notifIconBg(n.type) }}>
                     <NotifIcon type={n.type} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-[13px] font-bold text-white leading-tight">{n.title}</p>
-                      <span className="text-[10px] text-white/30 flex-shrink-0 mt-0.5">{fmtTs(n.ts)}</span>
+                      <span className="text-[10px] flex-shrink-0 mt-0.5"
+                        style={{ color: "rgba(240,242,250,0.25)" }}>{fmtTs(n.ts)}</span>
                     </div>
-                    <p className="text-[12px] text-white/50 mt-0.5 leading-snug">{n.body}</p>
+                    <p className="text-[12px] mt-0.5 leading-snug"
+                      style={{ color: "rgba(240,242,250,0.45)" }}>{n.body}</p>
                     {n.type === "order_ready" && n.order_id && (
                       <button
                         onClick={() => { onReviewOrder(n.order_id!); onClose(); }}
-                        className="mt-2 px-3 py-1.5 rounded-lg bg-blue-600/20 border border-blue-500/30 text-[11px] font-bold text-blue-400 active:opacity-70"
+                        className="mt-2 px-3 py-1.5 rounded-lg text-[11px] font-bold active:opacity-70"
+                        style={{
+                          background: "rgba(249,115,22,0.12)",
+                          border: "1px solid rgba(249,115,22,0.25)",
+                          color: "#FB923C",
+                        }}
                       >
                         Оставить отзыв →
                       </button>
                     )}
                   </div>
                   {!n.read && (
-                    <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                    <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
+                      style={{ background: "#F97316" }} />
                   )}
                 </div>
               ))}
