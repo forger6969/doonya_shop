@@ -21,7 +21,7 @@ import { useLang, type Lang } from "../i18n";
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Stats { pending_topups: number; pending_orders: number; total_games: number; total_products: number; total_revenue: number }
 interface Topup { id: string; user_id: number; amount: number; unique_amount: number; method: string; receipt_url: string; status: string; created_at: string }
-interface Order { id: string; user_id: number; amount: number; status: string; promo_code: string; created_at: string }
+interface Order { id: string; user_id: number; username: string; first_name: string; amount: number; status: string; promo_code: string; created_at: string }
 interface Game { id: string; name: string; description: string; icon_url: string }
 interface Category { id: string; game_id: string; name: string }
 interface PurchaseField { label: string; required: boolean }
@@ -263,7 +263,7 @@ function Payments() {
 }
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
-function Orders() {
+function Orders({ onChat }: { onChat: (user_id: number, name: string, username: string) => void }) {
   const { t } = useLang();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState("pending");
@@ -292,29 +292,48 @@ function Orders() {
       <div className="a-card mx-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
           : orders.length === 0 ? <Empty icon={ShoppingBag} text={t.noOrdersFilter} />
-          : orders.map((o, i) => (
-            <div key={o.id}>
-              {i > 0 && <Divider />}
-              <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-9 h-9 rounded-xl bg-violet-400/10 flex items-center justify-center flex-shrink-0">
-                  <ShoppingBag className="w-4 h-4 text-violet-400" />
+          : orders.map((o, i) => {
+            const userName = o.first_name || (o.username ? `@${o.username}` : `User ${o.user_id}`);
+            return (
+              <div key={o.id}>
+                {i > 0 && <Divider />}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-9 h-9 rounded-xl bg-violet-400/10 flex items-center justify-center flex-shrink-0">
+                    <ShoppingBag className="w-4 h-4 text-violet-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-bold text-white">{fmt(o.amount)}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span className="text-[11px] text-zinc-400 font-semibold truncate max-w-[120px]">{userName}</span>
+                      {o.username && (
+                        <span className="text-[10px] text-zinc-600">@{o.username}</span>
+                      )}
+                      <span className="text-[10px] text-zinc-700">· {fmtDate(o.created_at)}</span>
+                      {o.promo_code && (
+                        <span className="text-[10px] text-violet-400 font-bold">{o.promo_code}</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Chat button */}
+                  <button
+                    onClick={() => onChat(o.user_id, o.first_name || o.username, o.username)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 active:opacity-70"
+                    style={{ background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.18)" }}
+                    title="Написать клиенту"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 text-amber-400" />
+                  </button>
+                  {o.status === "pending"
+                    ? <button onClick={() => done(o.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-emerald-400 border border-emerald-400/20 active:opacity-70">
+                        <Check className="w-3 h-3" /> {t.doneBtn}
+                      </button>
+                    : <Badge status={o.status} />
+                  }
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-white">{fmt(o.amount)}</p>
-                  <p className="text-[11px] text-zinc-600">
-                    User {o.user_id}{o.promo_code ? ` · ${o.promo_code}` : ""} · {fmtDate(o.created_at)}
-                  </p>
-                </div>
-                {o.status === "pending"
-                  ? <button onClick={() => done(o.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-emerald-400 border border-emerald-400/20 active:opacity-70">
-                      <Check className="w-3 h-3" /> {t.doneBtn}
-                    </button>
-                  : <Badge status={o.status} />
-                }
               </div>
-            </div>
-          ))}
+            );
+          })}
       </div>
     </div>
   );
@@ -998,13 +1017,13 @@ interface AllUser { user_id: number; username: string; first_name: string; balan
 
 type ChatTab = "active" | "all";
 
-function AdminChat() {
+function AdminChat({ initialTarget }: { initialTarget?: { user_id: number; name: string; username: string } | null }) {
   const [chats, setChats] = useState<ChatUser[]>([]);
   const [allUsers, setAllUsers] = useState<AllUser[]>([]);
   const [allLoading, setAllLoading] = useState(false);
   const [tab, setTab] = useState<ChatTab>("active");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<{ user_id: number; name: string; username: string } | null>(null);
+  const [selected, setSelected] = useState<{ user_id: number; name: string; username: string } | null>(initialTarget ?? null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [text, setText] = useState("");
   const [connected, setConnected] = useState(false);
@@ -1019,6 +1038,13 @@ function AdminChat() {
     setAllLoading(true);
     agentGetAllUsers(search).then(setAllUsers).catch(() => {}).finally(() => setAllLoading(false));
   }, [tab, search]);
+
+  // Auto-open initialTarget chat once WS connects
+  useEffect(() => {
+    if (!initialTarget || !connected) return;
+    openChat(initialTarget.user_id, initialTarget.name, initialTarget.username);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, initialTarget]);
 
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData || "";
@@ -1063,17 +1089,19 @@ function AdminChat() {
     return () => ws.close();
   }, []);
 
-  const openChat = (user_id: number, name: string, username: string, user_name = "") => {
+  const openChat = useCallback((user_id: number, name: string, username: string, user_name = "") => {
     setSelected({ user_id, name, username });
     setMessages([]);
     setChats((prev) => prev.map((c) => c.user_id === user_id ? { ...c, unread: 0 } : c));
-    wsRef.current?.send(JSON.stringify({
-      type: "select_chat",
-      user_id,
-      user_name: username || user_name,
-      first_name: name,
-    }));
-  };
+    const payload = JSON.stringify({ type: "select_chat", user_id, user_name: username || user_name, first_name: name });
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(payload);
+    } else {
+      // WS not ready yet — send after open
+      const ws = wsRef.current;
+      if (ws) { const prev = ws.onopen; ws.onopen = (e) => { if (prev) (prev as (e: Event) => void)(e); ws.send(payload); }; }
+    }
+  }, []);
 
   const send = useCallback(() => {
     if (!selected || !text.trim() || wsRef.current?.readyState !== WebSocket.OPEN) return;
@@ -1319,6 +1347,12 @@ export default function AdminPage() {
   const [adminName, setAdminName] = useState("A");
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
+  const [chatTarget, setChatTarget] = useState<{ user_id: number; name: string; username: string } | null>(null);
+
+  const handleOpenChat = useCallback((user_id: number, name: string, username: string) => {
+    setChatTarget({ user_id, name, username });
+    setSection("chat");
+  }, []);
 
   useEffect(() => {
     getMe().then((u: { first_name: string; avatar_url?: string }) => {
@@ -1400,11 +1434,11 @@ export default function AdminPage() {
       <div className={`flex-1 ${section === "chat" ? "overflow-hidden flex flex-col" : "overflow-y-auto"}`}>
         {section === "dashboard" && <Dashboard onNav={setSection} />}
         {section === "payments"  && <Payments />}
-        {section === "orders"    && <Orders />}
+        {section === "orders"    && <Orders onChat={handleOpenChat} />}
         {section === "catalog"   && <Catalog />}
         {section === "analytics" && <Analytics />}
         {section === "promos"    && <Promos />}
-        {section === "chat"      && <AdminChat />}
+        {section === "chat"      && <AdminChat initialTarget={chatTarget} />}
       </div>
 
       {/* Bottom nav */}

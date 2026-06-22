@@ -346,10 +346,16 @@ async def reject(topup_id: str, _=Depends(require_admin)):
 async def list_orders(status: str = "pending", _=Depends(require_admin)):
     db = get_db()
     orders = await db.orders.find({"status": status}).sort("created_at", -1).limit(50).to_list(None)
+    # Batch-lookup users to get username/first_name
+    user_ids = list({o["user_id"] for o in orders})
+    users_raw = await db.users.find({"user_id": {"$in": user_ids}}, {"user_id": 1, "username": 1, "first_name": 1}).to_list(None)
+    users_map = {u["user_id"]: u for u in users_raw}
     return [
         {
             "id": str(o["_id"]),
             "user_id": o["user_id"],
+            "username": users_map.get(o["user_id"], {}).get("username", ""),
+            "first_name": users_map.get(o["user_id"], {}).get("first_name", ""),
             "product_id": o["product_id"],
             "amount": o["amount"],
             "status": o["status"],
