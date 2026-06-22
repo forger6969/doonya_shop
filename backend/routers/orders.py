@@ -92,6 +92,8 @@ async def buy_product(req: PurchaseRequest, tg_user: dict = Depends(get_current_
             order_id, user_id, product["name"], final_price,
             variant_label=req.variant_label,
             field_answers=req.field_answers,
+            username=tg_user.get("username", ""),
+            first_name=tg_user.get("first_name", ""),
         )
     except Exception:
         pass

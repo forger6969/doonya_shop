@@ -49,11 +49,18 @@ async def notify_admin_topup(
 async def notify_admin_order(
     order_id: str, user_id: int, product_name: str, price: int,
     variant_label: str = "", field_answers: dict | None = None,
+    username: str = "", first_name: str = "",
 ):
     bot = get_bot()
+    if username:
+        user_label = f"<b>{first_name}</b> @{username} (<code>{user_id}</code>)" if first_name else f"@{username} (<code>{user_id}</code>)"
+    elif first_name:
+        user_label = f"<b>{first_name}</b> (<code>{user_id}</code>)"
+    else:
+        user_label = f"<code>{user_id}</code>"
     text = (
         f"🛒 <b>Новый заказ</b>\n"
-        f"User: <code>{user_id}</code>\n"
+        f"От: {user_label}\n"
         f"Товар: <b>{product_name}</b>"
     )
     if variant_label:
