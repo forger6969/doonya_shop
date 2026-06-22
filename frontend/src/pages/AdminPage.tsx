@@ -627,8 +627,9 @@ function CategoryList({ game, onBack }: { game: Game; onBack: () => void }) {
           <input value={newCatName} onChange={(e) => setNewCatName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && save()}
             placeholder="Название категории (напр. Гемы)" className="a-input flex-1 text-sm" />
-          <button onClick={save} disabled={saving || !newCatName.trim()} className="a-btn px-4 py-2 text-sm">
-            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          <button onClick={save} disabled={saving || !newCatName.trim()}
+            className="flex-shrink-0 w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center disabled:opacity-30 active:opacity-70">
+            {saving ? <RefreshCw className="w-4 h-4 text-white animate-spin" /> : <Check className="w-4 h-4 text-white" />}
           </button>
         </div>
       )}
