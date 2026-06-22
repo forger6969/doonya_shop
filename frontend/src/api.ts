@@ -134,6 +134,8 @@ export const getNotifyWsUrl = () => {
 export interface AdminOrderChat {
   order_id: string;
   user_id: number;
+  username: string;
+  first_name: string;
   product_id: string;
   product_name: string;
   game_id: string;

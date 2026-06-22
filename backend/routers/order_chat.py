@@ -51,6 +51,8 @@ def _fmt(chat: dict) -> dict:
     return {
         "order_id": chat["order_id"],
         "user_id": chat["user_id"],
+        "username": chat.get("username", ""),
+        "first_name": chat.get("first_name", ""),
         "product_id": chat.get("product_id", ""),
         "product_name": chat.get("product_name", ""),
         "game_id": chat.get("game_id", ""),

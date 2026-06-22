@@ -1358,7 +1358,7 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
 
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData || "";
-    const url = `${getOrderChatWsUrl()}&initData=${encodeURIComponent(initData)}`;
+    const url = `${getOrderChatWsUrl()}?initData=${encodeURIComponent(initData)}`;
     const ws = new WebSocket(url);
     wsRef.current = ws;
     ws.onopen = () => setConnected(true);
@@ -1450,8 +1450,14 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
             <ArrowLeft className="w-4 h-4 text-white" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-black text-white truncate">{selected.product_name || "Заказ"}</p>
-            <p className="text-[10px] text-white/40 truncate">{selected.game_name} · user {selected.user_id}</p>
+            <p className="text-sm font-black text-white truncate">
+              {selected.first_name || selected.username
+                ? `${selected.first_name || ""}${selected.username ? ` @${selected.username}` : ""}`
+                : `user ${selected.user_id}`}
+            </p>
+            <p className="text-[10px] text-white/40 truncate">
+              {selected.product_name || "Заказ"}{selected.game_name ? ` · ${selected.game_name}` : ""}
+            </p>
           </div>
           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? "bg-emerald-400" : "bg-white/20"}`} />
         </div>
