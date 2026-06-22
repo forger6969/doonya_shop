@@ -137,55 +137,24 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
   item: CardItem; onBuy: () => void; onDetail: () => void;
 }) {
   const { t } = useLang();
-  const [g1, g2] = palette(item.id + (item.variant_label || ""));
   return (
-    <div className="rounded-2xl overflow-hidden flex flex-col active:scale-[0.97] transition-transform relative"
+    <div className="rounded-2xl overflow-hidden flex flex-col active:opacity-80 relative"
       style={{ background: "#100D1E", border: "1px solid rgba(168,85,247,0.15)" }}
       onClick={onDetail}>
-
-      {/* Image / art block — full width, tall */}
-      <div className="relative overflow-hidden flex items-center justify-center"
-        style={{ height: 160, ...(item.photo_id ? {} : { background: `linear-gradient(145deg,${g1}dd,${g2}dd)` }) }}>
-        {item.photo_id
-          ? <img src={item.photo_id} className="w-full h-full object-cover" alt={item.name} />
-          : (
-            <div className="absolute inset-0 flex items-center justify-center p-3">
-              <p className="text-white font-black text-center leading-tight"
-                style={{ fontSize: item.name.length > 12 ? 15 : 20 }}>{item.name}</p>
-            </div>
-          )}
-        {/* Gradient overlay bottom */}
-        <div className="absolute inset-x-0 bottom-0 h-12"
-          style={{ background: "linear-gradient(to top, #100D1E, transparent)" }} />
-        {/* Discount badge */}
-        {item.discount_percent ? (
-          <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded-md text-[9px] font-black text-white"
-            style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}>
-            -{item.discount_percent}%
-          </div>
-        ) : null}
+      {item.discount_percent ? <DiscountBadge pct={item.discount_percent} /> : null}
+      <div className="p-3 pb-2 flex-1">
+        <p className="text-[13px] font-bold text-white leading-snug pr-6">{item.name}</p>
+        {item.raw.description && !item.variant_label && (
+          <p className="text-[11px] text-white/40 mt-0.5 line-clamp-2">{item.raw.description}</p>
+        )}
       </div>
-
-      {/* Info */}
-      <div className="px-2.5 pt-1.5 pb-2.5 flex flex-col gap-2">
-        <p className="text-[12px] font-bold text-white leading-tight line-clamp-2">{item.name}</p>
-        <div className="flex items-center justify-between gap-1.5">
-          <div className="flex flex-col">
-            {item.discounted_price ? (
-              <>
-                <span className="text-[9px] line-through leading-none" style={{ color: "rgba(245,240,255,0.30)" }}>{item.price.toLocaleString()}</span>
-                <span className="text-[13px] font-black leading-tight" style={{ color: "#FBBF24" }}>{item.discounted_price.toLocaleString()}</span>
-              </>
-            ) : (
-              <span className="text-[13px] font-black" style={{ color: "#FBBF24" }}>{item.price.toLocaleString()}</span>
-            )}
-          </div>
-          <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-black text-white active:opacity-70 flex-shrink-0"
-            style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)", boxShadow: "0 2px 10px rgba(236,72,153,0.30)" }}>
-            <ShoppingCart className="w-3 h-3" /> {t.buy}
-          </button>
-        </div>
+      <div className="px-3 pb-3 flex items-center justify-between gap-2">
+        <CardPrice item={item} />
+        <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-white active:opacity-70"
+          style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}>
+          <ShoppingCart className="w-3 h-3" /> {t.buy}
+        </button>
       </div>
     </div>
   );
