@@ -23,6 +23,7 @@ export const uploadAvatar = (file: File) => {
 export const getSupportHistory = () => api.get("/support/chat").then((r) => r.data);
 export const agentGetChats = () => api.get("/support/agent/chats").then((r) => r.data);
 export const agentGetChat = (userId: number) => api.get(`/support/agent/chats/${userId}`).then((r) => r.data);
+export const agentGetAllUsers = (search = "") => api.get("/support/agent/users", { params: search ? { search } : {} }).then((r) => r.data as { user_id: number; username: string; first_name: string; balance: number }[]);
 
 // ── Catalog ──────────────────────────────────────────────────────────────────
 export const getGames = () => api.get("/catalog/games").then((r) => r.data);

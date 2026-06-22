@@ -4,6 +4,7 @@ import {
   BarChart2, Tag, Check, X, ChevronLeft, Plus, Trash2,
   RefreshCw, Eye, ChevronRight, TrendingUp, Users,
   Upload, AlertCircle, ToggleLeft, ToggleRight, Package, Camera,
+  MessageCircle, Send, ArrowLeft, Search,
 } from "lucide-react";
 import {
   adminGetStats, adminUpload, getMe, uploadAvatar,
@@ -13,6 +14,7 @@ import {
   adminCreateProduct, adminPatchProduct, adminDeleteProduct, adminSetDiscount,
   adminSalesStats, adminProductStats, adminUserStats,
   adminGetPromos, adminCreatePromo, adminDeletePromo, adminTogglePromo,
+  getSupportWsUrl, agentGetAllUsers,
 } from "../api";
 import { useLang, type Lang } from "../i18n";
 
@@ -26,7 +28,7 @@ interface PurchaseField { label: string; required: boolean }
 interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
-type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos";
+type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "chat";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 const fmt = (n: number) => n.toLocaleString("ru-RU") + " sum";
@@ -989,12 +991,325 @@ function Promos() {
   );
 }
 
+// ─── Admin Chat ───────────────────────────────────────────────────────────────
+interface ChatMsg { id: string; from: string; text: string; ts: string }
+interface ChatUser { user_id: number; user_name: string; first_name: string; unread: number; last_ts: string; last_message: string }
+interface AllUser { user_id: number; username: string; first_name: string; balance: number }
+
+type ChatTab = "active" | "all";
+
+function AdminChat() {
+  const [chats, setChats] = useState<ChatUser[]>([]);
+  const [allUsers, setAllUsers] = useState<AllUser[]>([]);
+  const [allLoading, setAllLoading] = useState(false);
+  const [tab, setTab] = useState<ChatTab>("active");
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<{ user_id: number; name: string; username: string } | null>(null);
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [text, setText] = useState("");
+  const [connected, setConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  // Load all users when tab switches to "all"
+  useEffect(() => {
+    if (tab !== "all") return;
+    setAllLoading(true);
+    agentGetAllUsers(search).then(setAllUsers).catch(() => {}).finally(() => setAllLoading(false));
+  }, [tab, search]);
+
+  useEffect(() => {
+    const initData = window.Telegram?.WebApp?.initData || "";
+    const ws = new WebSocket(`${getSupportWsUrl()}?initData=${encodeURIComponent(initData)}`);
+    wsRef.current = ws;
+    ws.onopen = () => setConnected(true);
+    ws.onclose = () => setConnected(false);
+    ws.onerror = () => setConnected(false);
+
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === "chats") {
+          setChats(data.chats || []);
+        } else if (data.type === "chat_history") {
+          setMessages(data.messages || []);
+        } else if (data.type === "message") {
+          const uid = data.user_id;
+          setChats((prev) => {
+            const idx = prev.findIndex((c) => c.user_id === uid);
+            const base = idx >= 0 ? prev[idx] : {
+              user_id: uid, user_name: data.user_name || "", first_name: data.first_name || "",
+              unread: 0, last_ts: data.ts, last_message: data.text,
+            };
+            const updated = {
+              ...base, last_message: data.text, last_ts: data.ts,
+              unread: data.from === "user" ? (base.unread || 0) + 1 : base.unread,
+            };
+            if (idx >= 0) { const next = [...prev]; next.splice(idx, 1); return [updated, ...next]; }
+            return [updated, ...prev];
+          });
+          setSelected((sel) => {
+            if (sel?.user_id === uid) {
+              setMessages((prev) => prev.find((m) => m.id === data.id) ? prev
+                : [...prev, { id: data.id, from: data.from, text: data.text, ts: data.ts }]);
+            }
+            return sel;
+          });
+        }
+      } catch { /* ignore */ }
+    };
+    return () => ws.close();
+  }, []);
+
+  const openChat = (user_id: number, name: string, username: string, user_name = "") => {
+    setSelected({ user_id, name, username });
+    setMessages([]);
+    setChats((prev) => prev.map((c) => c.user_id === user_id ? { ...c, unread: 0 } : c));
+    wsRef.current?.send(JSON.stringify({
+      type: "select_chat",
+      user_id,
+      user_name: username || user_name,
+      first_name: name,
+    }));
+  };
+
+  const send = useCallback(() => {
+    if (!selected || !text.trim() || wsRef.current?.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ type: "message", to_user_id: selected.user_id, text: text.trim() }));
+    setText("");
+  }, [selected, text]);
+
+  const fmt = (ts: string) => {
+    try { return new Date(ts).toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" }); }
+    catch { return ""; }
+  };
+  const fmtDate = (ts: string) => {
+    try {
+      const d = new Date(ts), now = new Date();
+      return d.toDateString() === now.toDateString()
+        ? d.toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" })
+        : d.toLocaleDateString("ru", { day: "numeric", month: "short" });
+    } catch { return ""; }
+  };
+
+  const avatar = (name: string) => (name || "U")[0].toUpperCase();
+
+  // ── Detail view ──────────────────────────────────────────────────────────────
+  if (selected) {
+    return (
+      <div className="flex flex-col" style={{ height: "calc(100dvh - 115px)" }}>
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0 border-b border-[#1e2030]">
+          <button onClick={() => setSelected(null)}
+            className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center active:opacity-70">
+            <ArrowLeft className="w-4 h-4 text-white" />
+          </button>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+            style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+            {avatar(selected.name)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-black text-white truncate">{selected.name || `User ${selected.user_id}`}</p>
+            {selected.username && <p className="text-[11px] text-white/40">@{selected.username}</p>}
+          </div>
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? "bg-emerald-400" : "bg-white/20"}`} />
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 overscroll-contain">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center gap-3 py-12 text-zinc-700">
+              <MessageCircle className="w-9 h-9" />
+              <p className="text-sm text-center">Начните диалог — напишите первым</p>
+            </div>
+          )}
+          {messages.map((msg) => {
+            const isAgent = msg.from === "agent";
+            return (
+              <div key={msg.id} className={`flex ${isAgent ? "justify-end" : "justify-start"}`}>
+                <div className="max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed"
+                  style={isAgent
+                    ? { background: "linear-gradient(135deg,#f59e0b,#d97706)", borderBottomRightRadius: 4 }
+                    : { background: "rgba(255,255,255,0.07)", borderBottomLeftRadius: 4 }
+                  }>
+                  <p className="text-white break-words">{msg.text}</p>
+                  <p className={`text-[10px] mt-1 text-white/40 ${isAgent ? "text-right" : ""}`}>{fmt(msg.ts)}</p>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        <div className="px-4 py-3 flex items-end gap-2 flex-shrink-0 border-t border-[#1e2030]">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 1000))}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder="Написать клиенту..."
+            rows={1}
+            className="flex-1 a-input resize-none outline-none"
+            style={{ maxHeight: 120, minHeight: 44 }}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = Math.min(el.scrollHeight, 120) + "px";
+            }}
+          />
+          <button onClick={send} disabled={!text.trim() || !connected}
+            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:opacity-70 disabled:opacity-30"
+            style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+            <Send className="w-4 h-4 text-white" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── List view ─────────────────────────────────────────────────────────────────
+  const totalUnread = chats.reduce((s, c) => s + (c.unread || 0), 0);
+
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden" style={{ height: "calc(100dvh - 115px)" }}>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 pt-4 pb-2 flex-shrink-0">
+        <MessageCircle className="w-5 h-5 text-amber-400" />
+        <div className="flex-1">
+          <h2 className="text-xl font-black text-white">Чаты</h2>
+        </div>
+        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? "bg-emerald-400" : "bg-white/20"}`} />
+      </div>
+
+      {/* Tabs */}
+      <div className="flex px-4 pb-2 gap-2 flex-shrink-0">
+        <button onClick={() => setTab("active")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all ${tab === "active" ? "bg-amber-500/20 text-amber-400" : "text-zinc-600"}`}>
+          Активные
+          {totalUnread > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black text-black" style={{ background: "#f59e0b" }}>
+              {totalUnread}
+            </span>
+          )}
+        </button>
+        <button onClick={() => setTab("all")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold transition-all ${tab === "all" ? "bg-amber-500/20 text-amber-400" : "text-zinc-600"}`}>
+          <Users className="w-3.5 h-3.5" />
+          Все клиенты
+        </button>
+      </div>
+
+      {/* Search (only on "all" tab) */}
+      {tab === "all" && (
+        <div className="px-4 pb-2 flex-shrink-0">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.05] border border-white/[0.08]">
+            <Search className="w-3.5 h-3.5 text-zinc-600 flex-shrink-0" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Поиск по имени или @username..."
+              className="flex-1 bg-transparent text-sm text-white outline-none placeholder-zinc-700"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto px-4 flex flex-col gap-2 pb-4 overscroll-contain">
+
+        {/* Active chats tab */}
+        {tab === "active" && (
+          chats.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-zinc-700">
+              <MessageCircle className="w-10 h-10" />
+              <p className="text-sm">Нет активных чатов</p>
+              <button onClick={() => setTab("all")} className="text-xs text-amber-500 font-bold">
+                Написать первым →
+              </button>
+            </div>
+          ) : (
+            chats.map((chat) => (
+              <button key={chat.user_id}
+                onClick={() => openChat(chat.user_id, chat.first_name || chat.user_name, chat.user_name, chat.user_name)}
+                className="a-card flex items-center gap-3 p-3.5 active:opacity-70 text-left w-full">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                  style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+                  {avatar(chat.first_name || chat.user_name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13px] font-bold text-white truncate">
+                      {chat.first_name || chat.user_name || `User ${chat.user_id}`}
+                    </p>
+                    <p className="text-[10px] text-zinc-700 flex-shrink-0">{fmtDate(chat.last_ts)}</p>
+                  </div>
+                  <p className="text-[12px] text-zinc-600 truncate mt-0.5">{chat.last_message || "..."}</p>
+                </div>
+                {chat.unread > 0 && (
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: "#f59e0b" }}>
+                    <span className="text-[10px] font-bold text-black">{chat.unread}</span>
+                  </div>
+                )}
+              </button>
+            ))
+          )
+        )}
+
+        {/* All users tab */}
+        {tab === "all" && (
+          allLoading ? (
+            <div className="flex justify-center py-10"><RefreshCw className="w-5 h-5 text-zinc-600 animate-spin" /></div>
+          ) : allUsers.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-zinc-700">
+              <Users className="w-10 h-10" />
+              <p className="text-sm">{search ? "Не найдено" : "Нет пользователей"}</p>
+            </div>
+          ) : (
+            allUsers.map((u) => {
+              const hasChat = chats.some((c) => c.user_id === u.user_id);
+              return (
+                <button key={u.user_id}
+                  onClick={() => openChat(u.user_id, u.first_name || u.username, u.username)}
+                  className="a-card flex items-center gap-3 p-3.5 active:opacity-70 text-left w-full">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+                    style={{ background: hasChat ? "linear-gradient(135deg,#f59e0b,#d97706)" : "rgba(255,255,255,0.07)" }}>
+                    {avatar(u.first_name || u.username)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-[13px] font-bold text-white truncate">
+                        {u.first_name || u.username || `User ${u.user_id}`}
+                      </p>
+                      {hasChat && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-400 flex-shrink-0">
+                          чат
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-600 mt-0.5">
+                      {u.username ? `@${u.username} · ` : ""}{u.balance.toLocaleString()} sum
+                    </p>
+                  </div>
+                  <MessageCircle className="w-4 h-4 text-zinc-700 flex-shrink-0" />
+                </button>
+              );
+            })
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { t, lang, setLang } = useLang();
   const [section, setSection] = useState<Section>(() => {
     const param = new URLSearchParams(window.location.search).get("section") as Section | null;
-    if (param && (["dashboard","payments","orders","catalog","analytics","promos"] as string[]).includes(param)) {
+    if (param && (["dashboard","payments","orders","catalog","analytics","promos","chat"] as string[]).includes(param)) {
       window.history.replaceState({}, "", window.location.pathname);
       return param;
     }
@@ -1034,6 +1349,7 @@ export default function AdminPage() {
     { id: "catalog",   label: t.adCatalog, Icon: Gamepad2 },
     { id: "analytics", label: t.adStats,   Icon: BarChart2 },
     { id: "promos",    label: t.adPromos,  Icon: Tag },
+    { id: "chat",      label: "Чат",       Icon: MessageCircle },
   ];
 
   return (
@@ -1081,13 +1397,14 @@ export default function AdminPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={`flex-1 ${section === "chat" ? "overflow-hidden flex flex-col" : "overflow-y-auto"}`}>
         {section === "dashboard" && <Dashboard onNav={setSection} />}
         {section === "payments"  && <Payments />}
         {section === "orders"    && <Orders />}
         {section === "catalog"   && <Catalog />}
         {section === "analytics" && <Analytics />}
         {section === "promos"    && <Promos />}
+        {section === "chat"      && <AdminChat />}
       </div>
 
       {/* Bottom nav */}

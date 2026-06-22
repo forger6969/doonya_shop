@@ -104,6 +104,37 @@ html.light-theme input::placeholder { color: var(--text-muted) !important; }
 html.light-theme [style*="rgba(8,5,16,0.95)"],
 html.light-theme [style*="rgba(8,5,16, 0.95)"] { background: rgba(250,245,255,0.97) !important; }
 
+/* ── Animations ──────────────────────────────────── */
+@keyframes s-slide-up {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes s-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes s-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes s-sheet-in {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes s-sheet-out {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+
+.s-slide-up  { animation: s-slide-up 0.28s cubic-bezier(0.34,1.56,0.64,1) both; }
+.s-fade-in   { animation: s-fade-in  0.2s ease both; }
+.s-shimmer {
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-raised) 50%, var(--bg-surface) 75%);
+  background-size: 200% 100%;
+  animation: s-shimmer 1.4s ease infinite;
+  border-radius: 10px;
+}
+
 * { box-sizing: border-box; }
 
 body {

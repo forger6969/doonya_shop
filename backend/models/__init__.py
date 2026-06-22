@@ -35,6 +35,27 @@ async def get_all_user_ids() -> list[int]:
     return [u["user_id"] for u in users if "user_id" in u]
 
 
+async def list_all_users(limit: int = 200, search: str = "") -> list[dict]:
+    query: dict = {}
+    if search:
+        query["$or"] = [
+            {"first_name": {"$regex": search, "$options": "i"}},
+            {"username": {"$regex": search, "$options": "i"}},
+        ]
+    users = await db().users.find(query, {
+        "user_id": 1, "username": 1, "first_name": 1, "balance": 1, "created_at": 1,
+    }).sort("created_at", -1).limit(limit).to_list(None)
+    return [
+        {
+            "user_id": u["user_id"],
+            "username": u.get("username", ""),
+            "first_name": u.get("first_name", ""),
+            "balance": u.get("balance", 0),
+        }
+        for u in users
+    ]
+
+
 # ── Games ────────────────────────────────────────────────────────────────────
 async def get_games() -> list:
     return await db().games.find({"is_active": True}).sort("order", 1).to_list(None)
@@ -450,15 +471,23 @@ async def add_chat_message(user_id: int, from_: str, text: str, agent_id: int | 
         "ts": datetime.utcnow().isoformat(),
         "agent_id": agent_id,
     }
+    now = datetime.utcnow()
     update: dict = {
         "$push": {"messages": msg},
-        "$set": {"last_ts": datetime.utcnow()},
+        "$set": {"last_ts": now},
+        "$setOnInsert": {
+            "user_id": user_id,
+            "user_name": "",
+            "first_name": "",
+            "status": "open",
+            "created_at": now,
+        },
     }
     if from_ == "user":
         update["$inc"] = {"unread_by_agent": 1}
     else:
         update["$set"]["unread_by_agent"] = 0
-    await db().support_chats.update_one({"user_id": user_id}, update)
+    await db().support_chats.update_one({"user_id": user_id}, update, upsert=True)
     return msg
 
 

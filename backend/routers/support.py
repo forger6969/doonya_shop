@@ -2,11 +2,11 @@ import json
 from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 from backend.auth import get_current_user, verify_telegram_init_data
-from backend.config import SUPPORT_AGENT_IDS
+from backend.config import SUPPORT_AGENT_IDS, ADMIN_IDS
 from backend.database import get_db
 from backend.models import (
     get_or_create_chat, add_chat_message, get_chat,
-    list_active_chats, mark_chat_read,
+    list_active_chats, mark_chat_read, list_all_users,
 )
 
 router = APIRouter(prefix="/support", tags=["support"])
@@ -77,7 +77,7 @@ async def support_ws(websocket: WebSocket):
 
     await websocket.accept()
     user_id: int = tg_user["id"]
-    is_agent = user_id in SUPPORT_AGENT_IDS
+    is_agent = user_id in SUPPORT_AGENT_IDS or user_id in ADMIN_IDS
 
     if is_agent:
         await manager.connect_agent(user_id, websocket)
@@ -150,17 +150,18 @@ async def support_ws(websocket: WebSocket):
                             pass
 
             elif msg_type == "select_chat" and is_agent:
-                # Agent requested a specific chat's history
+                # Agent requested a specific chat's history (creates chat if not exists)
                 target_id = data.get("user_id")
+                user_name = data.get("user_name", "")
+                first_name = data.get("first_name", "")
                 if target_id:
-                    chat = await get_chat(target_id)
-                    if chat:
-                        await mark_chat_read(target_id)
-                        await websocket.send_json({
-                            "type": "chat_history",
-                            "user_id": target_id,
-                            "messages": chat.get("messages", []),
-                        })
+                    chat = await get_or_create_chat(int(target_id), user_name, first_name)
+                    await mark_chat_read(int(target_id))
+                    await websocket.send_json({
+                        "type": "chat_history",
+                        "user_id": target_id,
+                        "messages": chat.get("messages", []),
+                    })
 
     except WebSocketDisconnect:
         pass
@@ -209,8 +210,12 @@ async def agent_list_chats(_=Depends(require_agent)):
 
 @router.get("/agent/chats/{user_id}")
 async def agent_get_chat(user_id: int, _=Depends(require_agent)):
-    chat = await get_chat(user_id)
-    if not chat:
-        raise HTTPException(404, "Chat not found")
+    chat = await get_or_create_chat(user_id, "", "")
     await mark_chat_read(user_id)
     return {"messages": chat.get("messages", []), **_fmt_chat(chat)}
+
+
+@router.get("/agent/users")
+async def agent_list_users(search: str = "", _=Depends(require_agent)):
+    users = await list_all_users(limit=200, search=search)
+    return users
