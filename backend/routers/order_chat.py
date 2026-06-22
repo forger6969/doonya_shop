@@ -114,6 +114,10 @@ async def order_chat_ws(websocket: WebSocket):
                     msg = await add_order_chat_msg(target, "admin", text, agent_id=user_id)
                     await manager.send_to_user(target, {"type": "message", "order_id": target, **msg})
                     await manager.broadcast_to_admins({"type": "message", "order_id": target, **msg})
+                    # Notify user via Telegram bot
+                    chat_doc = await get_order_chat(target)
+                    if chat_doc:
+                        await _notify_user_bot(chat_doc, text)
                 else:
                     msg = await add_order_chat_msg(order_id, "user", text)
                     await websocket.send_json({"type": "message", "order_id": order_id, **msg})
@@ -139,6 +143,31 @@ async def order_chat_ws(websocket: WebSocket):
             manager.disconnect_admin(user_id)
         else:
             manager.disconnect_user(order_id, user_id)
+
+
+async def _notify_user_bot(chat: dict, text: str) -> None:
+    try:
+        from backend.notify import get_bot
+        from backend.config import MINI_APP_URL
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+
+        bot = get_bot()
+        product = chat.get("product_name", "заказ")
+        order_id = chat["order_id"]
+        caption = f"💬 <b>Сообщение по заказу «{product}»</b>\n\n{text}"
+
+        kb = None
+        if MINI_APP_URL and MINI_APP_URL.startswith("https://"):
+            kb = InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(
+                    text="📱 Открыть чат",
+                    web_app=WebAppInfo(url=f"{MINI_APP_URL}?order_chat={order_id}"),
+                )
+            ]])
+
+        await bot.send_message(chat["user_id"], caption, parse_mode="HTML", reply_markup=kb)
+    except Exception:
+        pass
 
 
 async def require_admin(tg_user: dict = Depends(get_current_user)):
