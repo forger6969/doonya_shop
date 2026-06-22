@@ -428,18 +428,24 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
       {results.games.length > 0 && (
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">Игры</p>
-          <div className="flex flex-col gap-1">
-            {results.games.map((g) => (
-              <button key={g.id} onClick={() => onGameSelect(g)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] active:bg-white/[0.08] text-left">
-                <GameIcon game={g} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-bold text-white">{g.name}</p>
-                  {g.description && <p className="text-[11px] text-white/40 truncate">{g.description}</p>}
-                </div>
-                <ChevronRight className="w-4 h-4 text-white/25 flex-shrink-0" />
-              </button>
-            ))}
+          <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+            {results.games.map((g) => {
+              const [c1, c2] = palette(g.id);
+              return (
+                <button key={g.id} onClick={() => onGameSelect(g)}
+                  className="flex flex-col items-center gap-2 flex-shrink-0 active:opacity-70 w-[72px]">
+                  <div className="w-[72px] h-[72px] rounded-[20px] overflow-hidden shadow-lg"
+                    style={g.photo_id ? undefined : { background: `linear-gradient(145deg,${c1},${c2})`, boxShadow: `0 8px 24px ${c1}50` }}>
+                    {g.photo_id
+                      ? <img src={g.photo_id} className="w-full h-full object-cover" alt={g.name} />
+                      : <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-2xl font-black text-white">{initials(g.name)}</span>
+                        </div>}
+                  </div>
+                  <p className="text-[11px] font-semibold text-white/70 text-center leading-tight w-full truncate">{g.name}</p>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -547,22 +553,32 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
                 <OnSaleSection onBuy={onBuy} onDetail={(p) => setDetailProduct(p)} />
                 <TopProductsSection onBuy={onBuy} onDetail={(p) => setDetailProduct(p)} />
 
-                {/* Games list */}
+                {/* Games list — icon grid */}
                 {games.length > 0 && (
                   <div className="flex flex-col gap-3">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Все игры</p>
-                    <div className="flex flex-col gap-1">
-                      {games.map((g) => (
-                        <button key={g.id} onClick={() => setSelected(g)}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.04] active:bg-white/[0.08] text-left">
-                          <GameIcon game={g} size="sm" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-bold text-white">{g.name}</p>
-                            {g.description && <p className="text-[11px] text-white/40 truncate">{g.description}</p>}
-                          </div>
-                          <ChevronRight className="w-4 h-4 text-white/25 flex-shrink-0" />
-                        </button>
-                      ))}
+                    <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+                      {games.map((g) => {
+                        const [c1, c2] = palette(g.id);
+                        return (
+                          <button key={g.id} onClick={() => setSelected(g)}
+                            className="flex flex-col items-center gap-2 flex-shrink-0 active:opacity-70 w-[72px]">
+                            <div className="w-[72px] h-[72px] rounded-[20px] overflow-hidden flex-shrink-0 shadow-lg"
+                              style={g.photo_id ? undefined : {
+                                background: `linear-gradient(145deg,${c1},${c2})`,
+                                boxShadow: `0 8px 24px ${c1}50`,
+                              }}>
+                              {g.photo_id
+                                ? <img src={g.photo_id} className="w-full h-full object-cover" alt={g.name} />
+                                : <div className="w-full h-full flex items-center justify-center">
+                                    <span className="text-2xl font-black text-white">{initials(g.name)}</span>
+                                  </div>
+                              }
+                            </div>
+                            <p className="text-[11px] font-semibold text-white/70 text-center leading-tight w-full truncate">{g.name}</p>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
