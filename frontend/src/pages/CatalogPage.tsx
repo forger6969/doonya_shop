@@ -323,15 +323,13 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
       {categories.length > 0 && (
         <div className="sticky top-0 z-10 border-b border-white/[0.06]"
           style={{ background: "rgba(7,8,15,0.95)", backdropFilter: "blur(16px)" }}>
-          <div className="flex gap-2 px-4 py-2.5 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
             {categories.map((cat) => (
               <button key={cat.id} onClick={() => scrollToSection(cat.id)}
-                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                  activeTab === cat.id ? "" : "active:opacity-70"
-                }`}
+                className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all active:scale-95"
                 style={activeTab === cat.id
-                  ? { background: "rgba(249,115,22,0.15)", border: "1px solid rgba(249,115,22,0.25)", color: "#F97316" }
-                  : { background: "rgba(255,255,255,0.06)", border: "1px solid transparent", color: "rgba(240,242,250,0.4)" }}>
+                  ? { background: "linear-gradient(135deg,#F97316,#EA580C)", color: "#fff", boxShadow: "0 4px 16px rgba(249,115,22,0.35)" }
+                  : { background: "#131626", color: "rgba(240,242,250,0.5)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 {cat.name}
               </button>
             ))}
