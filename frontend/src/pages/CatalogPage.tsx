@@ -266,7 +266,6 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
   const [uncategorized, setUncategorized] = useState<CardItem[]>([]);
   const [activeTab, setActiveTab] = useState("");
   const [loading, setLoading] = useState(true);
-  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [g1, g2] = palette(game.id);
 
   useEffect(() => {
@@ -289,10 +288,9 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
     });
   }, [game.id]);
 
-  const scrollToSection = (catId: string) => {
-    setActiveTab(catId);
-    sectionRefs.current[catId]?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  const visibleItems = activeTab
+    ? (productsByCategory[activeTab] ?? [])
+    : uncategorized;
 
   const totalCards = Object.values(productsByCategory).reduce((n, arr) => n + arr.length, 0) + uncategorized.length;
 
@@ -325,7 +323,7 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
           style={{ background: "rgba(8,5,16,0.95)", backdropFilter: "blur(16px)" }}>
           <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
             {categories.map((cat) => (
-              <button key={cat.id} onClick={() => scrollToSection(cat.id)}
+              <button key={cat.id} onClick={() => setActiveTab(cat.id)}
                 className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all active:scale-95"
                 style={activeTab === cat.id
                   ? { background: "linear-gradient(135deg,#EC4899,#A855F7)", color: "#fff", boxShadow: "0 4px 16px rgba(236,72,153,0.35)" }
@@ -349,43 +347,22 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
             <p className="text-sm">{t.comingSoon}</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-8">
-            {categories.map((cat) => {
-              const items = productsByCategory[cat.id] ?? [];
-              if (items.length === 0) return null;
-              return (
-                <div key={cat.id} ref={(el) => { sectionRefs.current[cat.id] = el; }}>
-                  <p className="text-[11px] font-black uppercase tracking-[0.1em] mb-3"
-                    style={{ color: "rgba(240,242,250,0.3)" }}>{cat.name}</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {items.map((item, i) => (
-                      <GameDetailProductCard
-                        key={`${item.id}-${item.variant_label || i}`}
-                        item={item}
-                        onBuy={() => onBuy({ ...item.raw, gameName: game.name, variant_label: item.variant_label })}
-                        onDetail={() => onDetail({ ...item.raw, gameName: game.name, variant_label: item.variant_label })}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-            {uncategorized.length > 0 && (
-              <div>
-                {categories.length > 0 && (
-                  <p className="text-[11px] font-black uppercase tracking-[0.1em] mb-3"
-                    style={{ color: "rgba(240,242,250,0.3)" }}>Другое</p>
-                )}
-                <div className="grid grid-cols-2 gap-3">
-                  {uncategorized.map((item, i) => (
-                    <GameDetailProductCard
-                      key={`unc-${item.id}-${item.variant_label || i}`}
-                      item={item}
-                      onBuy={() => onBuy({ ...item.raw, gameName: game.name, variant_label: item.variant_label })}
-                      onDetail={() => onDetail({ ...item.raw, gameName: game.name, variant_label: item.variant_label })}
-                    />
-                  ))}
-                </div>
+          <div>
+            {visibleItems.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-14" style={{ color: "rgba(240,242,250,0.2)" }}>
+                <ShoppingCart className="w-10 h-10" />
+                <p className="text-sm">{t.comingSoon}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {visibleItems.map((item, i) => (
+                  <GameDetailProductCard
+                    key={`${item.id}-${item.variant_label || i}`}
+                    item={item}
+                    onBuy={() => onBuy({ ...item.raw, gameName: game.name, variant_label: item.variant_label })}
+                    onDetail={() => onDetail({ ...item.raw, gameName: game.name, variant_label: item.variant_label })}
+                  />
+                ))}
               </div>
             )}
           </div>
