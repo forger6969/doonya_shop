@@ -389,6 +389,34 @@ async def get_top_catalog_products(limit: int = 6) -> list:
     return result
 
 
+# ── Notifications ────────────────────────────────────────────────────────────
+
+async def create_notification(user_id: int, type: str, payload: dict) -> dict:
+    doc = {
+        "user_id": user_id,
+        "type": type,
+        "payload": payload,
+        "read": False,
+        "created_at": datetime.utcnow(),
+    }
+    result = await db().notifications.insert_one(doc)
+    doc["_id"] = result.inserted_id
+    return doc
+
+
+async def get_unread_notifications(user_id: int) -> list:
+    return await db().notifications.find(
+        {"user_id": user_id, "read": False}
+    ).sort("created_at", -1).limit(50).to_list(None)
+
+
+async def mark_notifications_read(user_id: int):
+    await db().notifications.update_many(
+        {"user_id": user_id, "read": False},
+        {"$set": {"read": True}},
+    )
+
+
 # ── Support Chat ──────────────────────────────────────────────────────────────
 
 async def get_or_create_chat(user_id: int, user_name: str, first_name: str) -> dict:

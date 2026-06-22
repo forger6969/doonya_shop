@@ -104,12 +104,24 @@ export function useNotifications(onOrderReady: (orderId: string) => void) {
       ws.onmessage = (e) => {
         try {
           const msg = JSON.parse(e.data);
-          const notif = makeNotification(msg.type, {
+          const notif = makeNotification(msg.type as NotifType, {
             order_id: msg.order_id,
             amount: msg.amount,
             product_name: msg.product_name,
           });
-          addNotif(notif);
+          // Deduplicate by order_id for order_ready notifications
+          setNotifs((prev) => {
+            if (
+              msg.type === "order_ready" &&
+              msg.order_id &&
+              prev.some((n) => n.type === "order_ready" && n.order_id === msg.order_id)
+            ) {
+              return prev;
+            }
+            const next = [notif, ...prev].slice(0, MAX_NOTIFS);
+            saveNotifications(next);
+            return next;
+          });
           if (msg.type === "order_ready" && msg.order_id) {
             onOrderReady(msg.order_id);
           }
