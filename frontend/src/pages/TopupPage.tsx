@@ -201,13 +201,13 @@ export default function TopupPage({ onBack }: Props) {
           {/* Legal disclaimer */}
           <div
             className="rounded-2xl p-4 flex flex-col gap-3"
-            style={{ background: "rgba(249,115,22,0.05)", border: "1px solid rgba(249,115,22,0.15)" }}
+            style={{ background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.15)" }}
           >
             <div className="flex items-start gap-2">
               <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
               <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-dim)" }}>
                 Пополненные средства являются внутренним балансом магазина и{" "}
-                <span className="font-semibold" style={{ color: "#F97316" }}>не подлежат возврату</span>.
+                <span className="font-semibold" style={{ color: "#EC4899" }}>не подлежат возврату</span>.
                 Баланс нельзя вывести на карту или счёт — он используется
                 исключительно для покупок в Doonya Shop.
                 Перед пополнением убедитесь, что вы хотите приобрести товары в нашем магазине.
@@ -221,8 +221,8 @@ export default function TopupPage({ onBack }: Props) {
               <div
                 className="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-colors"
                 style={{
-                  background: agreed ? "#F97316" : "transparent",
-                  border: agreed ? "1.5px solid #F97316" : "1.5px solid rgba(255,255,255,0.25)",
+                  background: agreed ? "#EC4899" : "transparent",
+                  border: agreed ? "1.5px solid #EC4899" : "1.5px solid rgba(168,85,247,0.25)",
                 }}
               >
                 {agreed && (
@@ -256,7 +256,7 @@ export default function TopupPage({ onBack }: Props) {
             <div className="flex justify-center py-6">
               <div
                 className="w-8 h-8 rounded-full animate-spin"
-                style={{ border: "2px solid rgba(249,115,22,0.15)", borderTopColor: "#F97316" }}
+                style={{ border: "2px solid rgba(236,72,153,0.15)", borderTopColor: "#EC4899" }}
               />
             </div>
           ) : (
@@ -327,7 +327,7 @@ export default function TopupPage({ onBack }: Props) {
                 <span className="text-sm" style={{ color: "var(--text-dim)" }}>Сумма к переводу</span>
                 <button
                   className="text-xl font-black active:opacity-70 flex items-center gap-1.5"
-                  style={{ color: "#F97316" }}
+                  style={{ color: "#EC4899" }}
                   onClick={() => copy(String(info.amount))}
                 >
                   {info.amount.toLocaleString()} сум
@@ -366,7 +366,7 @@ export default function TopupPage({ onBack }: Props) {
                 <span className="text-sm" style={{ color: "var(--text-dim)" }}>Сумма к переводу</span>
                 <button
                   className="text-xl font-black active:opacity-70 flex items-center gap-1.5"
-                  style={{ color: "#F97316" }}
+                  style={{ color: "#EC4899" }}
                   onClick={() => copy(String(info.amount))}
                 >
                   {info.amount.toLocaleString()} сум
@@ -397,13 +397,13 @@ export default function TopupPage({ onBack }: Props) {
           <label
             className="flex flex-col items-center gap-3 py-8 cursor-pointer active:opacity-70 rounded-2xl"
             style={{
-              background: file ? "rgba(249,115,22,0.05)" : "rgba(139,92,246,0.05)",
-              border: `1.5px dashed ${file ? "rgba(249,115,22,0.35)" : "rgba(139,92,246,0.25)"}`,
+              background: file ? "rgba(236,72,153,0.05)" : "rgba(168,85,247,0.05)",
+              border: `1.5px dashed ${file ? "rgba(236,72,153,0.45)" : "rgba(168,85,247,0.20)"}`,
               borderRadius: 16,
             }}
           >
             <span className="text-4xl">{file ? "📎" : "📷"}</span>
-            <span className="text-sm" style={{ color: file ? "#F97316" : "#A78BFA" }}>
+            <span className="text-sm" style={{ color: file ? "#EC4899" : "#A78BFA" }}>
               {file ? file.name : "Нажмите чтобы выбрать файл"}
             </span>
             <input

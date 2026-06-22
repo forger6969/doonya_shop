@@ -61,7 +61,7 @@ export default function ProfilePage({ onTopup }: Props) {
       <div className="flex items-center justify-center h-40">
         <div
           className="w-7 h-7 rounded-full animate-spin"
-          style={{ border: "2px solid rgba(249,115,22,0.15)", borderTopColor: "#F97316" }}
+          style={{ border: "2px solid rgba(236,72,153,0.15)", borderTopColor: "#EC4899" }}
         />
       </div>
     );
@@ -86,7 +86,7 @@ export default function ProfilePage({ onTopup }: Props) {
         <div className="relative">
           <div
             className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black overflow-hidden relative"
-            style={{ background: "linear-gradient(135deg,#F97316,#8B5CF6)" }}
+            style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}
           >
             {user.avatar_url
               ? <img src={user.avatar_url} className="w-full h-full object-cover" alt="avatar" />
@@ -102,8 +102,8 @@ export default function ProfilePage({ onTopup }: Props) {
             onClick={() => avatarRef.current?.click()}
             className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center active:opacity-70"
             style={{
-              background: "linear-gradient(135deg,#F97316,#EA580C)",
-              border: "2px solid var(--bg, #07080F)",
+              background: "linear-gradient(135deg,#EC4899,#A855F7)",
+              border: "2px solid var(--bg, #080510)",
             }}
           >
             <Camera className="w-3.5 h-3.5 text-white" />
@@ -120,23 +120,23 @@ export default function ProfilePage({ onTopup }: Props) {
       <div
         className="rounded-2xl p-5 flex flex-col gap-4"
         style={{
-          background: "var(--bg-raised, #0D1020)",
-          border: "1px solid rgba(34,211,238,0.12)",
+          background: "linear-gradient(135deg,#2d0a4e 0%,#1a0535 50%,#080510 100%)",
+          border: "1px solid rgba(168,85,247,0.20)",
         }}
       >
         <div>
           <p className="s-label mb-1">{t.balance}</p>
-          <p className="text-3xl font-black text-white">
+          <p className="text-3xl font-black" style={{ color: "#FBBF24" }}>
             {user.balance.toLocaleString()}{" "}
-            <span className="text-lg font-bold" style={{ color: "var(--text-muted)" }}>sum</span>
+            <span className="text-lg font-bold" style={{ color: "rgba(251,191,36,0.45)" }}>sum</span>
           </p>
         </div>
         <button
           onClick={onTopup}
           className="w-full py-3.5 rounded-2xl font-black text-sm text-white active:opacity-70"
           style={{
-            background: "linear-gradient(135deg,#F97316,#EA580C)",
-            boxShadow: "0 4px 16px rgba(249,115,22,0.30)",
+            background: "linear-gradient(135deg,#EC4899,#A855F7)",
+            boxShadow: "0 4px 20px rgba(236,72,153,0.35)",
           }}
         >
           + {t.topUpBalance}
@@ -156,9 +156,9 @@ export default function ProfilePage({ onTopup }: Props) {
               onClick={() => setTab(tb)}
               className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
               style={active ? {
-                background: "rgba(249,115,22,0.15)",
+                background: "rgba(236,72,153,0.15)",
                 borderRadius: 10,
-                color: "#F97316",
+                color: "#EC4899",
               } : {
                 color: "rgba(240,242,250,0.35)",
               }}
@@ -249,9 +249,9 @@ export default function ProfilePage({ onTopup }: Props) {
                     onClick={() => setLang(l)}
                     className="flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-colors"
                     style={active ? {
-                      background: "rgba(249,115,22,0.15)",
+                      background: "rgba(236,72,153,0.15)",
                       borderRadius: 10,
-                      color: "#F97316",
+                      color: "#EC4899",
                     } : {
                       color: "rgba(240,242,250,0.30)",
                     }}
@@ -278,7 +278,7 @@ export default function ProfilePage({ onTopup }: Props) {
                 onClick={handleSaveEmail}
                 disabled={!email.trim() || emailSaving}
                 className="px-4 py-2.5 rounded-xl text-xs font-black disabled:opacity-30 active:opacity-70 transition-opacity flex-shrink-0"
-                style={{ background: emailSaved ? "#10B981" : "linear-gradient(135deg,#F97316,#EA580C)", color: "#fff" }}
+                style={{ background: emailSaved ? "#10B981" : "linear-gradient(135deg,#EC4899,#A855F7)", color: "#fff" }}
               >
                 {emailSaved ? t.saved : t.save}
               </button>
@@ -301,7 +301,7 @@ export default function ProfilePage({ onTopup }: Props) {
           >
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(249,115,22,0.12)" }}
+              style={{ background: "rgba(236,72,153,0.12)" }}
             >
               <User className="w-5 h-5" style={{ color: "#F97316" }} />
             </div>

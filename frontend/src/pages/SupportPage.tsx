@@ -80,9 +80,9 @@ export default function SupportPage() {
       >
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "rgba(249,115,22,0.12)" }}
+          style={{ background: "rgba(236,72,153,0.12)" }}
         >
-          <MessageCircle className="w-4 h-4" style={{ color: "#F97316" }} />
+          <MessageCircle className="w-4 h-4" style={{ color: "#EC4899" }} />
         </div>
         <div className="flex-1">
           <p className="text-sm font-black text-white">Поддержка</p>
@@ -117,8 +117,8 @@ export default function SupportPage() {
                 style={
                   isUser
                     ? {
-                        background: "linear-gradient(135deg,rgba(249,115,22,0.20),rgba(234,88,12,0.15))",
-                        border: "1px solid rgba(249,115,22,0.20)",
+                        background: "linear-gradient(135deg,rgba(236,72,153,0.18),rgba(168,85,247,0.12))",
+                        border: "1px solid rgba(236,72,153,0.22)",
                         borderBottomRightRadius: 4,
                       }
                     : {
@@ -129,7 +129,7 @@ export default function SupportPage() {
                 }
               >
                 {!isUser && (
-                  <p className="text-[10px] font-bold mb-1 uppercase tracking-wider" style={{ color: "#F97316" }}>
+                  <p className="text-[10px] font-bold mb-1 uppercase tracking-wider" style={{ color: "#EC4899" }}>
                     Поддержка
                   </p>
                 )}
@@ -171,14 +171,14 @@ export default function SupportPage() {
             el.style.height = "auto";
             el.style.height = Math.min(el.scrollHeight, 120) + "px";
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(249,115,22,0.35)"; }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(236,72,153,0.40)"; }}
           onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; }}
         />
         <button
           onClick={send}
           disabled={!text.trim() || !connected || sending}
           className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:opacity-70 disabled:opacity-30 transition-opacity"
-          style={{ background: "linear-gradient(135deg,#F97316,#EA580C)" }}
+          style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}
         >
           {sending
             ? <Loader2 className="w-4 h-4 text-white animate-spin" />

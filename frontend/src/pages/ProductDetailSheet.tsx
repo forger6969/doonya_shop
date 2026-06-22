@@ -26,9 +26,9 @@ interface Props {
 }
 
 const PALETTES = [
-  ["#FF6B35","#F7931E"],["#7B2FBE","#C850C0"],["#0F3460","#533483"],
-  ["#11998E","#38EF7D"],["#FC5C7D","#6A3093"],["#4776E6","#8E54E9"],
-  ["#F7971E","#FFD200"],["#FE8C00","#F83600"],["#43CBFF","#9708CC"],["#1D976C","#93F9B9"],
+  ["#EC4899","#A855F7"],["#A855F7","#6366F1"],["#F472B6","#EC4899"],
+  ["#C084FC","#818CF8"],["#FB7185","#EC4899"],["#E879F9","#A855F7"],
+  ["#F9A8D4","#C084FC"],["#EC4899","#8B5CF6"],["#A78BFA","#EC4899"],["#F0ABFC","#A855F7"],
 ];
 function palette(id: string) {
   const hash = [...id].reduce((a, c) => a + c.charCodeAt(0), 0);
@@ -45,7 +45,7 @@ function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) 
       {[1,2,3,4,5].map(i => (
         <Star
           key={i}
-          className={`${sz} ${i <= Math.round(rating) ? "fill-yellow-400 text-yellow-400" : "text-white/15"}`}
+          className={`${sz} ${i <= Math.round(rating) ? "fill-pink-400 text-pink-400" : "text-white/15"}`}
         />
       ))}
     </div>
@@ -77,7 +77,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
       <div className="absolute inset-0 bg-black/75" onClick={onClose} />
       <div
         className="relative w-full rounded-t-3xl flex flex-col max-h-[90dvh]"
-        style={{ background: "#0D1020", border: "1px solid rgba(255,255,255,0.07)" }}
+        style={{ background: "#100D1E", border: "1px solid rgba(168,85,247,0.15)" }}
       >
         {/* Drag handle */}
         <div className="w-9 h-1 rounded-full mx-auto mt-3 flex-shrink-0"
@@ -114,7 +114,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
           {loading ? (
             <div className="flex justify-center py-12">
               <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
-                style={{ borderColor: "#F97316", borderTopColor: "transparent" }} />
+                style={{ borderColor: "#EC4899", borderTopColor: "transparent" }} />
             </div>
           ) : detail ? (
             <div className="px-4 mt-4 flex flex-col gap-5">
@@ -161,13 +161,13 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                         onClick={() => setSelectedVariant(v)}
                         className="px-3.5 py-2 rounded-xl text-sm font-bold transition-colors"
                         style={selectedVariant?.label === v.label
-                          ? { background: "rgba(249,115,22,0.12)", border: "1px solid rgba(249,115,22,0.30)", color: "#F97316" }
-                          : { background: "#121526", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(240,242,250,0.55)" }
+                          ? { background: "rgba(236,72,153,0.12)", border: "1px solid rgba(236,72,153,0.35)", color: "#EC4899" }
+                          : { background: "#15112A", border: "1px solid rgba(168,85,247,0.10)", color: "rgba(245,240,255,0.55)" }
                         }
                       >
                         {v.label}
                         <span className={`ml-2 text-[11px]`}
-                          style={{ color: selectedVariant?.label === v.label ? "rgba(249,115,22,0.65)" : "rgba(240,242,250,0.25)" }}>
+                          style={{ color: selectedVariant?.label === v.label ? "rgba(236,72,153,0.65)" : "rgba(245,240,255,0.25)" }}>
                           {v.price.toLocaleString()}
                         </span>
                       </button>
@@ -179,15 +179,15 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
               {/* Price + buy */}
               <div
                 className="rounded-2xl p-4"
-                style={{ background: "#0D1020", border: "1px solid rgba(255,255,255,0.07)" }}
+                style={{ background: "#15112A", border: "1px solid rgba(168,85,247,0.12)" }}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.12em] mb-0.5"
                       style={{ color: "rgba(240,242,250,0.2)" }}>{t.price}</p>
-                    <p className="font-black" style={{ fontSize: "1.5rem", color: "#22D3EE" }}>
+                    <p className="font-black" style={{ fontSize: "1.5rem", color: "#FBBF24" }}>
                       {(selectedVariant ? selectedVariant.price : detail.price).toLocaleString()}
-                      <span className="text-base ml-1.5" style={{ color: "rgba(34,211,238,0.45)" }}>sum</span>
+                      <span className="text-base ml-1.5" style={{ color: "rgba(251,191,36,0.45)" }}>sum</span>
                     </p>
                   </div>
                   <button
@@ -204,8 +204,8 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                     disabled={detail.variants.length > 0 && !selectedVariant}
                     className="flex items-center gap-2 px-5 py-3 rounded-xl font-black text-sm text-white active:opacity-70 disabled:opacity-40"
                     style={{
-                      background: "linear-gradient(135deg,#F97316,#EA580C)",
-                      boxShadow: "0 4px 20px rgba(249,115,22,0.25)",
+                      background: "linear-gradient(135deg,#EC4899,#A855F7)",
+                      boxShadow: "0 4px 24px rgba(236,72,153,0.40)",
                     }}
                   >
                     <ShoppingCart className="w-4 h-4" />
@@ -224,7 +224,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                     <div
                       key={i}
                       className="rounded-2xl p-4 flex flex-col gap-2"
-                      style={{ background: "#0D1020", border: "1px solid rgba(255,255,255,0.07)" }}
+                      style={{ background: "#15112A", border: "1px solid rgba(168,85,247,0.08)" }}
                     >
                       <div className="flex items-center justify-between">
                         <Stars rating={r.rating} />

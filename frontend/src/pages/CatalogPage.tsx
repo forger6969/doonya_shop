@@ -29,9 +29,9 @@ interface Props { onBuy: (product: Product) => void; onTopup: () => void }
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const PALETTES = [
-  ["#FF6B35","#F7931E"],["#7B2FBE","#C850C0"],["#0F3460","#533483"],
-  ["#11998E","#38EF7D"],["#FC5C7D","#6A3093"],["#4776E6","#8E54E9"],
-  ["#F7971E","#FFD200"],["#FE8C00","#F83600"],["#43CBFF","#9708CC"],["#1D976C","#93F9B9"],
+  ["#EC4899","#A855F7"],["#A855F7","#6366F1"],["#F472B6","#EC4899"],
+  ["#C084FC","#818CF8"],["#FB7185","#EC4899"],["#E879F9","#A855F7"],
+  ["#F9A8D4","#C084FC"],["#EC4899","#8B5CF6"],["#A78BFA","#EC4899"],["#F0ABFC","#A855F7"],
 ];
 const BANNER_GRADS = [["#4c1d95","#1e1b4b"],["#0c4a6e","#064e3b"],["#7c2d12","#1c1917"]];
 
@@ -95,11 +95,11 @@ function CardPrice({ item }: { item: CardItem }) {
     return (
       <div className="flex flex-col gap-0">
         <span className="text-[9px] text-white/30 line-through leading-none">{item.price.toLocaleString()}</span>
-        <span className="text-[10px] font-black text-red-400 leading-none">{item.discounted_price.toLocaleString()}</span>
+        <span className="text-[10px] font-black leading-none" style={{ color: "#EC4899" }}>{item.discounted_price.toLocaleString()}</span>
       </div>
     );
   }
-  return <span className="text-[10px] font-black" style={{ color: "#22D3EE" }}>{item.price.toLocaleString()}</span>;
+  return <span className="text-[10px] font-black" style={{ color: "#FBBF24" }}>{item.price.toLocaleString()}</span>;
 }
 
 function VariantCard({ item, gameId, onBuy, onDetail }: {
@@ -109,7 +109,7 @@ function VariantCard({ item, gameId, onBuy, onDetail }: {
   const [g1, g2] = palette(gameId + item.id + (item.variant_label || ""));
   return (
     <div className="flex-shrink-0 w-[128px] rounded-2xl overflow-hidden flex flex-col active:opacity-80 relative"
-      style={{ background: "#0D1020", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "#100D1E", border: "1px solid rgba(168,85,247,0.15)" }}
       onClick={onDetail}>
       {item.discount_percent ? <DiscountBadge pct={item.discount_percent} /> : null}
       <div className="h-[70px] flex items-center justify-center flex-shrink-0 overflow-hidden"
@@ -124,7 +124,7 @@ function VariantCard({ item, gameId, onBuy, onDetail }: {
           <CardPrice item={item} />
           <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
             className="px-2 py-1 rounded-lg text-[10px] font-bold text-white active:opacity-70"
-            style={{ background: "linear-gradient(135deg,#F97316,#EA580C)" }}>
+            style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}>
             {t.buy}
           </button>
         </div>
@@ -139,7 +139,7 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
   const { t } = useLang();
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col active:opacity-80 relative"
-      style={{ background: "#0D1020", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "#100D1E", border: "1px solid rgba(168,85,247,0.15)" }}
       onClick={onDetail}>
       {item.discount_percent ? <DiscountBadge pct={item.discount_percent} /> : null}
       <div className="p-3 pb-2 flex-1">
@@ -152,7 +152,7 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
         <CardPrice item={item} />
         <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-white active:opacity-70"
-          style={{ background: "linear-gradient(135deg,#F97316,#EA580C)" }}>
+          style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}>
           <ShoppingCart className="w-3 h-3" /> {t.buy}
         </button>
       </div>
@@ -203,7 +203,7 @@ function BannerCarousel({ onTopup }: { onTopup: () => void }) {
       <div className="flex justify-center gap-1.5 mt-2.5">
         {banners.map((_, i) => (
           <div key={i} className={`rounded-full transition-all ${active === i ? "w-4 h-1.5" : "w-1.5 h-1.5 bg-white/15"}`}
-            style={active === i ? { background: "#F97316" } : undefined} />
+            style={active === i ? { background: "#EC4899" } : undefined} />
         ))}
       </div>
     </div>
@@ -321,15 +321,15 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
 
       {/* Sticky category tabs */}
       {categories.length > 0 && (
-        <div className="sticky top-0 z-10 border-b border-white/[0.06]"
-          style={{ background: "rgba(7,8,15,0.95)", backdropFilter: "blur(16px)" }}>
+        <div className="sticky top-0 z-10 border-b border-white/[0.04]"
+          style={{ background: "rgba(8,5,16,0.95)", backdropFilter: "blur(16px)" }}>
           <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
             {categories.map((cat) => (
               <button key={cat.id} onClick={() => scrollToSection(cat.id)}
                 className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all active:scale-95"
                 style={activeTab === cat.id
-                  ? { background: "linear-gradient(135deg,#F97316,#EA580C)", color: "#fff", boxShadow: "0 4px 16px rgba(249,115,22,0.35)" }
-                  : { background: "#131626", color: "rgba(240,242,250,0.5)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  ? { background: "linear-gradient(135deg,#EC4899,#A855F7)", color: "#fff", boxShadow: "0 4px 16px rgba(236,72,153,0.35)" }
+                  : { background: "#100D1E", color: "rgba(245,240,255,0.45)", border: "1px solid rgba(168,85,247,0.12)" }}>
                 {cat.name}
               </button>
             ))}
@@ -341,7 +341,7 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
       <div className="flex-1 p-4">
         {loading ? (
           <div className="flex justify-center py-10">
-            <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#F97316", borderTopColor: "transparent" }} />
+            <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#EC4899", borderTopColor: "transparent" }} />
           </div>
         ) : totalCards === 0 ? (
           <div className="flex flex-col items-center gap-3 py-14" style={{ color: "rgba(240,242,250,0.2)" }}>
@@ -417,7 +417,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
 
   if (loading) {
     return <div className="flex justify-center py-10">
-      <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#F97316", borderTopColor: "transparent" }} />
+      <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#EC4899", borderTopColor: "transparent" }} />
     </div>;
   }
   if (!results) return null;
@@ -539,16 +539,16 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
       <div className="flex flex-col gap-5 pb-4">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#8B5CF6" }} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#EC4899" }} />
           <input value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder={t.searchGames}
             className="w-full rounded-2xl pl-10 pr-9 py-3 text-sm text-white placeholder-white/25 outline-none transition-colors"
             style={{
-              background: "#0D1020",
-              border: "1px solid rgba(255,255,255,0.07)",
+              background: "#100D1E",
+              border: "1px solid rgba(168,85,247,0.15)",
             }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(249,115,22,0.35)"; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(236,72,153,0.40)"; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(168,85,247,0.15)"; }}
           />
           {query && (
             <button onClick={() => setQuery("")} className="absolute right-3.5 top-1/2 -translate-y-1/2">
@@ -572,7 +572,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
             {loading ? (
               <div className="flex justify-center py-10">
                 <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
-                  style={{ borderColor: "#F97316", borderTopColor: "transparent" }} />
+                  style={{ borderColor: "#EC4899", borderTopColor: "transparent" }} />
               </div>
             ) : (
               <div className="flex flex-col gap-7">

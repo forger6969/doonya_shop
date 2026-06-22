@@ -150,14 +150,14 @@ export function useNotifications(onOrderReady: (orderId: string) => void) {
 // ── UI ────────────────────────────────────────────────────────────────────────
 
 function NotifIcon({ type }: { type: NotifType }) {
-  if (type === "order_ready") return <ShoppingBag className="w-5 h-5 text-orange-400" />;
+  if (type === "order_ready") return <ShoppingBag className="w-5 h-5 text-pink-400" />;
   if (type === "topup_confirmed") return <CheckCircle className="w-5 h-5 text-emerald-400" />;
   if (type === "topup_rejected") return <XCircle className="w-5 h-5 text-red-400" />;
   return <Clock className="w-5 h-5 text-amber-400" />;
 }
 
 function notifIconBg(type: NotifType): string {
-  if (type === "order_ready") return "rgba(249,115,22,0.10)";
+  if (type === "order_ready") return "rgba(236,72,153,0.12)";
   if (type === "topup_confirmed") return "rgba(16,185,129,0.10)";
   if (type === "topup_rejected") return "rgba(239,68,68,0.10)";
   return "rgba(245,158,11,0.10)";
@@ -192,8 +192,8 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
         className={`fixed bottom-0 left-0 right-0 z-50 flex flex-col transition-transform duration-300 ease-out ${open ? "translate-y-0" : "translate-y-full"}`}
         style={{
           maxHeight: "80dvh",
-          background: "#0D1020",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
+          background: "#100D1E",
+          borderTop: "1px solid rgba(168,85,247,0.15)",
           borderRadius: "20px 20px 0 0",
           backdropFilter: "blur(24px)",
         }}
@@ -211,7 +211,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
             <p className="text-[15px] font-black text-white">Уведомления</p>
             {notifs.filter((n) => !n.read).length > 0 && (
               <div className="rounded-full px-2 py-0.5"
-                style={{ background: "linear-gradient(135deg,#F97316,#EA580C)" }}>
+                style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}>
                 <span className="text-[10px] font-black text-white">{notifs.filter((n) => !n.read).length}</span>
               </div>
             )}
@@ -255,9 +255,9 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
                         onClick={() => { onReviewOrder(n.order_id!); onClose(); }}
                         className="mt-2 px-3 py-1.5 rounded-lg text-[11px] font-bold active:opacity-70"
                         style={{
-                          background: "rgba(249,115,22,0.12)",
-                          border: "1px solid rgba(249,115,22,0.25)",
-                          color: "#FB923C",
+                          background: "rgba(236,72,153,0.12)",
+                          border: "1px solid rgba(236,72,153,0.25)",
+                          color: "#F9A8D4",
                         }}
                       >
                         Оставить отзыв →
@@ -266,7 +266,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
                   </div>
                   {!n.read && (
                     <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
-                      style={{ background: "#F97316" }} />
+                      style={{ background: "#EC4899" }} />
                   )}
                 </div>
               ))}
