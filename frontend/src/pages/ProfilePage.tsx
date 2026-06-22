@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { User, CheckCircle, Camera, Loader } from "lucide-react";
-import { getMe, getOrders, getMyTopups, saveEmail, uploadAvatar } from "../api";
+import { User, CheckCircle, Camera, Loader, MessageCircle } from "lucide-react";
+import { getMe, getOrders, getMyTopups, saveEmail, uploadAvatar, getMyOrderChats, type AdminOrderChat } from "../api";
 import { useLang, type Lang } from "../i18n";
 
 interface UserT { user_id: number; first_name: string; username: string; balance: number; email?: string; avatar_url?: string }
-interface Order { id: string; amount: number; status: string; created_at: string }
+interface Order { id: string; product_id?: string; amount: number; status: string; created_at: string }
 interface Topup { id: string; amount: number; method: string; status: string; created_at: string }
 
-interface Props { onTopup: () => void }
+interface Props { onTopup: () => void; onOpenOrderChat?: (orderId: string, productName?: string) => void }
 
-export default function ProfilePage({ onTopup }: Props) {
+export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
   const { t, lang, setLang } = useLang();
   const [user, setUser] = useState<UserT | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [topups, setTopups] = useState<Topup[]>([]);
+  const [orderChats, setOrderChats] = useState<AdminOrderChat[]>([]);
   const [tab, setTab] = useState<"orders" | "topups" | "settings">("orders");
   const [email, setEmail] = useState("");
   const [emailSaving, setEmailSaving] = useState(false);
@@ -25,6 +26,7 @@ export default function ProfilePage({ onTopup }: Props) {
     getMe().then((u: UserT) => { setUser(u); setEmail(u.email ?? ""); });
     getOrders().then(setOrders).catch(() => {});
     getMyTopups().then(setTopups).catch(() => {});
+    getMyOrderChats().then(setOrderChats).catch(() => {});
   }, []);
 
   const handleSaveEmail = async () => {
@@ -175,27 +177,53 @@ export default function ProfilePage({ onTopup }: Props) {
           {orders.length === 0 ? (
             <p className="text-center text-sm py-10" style={{ color: "var(--text-muted)" }}>{t.noOrders}</p>
           ) : (
-            orders.map((o) => (
-              <div
-                key={o.id}
-                className="rounded-2xl px-4 py-3 flex justify-between items-center"
-                style={{
-                  background: "var(--bg-raised, #0D1020)",
-                  border: "1px solid var(--border, rgba(255,255,255,0.07))",
-                }}
-              >
-                <div>
-                  <p className="text-sm font-bold text-white">Order</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-                    {new Date(o.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'uz-UZ', { month: "short", day: "numeric" })}
-                  </p>
+            orders.map((o) => {
+              const chat = orderChats.find((c) => c.order_id === o.id);
+              const unread = chat?.unread_by_user ?? 0;
+              return (
+                <div
+                  key={o.id}
+                  className="rounded-2xl px-4 py-3 flex items-center gap-3"
+                  style={{
+                    background: "var(--bg-raised, #0D1020)",
+                    border: "1px solid var(--border, rgba(255,255,255,0.07))",
+                  }}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold" style={{ color: "var(--text)" }}>
+                      {chat?.product_name || "Order"}
+                    </p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                      {new Date(o.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'uz-UZ', { month: "short", day: "numeric" })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className="text-sm font-black s-price">{o.amount.toLocaleString()} sum</span>
+                      {orderStatusBadge(o.status)}
+                    </div>
+                    {onOpenOrderChat && (
+                      <button
+                        onClick={() => onOpenOrderChat(o.id, chat?.product_name)}
+                        className="relative w-8 h-8 rounded-xl flex items-center justify-center active:opacity-70 flex-shrink-0"
+                        style={{
+                          background: unread > 0 ? "rgba(236,72,153,0.15)" : "var(--bg-surface)",
+                          border: `1px solid ${unread > 0 ? "rgba(236,72,153,0.30)" : "var(--border)"}`,
+                        }}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" style={{ color: unread > 0 ? "#EC4899" : "var(--text-muted)" }} />
+                        {unread > 0 && (
+                          <div className="absolute -top-1 -right-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
+                            style={{ background: "#EC4899" }}>
+                            <span className="text-[8px] font-black text-white leading-none">{unread > 9 ? "9+" : unread}</span>
+                          </div>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1.5">
-                  <span className="text-sm font-black s-price">{o.amount.toLocaleString()} sum</span>
-                  {orderStatusBadge(o.status)}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}

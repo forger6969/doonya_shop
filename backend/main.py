@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from aiogram.types import Update
 from backend.database import connect_db, close_db
-from backend.routers import users, catalog, topup, orders, admin, support, notifications
+from backend.routers import users, catalog, topup, orders, admin, support, notifications, order_chat
 from backend.config import BOT_TOKEN
 
 WEBHOOK_PATH = "/webhook"
@@ -43,6 +43,7 @@ app.include_router(orders.router)
 app.include_router(admin.router)
 app.include_router(support.router)
 app.include_router(notifications.router)
+app.include_router(order_chat.router)
 
 
 @app.post(WEBHOOK_PATH)

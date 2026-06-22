@@ -129,3 +129,29 @@ export const getNotifyWsUrl = () => {
   const base = import.meta.env.VITE_API_URL || "http://localhost:8000";
   return base.replace(/^http/, "ws") + "/notify/ws";
 };
+
+// ── Order Chat ───────────────────────────────────────────────────────────────
+export interface AdminOrderChat {
+  order_id: string;
+  user_id: number;
+  product_id: string;
+  product_name: string;
+  game_id: string;
+  game_name: string;
+  unread_by_admin: number;
+  unread_by_user: number;
+  last_ts: string;
+  last_message: string;
+}
+
+export const getOrderChatWsUrl = (order_id?: string) => {
+  const base = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const url = base.replace(/^http/, "ws") + "/order-chat/ws";
+  return order_id ? `${url}?order_id=${encodeURIComponent(order_id)}` : url;
+};
+
+export const getMyOrderChats = () => api.get("/order-chat/my").then((r) => r.data as AdminOrderChat[]);
+export const getMyOrderChatHistory = (order_id: string) =>
+  api.get(`/order-chat/my/${order_id}`).then((r) => r.data as { messages: { id: string; from: string; text: string; ts: string }[]; order_id: string; unread_by_user: number });
+export const adminGetOrderChats = (game_id = "", product_id = "") =>
+  api.get("/order-chat/admin/chats", { params: { ...(game_id && { game_id }), ...(product_id && { product_id }) } }).then((r) => r.data as AdminOrderChat[]);

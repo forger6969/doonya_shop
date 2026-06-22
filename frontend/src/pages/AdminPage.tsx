@@ -15,6 +15,7 @@ import {
   adminSalesStats, adminProductStats, adminUserStats,
   adminGetPromos, adminCreatePromo, adminDeletePromo, adminTogglePromo,
   getSupportWsUrl, agentGetAllUsers,
+  getOrderChatWsUrl, adminGetOrderChats, type AdminOrderChat,
 } from "../api";
 import { useLang, type Lang } from "../i18n";
 
@@ -28,7 +29,7 @@ interface PurchaseField { label: string; required: boolean }
 interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
-type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "chat";
+type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "chat" | "order_chats";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 const fmt = (n: number) => n.toLocaleString("ru-RU") + " sum";
@@ -1332,12 +1333,251 @@ function AdminChat({ initialTarget }: { initialTarget?: { user_id: number; name:
   );
 }
 
+// ─── Admin Order Chats ────────────────────────────────────────────────────────
+interface OrderChatMsg { id: string; from: string; text: string; ts: string }
+
+function AdminOrderChats() {
+  const [chats, setChats] = useState<AdminOrderChat[]>([]);
+  const [selected, setSelected] = useState<AdminOrderChat | null>(null);
+  const [messages, setMessages] = useState<OrderChatMsg[]>([]);
+  const [text, setText] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [filterGame, setFilterGame] = useState("");
+  const [games, setGames] = useState<{ id: string; name: string }[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  // Load REST chats + games
+  useEffect(() => {
+    adminGetOrderChats().then(setChats).catch(() => {});
+    adminGetGames().then(setGames).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const initData = window.Telegram?.WebApp?.initData || "";
+    const url = `${getOrderChatWsUrl()}&initData=${encodeURIComponent(initData)}`;
+    const ws = new WebSocket(url);
+    wsRef.current = ws;
+    ws.onopen = () => setConnected(true);
+    ws.onclose = () => setConnected(false);
+    ws.onerror = () => setConnected(false);
+    ws.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        if (data.type === "order_chats") {
+          setChats(data.chats || []);
+        } else if (data.type === "order_history") {
+          setMessages(data.messages || []);
+        } else if (data.type === "message") {
+          const oid = data.order_id;
+          setChats((prev) => {
+            const idx = prev.findIndex((c) => c.order_id === oid);
+            if (idx >= 0) {
+              const next = [...prev];
+              next[idx] = { ...next[idx], last_message: data.text, last_ts: data.ts,
+                unread_by_admin: data.from === "user" ? (next[idx].unread_by_admin || 0) + 1 : next[idx].unread_by_admin };
+              return next;
+            }
+            return prev;
+          });
+          setSelected((sel) => {
+            if (sel?.order_id === oid) {
+              setMessages((prev) =>
+                prev.find((m) => m.id === data.id) ? prev : [...prev, { id: data.id, from: data.from, text: data.text, ts: data.ts }]
+              );
+            }
+            return sel;
+          });
+        }
+      } catch { /* ignore */ }
+    };
+    return () => ws.close();
+  }, []);
+
+  const openChat = (chat: AdminOrderChat) => {
+    setSelected(chat);
+    setMessages([]);
+    setChats((prev) => prev.map((c) => c.order_id === chat.order_id ? { ...c, unread_by_admin: 0 } : c));
+    const payload = JSON.stringify({ type: "select_order", order_id: chat.order_id });
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(payload);
+    }
+  };
+
+  const send = () => {
+    if (!selected || !text.trim() || wsRef.current?.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({ type: "message", order_id: selected.order_id, text: text.trim() }));
+    setText("");
+  };
+
+  const fmtTs = (ts: string) => {
+    try {
+      const d = new Date(ts), now = new Date();
+      return d.toDateString() === now.toDateString()
+        ? d.toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" })
+        : d.toLocaleDateString("ru", { day: "numeric", month: "short" });
+    } catch { return ""; }
+  };
+  const fmtTime = (ts: string) => {
+    try { return new Date(ts).toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" }); }
+    catch { return ""; }
+  };
+
+  const filtered = filterGame ? chats.filter((c) => c.game_id === filterGame) : chats;
+  const totalUnread = chats.reduce((s, c) => s + (c.unread_by_admin || 0), 0);
+
+  // ── Detail view ──────────────────────────────────────────────────────────────
+  if (selected) {
+    return (
+      <div className="flex flex-col" style={{ height: "calc(100dvh - 115px)" }}>
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0 border-b border-[#1e2030]">
+          <button onClick={() => setSelected(null)}
+            className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center active:opacity-70">
+            <ArrowLeft className="w-4 h-4 text-white" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-black text-white truncate">{selected.product_name || "Заказ"}</p>
+            <p className="text-[10px] text-white/40 truncate">{selected.game_name} · user {selected.user_id}</p>
+          </div>
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? "bg-emerald-400" : "bg-white/20"}`} />
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2 overscroll-contain">
+          {messages.length === 0 && (
+            <div className="flex flex-col items-center gap-3 py-12 text-zinc-700">
+              <MessageCircle className="w-9 h-9" />
+              <p className="text-sm text-center">Начните диалог — напишите первым</p>
+            </div>
+          )}
+          {messages.map((msg) => {
+            const isAdmin = msg.from === "admin";
+            return (
+              <div key={msg.id} className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
+                <div className="max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed"
+                  style={isAdmin
+                    ? { background: "linear-gradient(135deg,#f59e0b,#d97706)", borderBottomRightRadius: 4 }
+                    : { background: "rgba(255,255,255,0.07)", borderBottomLeftRadius: 4 }
+                  }>
+                  <p className="text-white break-words">{msg.text}</p>
+                  <p className={`text-[10px] mt-1 text-white/40 ${isAdmin ? "text-right" : ""}`}>{fmtTime(msg.ts)}</p>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        <div className="px-4 py-3 flex items-end gap-2 flex-shrink-0 border-t border-[#1e2030]">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, 1000))}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder="Написать клиенту..."
+            rows={1}
+            className="flex-1 a-input resize-none outline-none"
+            style={{ maxHeight: 120, minHeight: 44 }}
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = Math.min(el.scrollHeight, 120) + "px";
+            }}
+          />
+          <button onClick={send} disabled={!text.trim() || !connected}
+            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:opacity-70 disabled:opacity-30"
+            style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+            <Send className="w-4 h-4 text-white" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── List view ─────────────────────────────────────────────────────────────────
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden" style={{ height: "calc(100dvh - 115px)" }}>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 pt-4 pb-2 flex-shrink-0">
+        <MessageCircle className="w-5 h-5 text-amber-400" />
+        <div className="flex-1">
+          <h2 className="text-xl font-black text-white">
+            Заказы чаты
+            {totalUnread > 0 && (
+              <span className="ml-2 px-1.5 py-0.5 rounded-full text-[9px] font-black text-black" style={{ background: "#f59e0b" }}>
+                {totalUnread}
+              </span>
+            )}
+          </h2>
+        </div>
+        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? "bg-emerald-400" : "bg-white/20"}`} />
+      </div>
+
+      {/* Game filter */}
+      <div className="flex items-center gap-2 px-4 pb-2 flex-shrink-0 overflow-x-auto">
+        <button onClick={() => setFilterGame("")}
+          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap flex-shrink-0 transition-all ${!filterGame ? "bg-amber-500/20 text-amber-400" : "text-zinc-600"}`}>
+          Все
+        </button>
+        {games.map((g) => (
+          <button key={g.id} onClick={() => setFilterGame(filterGame === g.id ? "" : g.id)}
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap flex-shrink-0 transition-all ${filterGame === g.id ? "bg-amber-500/20 text-amber-400" : "text-zinc-600"}`}>
+            {g.name}
+          </button>
+        ))}
+      </div>
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto px-4 flex flex-col gap-2 pb-4 overscroll-contain">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-16 text-zinc-700">
+            <MessageCircle className="w-10 h-10" />
+            <p className="text-sm">Нет чатов по заказам</p>
+          </div>
+        ) : (
+          filtered.map((chat) => (
+            <button key={chat.order_id} onClick={() => openChat(chat)}
+              className="a-card flex items-center gap-3 p-3.5 active:opacity-70 text-left w-full">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+                style={{ background: chat.unread_by_admin > 0 ? "linear-gradient(135deg,#f59e0b,#d97706)" : "rgba(255,255,255,0.06)" }}>
+                <Gamepad2 className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[13px] font-bold text-white truncate">{chat.product_name || "Заказ"}</p>
+                  <p className="text-[10px] text-zinc-700 flex-shrink-0">{fmtTs(chat.last_ts)}</p>
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {chat.game_name && (
+                    <span className="text-[10px] font-bold text-amber-400/60">{chat.game_name}</span>
+                  )}
+                  {chat.game_name && chat.last_message && <span className="text-[10px] text-zinc-700">·</span>}
+                  <p className="text-[12px] text-zinc-600 truncate">{chat.last_message || "—"}</p>
+                </div>
+              </div>
+              {chat.unread_by_admin > 0 && (
+                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: "#f59e0b" }}>
+                  <span className="text-[10px] font-bold text-black">{chat.unread_by_admin}</span>
+                </div>
+              )}
+            </button>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { t, lang, setLang } = useLang();
   const [section, setSection] = useState<Section>(() => {
     const param = new URLSearchParams(window.location.search).get("section") as Section | null;
-    if (param && (["dashboard","payments","orders","catalog","analytics","promos","chat"] as string[]).includes(param)) {
+    if (param && (["dashboard","payments","orders","catalog","analytics","promos","chat","order_chats"] as string[]).includes(param)) {
       window.history.replaceState({}, "", window.location.pathname);
       return param;
     }
@@ -1383,7 +1623,8 @@ export default function AdminPage() {
     { id: "catalog",   label: t.adCatalog, Icon: Gamepad2 },
     { id: "analytics", label: t.adStats,   Icon: BarChart2 },
     { id: "promos",    label: t.adPromos,  Icon: Tag },
-    { id: "chat",      label: "Чат",       Icon: MessageCircle },
+    { id: "chat",        label: "Чат",      Icon: MessageCircle },
+    { id: "order_chats", label: "Заказы",   Icon: ShoppingBag },
   ];
 
   return (
@@ -1431,14 +1672,15 @@ export default function AdminPage() {
       </div>
 
       {/* Content */}
-      <div className={`flex-1 ${section === "chat" ? "overflow-hidden flex flex-col" : "overflow-y-auto"}`}>
-        {section === "dashboard" && <Dashboard onNav={setSection} />}
-        {section === "payments"  && <Payments />}
-        {section === "orders"    && <Orders onChat={handleOpenChat} />}
-        {section === "catalog"   && <Catalog />}
-        {section === "analytics" && <Analytics />}
-        {section === "promos"    && <Promos />}
-        {section === "chat"      && <AdminChat initialTarget={chatTarget} />}
+      <div className={`flex-1 ${section === "chat" || section === "order_chats" ? "overflow-hidden flex flex-col" : "overflow-y-auto"}`}>
+        {section === "dashboard"   && <Dashboard onNav={setSection} />}
+        {section === "payments"    && <Payments />}
+        {section === "orders"      && <Orders onChat={handleOpenChat} />}
+        {section === "catalog"     && <Catalog />}
+        {section === "analytics"   && <Analytics />}
+        {section === "promos"      && <Promos />}
+        {section === "chat"        && <AdminChat initialTarget={chatTarget} />}
+        {section === "order_chats" && <AdminOrderChats />}
       </div>
 
       {/* Bottom nav */}

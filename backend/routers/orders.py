@@ -9,6 +9,7 @@ from backend.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY
 from backend.models import (
     get_or_create_user, get_product, create_order,
     create_review, get_promo_by_code, apply_promo, use_promo,
+    get_or_create_order_chat,
 )
 
 cloudinary.config(
@@ -85,6 +86,21 @@ async def buy_product(req: PurchaseRequest, tg_user: dict = Depends(get_current_
 
     if promo:
         await use_promo(str(promo["_id"]))
+
+    try:
+        from bson import ObjectId as ObjId
+        _db = get_db()
+        game = await _db.games.find_one({"_id": ObjId(product["game_id"])}) if product.get("game_id") else None
+        await get_or_create_order_chat(
+            order_id=order_id,
+            user_id=user_id,
+            product_id=req.product_id,
+            game_id=product.get("game_id", ""),
+            product_name=product.get("name", ""),
+            game_name=game["name"] if game else "",
+        )
+    except Exception:
+        pass
 
     try:
         from backend.notify import notify_admin_order

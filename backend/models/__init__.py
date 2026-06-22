@@ -506,6 +506,83 @@ async def mark_chat_read(user_id: int):
     )
 
 
+import uuid as _uuid
+
+
+async def get_or_create_order_chat(
+    order_id: str, user_id: int, product_id: str, game_id: str,
+    product_name: str = "", game_name: str = "",
+) -> dict:
+    now = datetime.utcnow()
+    await db().order_chats.update_one(
+        {"order_id": order_id},
+        {
+            "$setOnInsert": {
+                "order_id": order_id,
+                "user_id": user_id,
+                "product_id": product_id,
+                "game_id": game_id,
+                "product_name": product_name,
+                "game_name": game_name,
+                "messages": [],
+                "unread_by_admin": 0,
+                "unread_by_user": 0,
+                "last_ts": now,
+                "created_at": now,
+            }
+        },
+        upsert=True,
+    )
+    return await db().order_chats.find_one({"order_id": order_id})
+
+
+async def get_order_chat(order_id: str) -> dict | None:
+    return await db().order_chats.find_one({"order_id": order_id})
+
+
+async def add_order_chat_msg(order_id: str, from_: str, text: str, agent_id: int | None = None) -> dict:
+    msg: dict = {
+        "id": str(_uuid.uuid4()),
+        "from": from_,
+        "text": text,
+        "ts": datetime.utcnow().isoformat(),
+    }
+    if agent_id:
+        msg["agent_id"] = agent_id
+    now = datetime.utcnow()
+    update: dict = {
+        "$push": {"messages": msg},
+        "$set": {"last_ts": now},
+    }
+    if from_ == "user":
+        update["$inc"] = {"unread_by_admin": 1}
+    else:
+        update["$inc"] = {"unread_by_user": 1}
+    await db().order_chats.update_one({"order_id": order_id}, update)
+    return msg
+
+
+async def list_order_chats(game_id: str = "", product_id: str = "", limit: int = 100) -> list:
+    query: dict = {}
+    if game_id:
+        query["game_id"] = game_id
+    if product_id:
+        query["product_id"] = product_id
+    return await db().order_chats.find(query).sort("last_ts", -1).limit(limit).to_list(None)
+
+
+async def mark_order_chat_read_admin(order_id: str):
+    await db().order_chats.update_one({"order_id": order_id}, {"$set": {"unread_by_admin": 0}})
+
+
+async def mark_order_chat_read_user(order_id: str):
+    await db().order_chats.update_one({"order_id": order_id}, {"$set": {"unread_by_user": 0}})
+
+
+async def get_user_order_chats(user_id: int) -> list:
+    return await db().order_chats.find({"user_id": user_id}).sort("last_ts", -1).to_list(None)
+
+
 async def get_product_stats(product_id: str) -> dict:
     pipeline = [
         {"$match": {"product_id": product_id}},

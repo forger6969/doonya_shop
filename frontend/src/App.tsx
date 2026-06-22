@@ -11,6 +11,7 @@ import AdminPage from "./pages/AdminPage";
 import BuyModal from "./pages/BuyModal";
 import ReviewSheet from "./pages/ReviewSheet";
 import NotificationSheet, { useNotifications } from "./pages/NotificationSheet";
+import OrderChatSheet from "./pages/OrderChatSheet";
 
 type Tab = "catalog" | "support" | "profile";
 interface UserT { user_id: number; balance: number; first_name: string }
@@ -80,6 +81,7 @@ export default function App() {
     return param;
   });
 
+  const [orderChat, setOrderChat] = useState<{ orderId: string; productName?: string } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const { notifs, unreadCount, markAllRead, addTopupExpired } = useNotifications(
     (orderId) => setReviewOrderId(orderId),
@@ -265,7 +267,12 @@ export default function App() {
           <CatalogPage onBuy={setBuyProduct} onTopup={() => setShowTopup(true)} />
         )}
         {tab === "support" && <SupportPage />}
-        {tab === "profile" && <ProfilePage onTopup={() => setShowTopup(true)} />}
+        {tab === "profile" && (
+          <ProfilePage
+            onTopup={() => setShowTopup(true)}
+            onOpenOrderChat={(orderId, productName) => setOrderChat({ orderId, productName })}
+          />
+        )}
       </div>
 
       {/* Bottom nav */}
@@ -339,6 +346,15 @@ export default function App() {
         <ReviewSheet
           orderId={reviewOrderId}
           onClose={() => setReviewOrderId(null)}
+        />
+      )}
+
+      {/* Order chat sheet */}
+      {orderChat && (
+        <OrderChatSheet
+          orderId={orderChat.orderId}
+          productName={orderChat.productName}
+          onClose={() => setOrderChat(null)}
         />
       )}
 
