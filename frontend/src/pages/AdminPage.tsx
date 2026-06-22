@@ -9,6 +9,7 @@ import {
   adminGetStats, adminUpload, getMe, uploadAvatar,
   adminGetTopups, adminGetOrders, adminConfirmTopup, adminRejectTopup, adminCompleteOrder,
   adminGetGames, adminGetProducts, adminCreateGame, adminPatchGame, adminDeleteGame,
+  adminGetCategories, adminCreateCategory, adminDeleteCategory,
   adminCreateProduct, adminPatchProduct, adminDeleteProduct, adminSetDiscount,
   adminSalesStats, adminProductStats, adminUserStats,
   adminGetPromos, adminCreatePromo, adminDeletePromo, adminTogglePromo,
@@ -20,8 +21,9 @@ interface Stats { pending_topups: number; pending_orders: number; total_games: n
 interface Topup { id: string; user_id: number; amount: number; unique_amount: number; method: string; receipt_url: string; status: string; created_at: string }
 interface Order { id: string; user_id: number; amount: number; status: string; promo_code: string; created_at: string }
 interface Game { id: string; name: string; description: string; icon_url: string }
+interface Category { id: string; game_id: string; name: string }
 interface PurchaseField { label: string; required: boolean }
-interface Product { id: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
+interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
 type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos";
@@ -444,7 +446,8 @@ function AdminCardEditor({ product, gameId: _gameId, onSaved }: { product: Produ
   );
 }
 
-function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
+// ── ProductList — products within a category ──────────────────────────────────
+function ProductList({ game, category, onBack }: { game: Game; category: Category; onBack: () => void }) {
   const { t } = useLang();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -455,8 +458,12 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const load = async () => { setLoading(true); setProducts(await adminGetProducts(game.id)); setLoading(false); };
-  useEffect(() => { load(); }, [game.id]);
+  const load = async () => {
+    setLoading(true);
+    setProducts(await adminGetProducts(game.id, category.id));
+    setLoading(false);
+  };
+  useEffect(() => { load(); }, [category.id]);
 
   const addField = () => {
     if (!newField.label.trim()) return;
@@ -468,7 +475,8 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
     if (!form.name.trim() || !form.price) return;
     setSaving(true);
     const result = await adminCreateProduct({
-      game_id: game.id, name: form.name.trim(), description: "", price: Number(form.price), icon_url: form.icon_url,
+      game_id: game.id, category_id: category.id,
+      name: form.name.trim(), description: "", price: Number(form.price), icon_url: form.icon_url,
     });
     if (formFields.length > 0 && result?.product_id) {
       await adminPatchProduct(result.product_id, { purchase_fields: formFields });
@@ -483,20 +491,15 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
     load();
   };
 
-  const deleteProduct = async (product: Product) => {
-    await adminDeleteProduct(product.id);
-    load();
-  };
-
   return (
     <div className="flex flex-col flex-1">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1e2030]">
         <button onClick={onBack} className="a-card w-8 h-8 flex items-center justify-center active:opacity-70">
           <ChevronLeft className="w-4 h-4 text-zinc-400" />
         </button>
-        <div className="flex-1">
-          <p className="text-[10px] text-zinc-600 uppercase tracking-wider">{t.productsSubtitle}</p>
-          <p className="text-sm font-black text-white">{game.name}</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] text-zinc-600 uppercase tracking-wider truncate">{game.name}</p>
+          <p className="text-sm font-black text-white truncate">{category.name}</p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
           className={`w-8 h-8 rounded-lg flex items-center justify-center ${showForm ? "bg-white/10 text-white" : "a-card text-zinc-500"}`}>
@@ -504,7 +507,6 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
         </button>
       </div>
 
-      {/* Create form */}
       {showForm && (
         <div className="mx-4 mt-4 a-card p-4 flex flex-col gap-3">
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{t.newProduct}</p>
@@ -517,8 +519,6 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
                 placeholder={t.basePricePlaceholder} type="number" className="a-input" />
             </div>
           </div>
-
-          {/* Optional purchase fields */}
           <div className="flex flex-col gap-1.5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">{t.purchaseFieldsCheckout}</p>
             {formFields.map((f, i) => (
@@ -547,60 +547,114 @@ function ProductList({ game, onBack }: { game: Game; onBack: () => void }) {
               </button>
             </div>
           </div>
-
           <button onClick={save} disabled={saving || !form.name.trim() || !form.price} className="a-btn">
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> {t.createProductBtn}</>}
           </button>
         </div>
       )}
 
-      {/* Product list */}
       <div className="a-card mx-4 mt-4 mb-4 overflow-hidden flex-1">
         {loading ? <div className="flex justify-center py-10"><Spin /></div>
           : products.length === 0 ? <Empty icon={Package} text={t.noProductsYet} />
           : products.map((product, i) => (
             <div key={product.id}>
               {i > 0 && <Divider />}
-              <div
-                className="flex items-center gap-3 px-4 py-3 active:bg-white/[0.02] cursor-pointer"
-                onClick={() => setExpandedId(expandedId === product.id ? null : product.id)}
-              >
-                <UploadBtn
-                  current={product.icon_url}
-                  onDone={(url) => { updateIcon(product, url); }}
-                />
+              <div className="flex items-center gap-3 px-4 py-3 active:bg-white/[0.02] cursor-pointer"
+                onClick={() => setExpandedId(expandedId === product.id ? null : product.id)}>
+                <UploadBtn current={product.icon_url} onDone={(url) => updateIcon(product, url)} />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-bold text-white truncate">{product.name}</p>
-                  <p className="text-[11px] text-zinc-600">
-                    {fmt(product.price)}
-                    {product.purchase_fields?.length
-                      ? ` · ${product.purchase_fields.length} ${t.fieldCount}`
-                      : ""}
-                  </p>
-                  <p className="text-[10px] text-zinc-700 mt-0.5">
-                    {product.sales_count} {t.sold} · {fmtShort(product.revenue)} sum
-                  </p>
+                  <p className="text-[11px] text-zinc-600">{fmt(product.price)}</p>
+                  <p className="text-[10px] text-zinc-700 mt-0.5">{product.sales_count} {t.sold} · {fmtShort(product.revenue)} sum</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <ChevronRight className={`w-4 h-4 text-zinc-700 transition-transform ${expandedId === product.id ? "rotate-90" : ""}`} />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteProduct(product); }}
-                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); adminDeleteProduct(product.id).then(load); }}
+                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70 flex-shrink-0">
                     <Trash2 className="w-3.5 h-3.5 text-red-400" />
                   </button>
                 </div>
               </div>
               {expandedId === product.id && (
-                <AdminCardEditor
-                  product={product}
-                  gameId={game.id}
-                  onSaved={() => { load(); setExpandedId(null); }}
-                />
+                <AdminCardEditor product={product} gameId={game.id} onSaved={() => { load(); setExpandedId(null); }} />
               )}
             </div>
-          ))
-        }
+          ))}
+      </div>
+    </div>
+  );
+}
+
+// ── CategoryList — categories within a game ───────────────────────────────────
+function CategoryList({ game, onBack }: { game: Game; onBack: () => void }) {
+  const { t } = useLang();
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [selected, setSelected] = useState<Category | null>(null);
+
+  const load = async () => { setLoading(true); setCategories(await adminGetCategories(game.id)); setLoading(false); };
+  useEffect(() => { load(); }, [game.id]);
+
+  const save = async () => {
+    if (!newCatName.trim()) return;
+    setSaving(true);
+    await adminCreateCategory(game.id, newCatName.trim());
+    setNewCatName(""); setShowForm(false); setSaving(false); load();
+  };
+
+  if (selected) return <ProductList game={game} category={selected} onBack={() => { setSelected(null); load(); }} />;
+
+  return (
+    <div className="flex flex-col flex-1">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1e2030]">
+        <button onClick={onBack} className="a-card w-8 h-8 flex items-center justify-center active:opacity-70">
+          <ChevronLeft className="w-4 h-4 text-zinc-400" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] text-zinc-600 uppercase tracking-wider">Категории</p>
+          <p className="text-sm font-black text-white truncate">{game.name}</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)}
+          className={`w-8 h-8 rounded-lg flex items-center justify-center ${showForm ? "bg-white/10 text-white" : "a-card text-zinc-500"}`}>
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="mx-4 mt-4 a-card p-4 flex gap-2">
+          <input value={newCatName} onChange={(e) => setNewCatName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && save()}
+            placeholder="Название категории (напр. Гемы)" className="a-input flex-1 text-sm" />
+          <button onClick={save} disabled={saving || !newCatName.trim()} className="a-btn px-4 py-2 text-sm">
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          </button>
+        </div>
+      )}
+
+      <div className="a-card mx-4 mt-4 mb-4 overflow-hidden flex-1">
+        {loading ? <div className="flex justify-center py-10"><Spin /></div>
+          : categories.length === 0 ? <Empty icon={Tag} text="Категорий пока нет" />
+          : categories.map((cat, i) => (
+            <div key={cat.id}>
+              {i > 0 && <Divider />}
+              <div className="flex items-center gap-3 px-4 py-3">
+                <button onClick={() => setSelected(cat)} className="flex-1 text-left active:opacity-70">
+                  <p className="text-[13px] font-bold text-white">{cat.name}</p>
+                  <p className="text-[11px] text-zinc-600">Нажмите для товаров</p>
+                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => adminDeleteCategory(cat.id).then(load)}
+                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70">
+                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  </button>
+                  <ChevronRight className="w-4 h-4 text-zinc-700" />
+                </div>
+              </div>
+            </div>
+          ))}
       </div>
     </div>
   );
@@ -631,7 +685,7 @@ function Catalog() {
     load();
   };
 
-  if (selected) return <ProductList game={selected} onBack={() => { setSelected(null); load(); }} />;
+  if (selected) return <CategoryList game={selected} onBack={() => { setSelected(null); load(); }} />;
 
   return (
     <div className="flex flex-col flex-1">
@@ -672,7 +726,7 @@ function Catalog() {
                 <UploadBtn current={g.icon_url} onDone={(url) => updateIcon(g.id, url)} />
                 <button onClick={() => setSelected(g)} className="flex-1 text-left min-w-0 active:opacity-70">
                   <p className="text-[13px] font-bold text-white">{g.name}</p>
-                  <p className="text-[11px] text-zinc-600">{t.tapManageProducts}</p>
+                  <p className="text-[11px] text-zinc-600">Категории и товары</p>
                 </button>
                 <div className="flex items-center gap-2">
                   <button onClick={() => adminDeleteGame(g.id).then(load)}

@@ -26,11 +26,13 @@ export const agentGetChat = (userId: number) => api.get(`/support/agent/chats/${
 
 // ── Catalog ──────────────────────────────────────────────────────────────────
 export const getGames = () => api.get("/catalog/games").then((r) => r.data);
+export const getCategories = (gameId: string) => api.get(`/catalog/games/${gameId}/categories`).then((r) => r.data);
 export const getProducts = (gameId: string) => api.get(`/catalog/games/${gameId}/products`).then((r) => r.data);
 export const getProduct = (id: string) => api.get(`/catalog/products/${id}`).then((r) => r.data);
 export const getReviews = (id: string) => api.get(`/catalog/products/${id}/reviews`).then((r) => r.data);
 export const getTopProducts = () => api.get("/catalog/top").then((r) => r.data);
 export const getOnSaleProducts = () => api.get("/catalog/on-sale").then((r) => r.data);
+export const searchCatalog = (q: string) => api.get("/catalog/search", { params: { q } }).then((r) => r.data);
 
 // ── Topup ────────────────────────────────────────────────────────────────────
 export const getTopupInfo = (amount: number, method: string) =>
@@ -76,9 +78,16 @@ export const adminCreateGame = (name: string, description: string, icon_url = ""
 export const adminPatchGame = (id: string, data: object) => api.patch(`/admin/games/${id}`, data).then((r) => r.data);
 export const adminDeleteGame = (id: string) => api.delete(`/admin/games/${id}`).then((r) => r.data);
 
+// Categories
+export const adminGetCategories = (gameId: string) => api.get(`/admin/games/${gameId}/categories`).then((r) => r.data);
+export const adminCreateCategory = (game_id: string, name: string) => api.post("/admin/categories", { game_id, name }).then((r) => r.data);
+export const adminPatchCategory = (id: string, name: string) => api.patch(`/admin/categories/${id}`, { name }).then((r) => r.data);
+export const adminDeleteCategory = (id: string) => api.delete(`/admin/categories/${id}`).then((r) => r.data);
+
 // Products
-export const adminGetProducts = (gameId: string) => api.get(`/admin/games/${gameId}/products`).then((r) => r.data);
-export const adminCreateProduct = (data: { game_id: string; name: string; description: string; price: number; icon_url?: string }) =>
+export const adminGetProducts = (gameId: string, categoryId = "") =>
+  api.get(`/admin/games/${gameId}/products`, { params: categoryId ? { category_id: categoryId } : {} }).then((r) => r.data);
+export const adminCreateProduct = (data: { game_id: string; category_id?: string; name: string; description: string; price: number; icon_url?: string }) =>
   api.post("/admin/products", data).then((r) => r.data);
 export const adminPatchProduct = (id: string, data: object) => api.patch(`/admin/products/${id}`, data).then((r) => r.data);
 export const adminDeleteProduct = (id: string) => api.delete(`/admin/products/${id}`).then((r) => r.data);

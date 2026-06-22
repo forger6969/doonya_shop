@@ -61,19 +61,52 @@ async def delete_game(game_id: str):
     await db().games.update_one({"_id": ObjectId(game_id)}, {"$set": {"is_active": False}})
 
 
+# ── Categories ────────────────────────────────────────────────────────────────
+async def get_categories(game_id: str) -> list:
+    return await db().categories.find({"game_id": game_id, "is_active": True}).sort("order", 1).to_list(None)
+
+
+async def get_category(cat_id: str) -> dict | None:
+    return await db().categories.find_one({"_id": ObjectId(cat_id), "is_active": True})
+
+
+async def create_category(game_id: str, name: str) -> str:
+    count = await db().categories.count_documents({"game_id": game_id})
+    result = await db().categories.insert_one({
+        "game_id": game_id,
+        "name": name,
+        "is_active": True,
+        "order": count,
+        "created_at": datetime.utcnow(),
+    })
+    return str(result.inserted_id)
+
+
+async def update_category(cat_id: str, **fields):
+    await db().categories.update_one({"_id": ObjectId(cat_id)}, {"$set": fields})
+
+
+async def delete_category(cat_id: str):
+    await db().categories.update_one({"_id": ObjectId(cat_id)}, {"$set": {"is_active": False}})
+
+
 # ── Products ─────────────────────────────────────────────────────────────────
-async def get_products(game_id: str) -> list:
-    return await db().products.find({"game_id": game_id, "is_active": True}).sort("order", 1).to_list(None)
+async def get_products(game_id: str, category_id: str = "") -> list:
+    query: dict = {"game_id": game_id, "is_active": True}
+    if category_id:
+        query["category_id"] = category_id
+    return await db().products.find(query).sort("order", 1).to_list(None)
 
 
 async def get_product(product_id: str) -> dict | None:
     return await db().products.find_one({"_id": ObjectId(product_id), "is_active": True})
 
 
-async def create_product(game_id: str, name: str, description: str, price: int, photo_id: str = "") -> str:
+async def create_product(game_id: str, name: str, description: str, price: int, photo_id: str = "", category_id: str = "") -> str:
     count = await db().products.count_documents({"game_id": game_id})
     result = await db().products.insert_one({
         "game_id": game_id,
+        "category_id": category_id,
         "name": name,
         "description": description,
         "price": price,

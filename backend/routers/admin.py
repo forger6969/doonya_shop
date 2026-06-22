@@ -10,6 +10,7 @@ from backend.models import (
     create_game, delete_game, update_game,
     create_product, delete_product, update_product,
     get_games, get_products,
+    get_categories, get_category, create_category, update_category, delete_category,
     create_promo, list_promos, delete_promo, toggle_promo,
     get_sales_by_day, get_top_products, get_top_users, get_product_stats,
     set_discount,
@@ -118,10 +119,48 @@ async def del_game(game_id: str, _=Depends(require_admin)):
     return {"ok": True}
 
 
+# ── Categories ────────────────────────────────────────────────────────────────
+
+class CategoryCreate(BaseModel):
+    game_id: str
+    name: str
+
+
+class CategoryUpdate(BaseModel):
+    name: str | None = None
+
+
+@router.get("/games/{game_id}/categories")
+async def list_categories(game_id: str, _=Depends(require_admin)):
+    cats = await get_categories(game_id)
+    return [{"id": str(c["_id"]), "game_id": c["game_id"], "name": c["name"]} for c in cats]
+
+
+@router.post("/categories")
+async def add_category(data: CategoryCreate, _=Depends(require_admin)):
+    cat_id = await create_category(data.game_id, data.name)
+    return {"ok": True, "category_id": cat_id}
+
+
+@router.patch("/categories/{cat_id}")
+async def patch_category(cat_id: str, data: CategoryUpdate, _=Depends(require_admin)):
+    fields = {k: v for k, v in data.model_dump().items() if v is not None}
+    if fields:
+        await update_category(cat_id, **fields)
+    return {"ok": True}
+
+
+@router.delete("/categories/{cat_id}")
+async def del_category(cat_id: str, _=Depends(require_admin)):
+    await delete_category(cat_id)
+    return {"ok": True}
+
+
 # ── Products ──────────────────────────────────────────────────────────────────
 
 class ProductCreate(BaseModel):
     game_id: str
+    category_id: str = ""
     name: str
     description: str = ""
     price: int
@@ -146,13 +185,17 @@ class ProductUpdate(BaseModel):
 
 
 @router.get("/games/{game_id}/products")
-async def list_all_products(game_id: str, _=Depends(require_admin)):
-    products = await get_products(game_id)
+async def list_all_products(game_id: str, category_id: str = "", _=Depends(require_admin)):
+    products = await get_products(game_id, category_id)
+    cats = await get_categories(game_id)
+    cat_map = {str(c["_id"]): c["name"] for c in cats}
     result = []
     for p in products:
         stats = await get_product_stats(str(p["_id"]))
         result.append({
             "id": str(p["_id"]),
+            "category_id": p.get("category_id", ""),
+            "category_name": cat_map.get(p.get("category_id", ""), ""),
             "name": p["name"],
             "description": p.get("description", ""),
             "price": p["price"],
@@ -170,7 +213,7 @@ async def list_all_products(game_id: str, _=Depends(require_admin)):
 
 @router.post("/products")
 async def add_product(data: ProductCreate, _=Depends(require_admin)):
-    pid = await create_product(data.game_id, data.name, data.description, data.price, data.icon_url)
+    pid = await create_product(data.game_id, data.name, data.description, data.price, data.icon_url, data.category_id)
     return {"ok": True, "product_id": pid}
 
 
