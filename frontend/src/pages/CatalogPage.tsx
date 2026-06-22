@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, X, ArrowLeft, ShoppingCart, Zap, Flame, Tag } from "lucide-react";
 import { getGames, getCategories, getProducts, getTopProducts, getOnSaleProducts, searchCatalog } from "../api";
 import { useLang } from "../i18n";
