@@ -22,7 +22,6 @@ async def lifespan(app: FastAPI):
     app.state.bot = bot
     app.state.dp = dp
     yield
-    await bot.delete_webhook()
     await bot.session.close()
     await close_db()
 
