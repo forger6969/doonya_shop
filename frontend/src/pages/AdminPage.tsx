@@ -331,6 +331,7 @@ function AdminCardEditor({ product, gameId: _gameId, onSaved }: { product: Produ
   const [discountUntil, setDiscountUntil] = useState(
     product.discount_until ? product.discount_until.slice(0, 16) : ""
   );
+  const [broadcastDiscount, setBroadcastDiscount] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const addField = () => {
@@ -347,6 +348,7 @@ function AdminCardEditor({ product, gameId: _gameId, onSaved }: { product: Produ
       discount_percent: Number(discountPct) || 0,
       discount_enabled: discountEnabled,
       discount_until: discountUntil ? new Date(discountUntil).toISOString() : null,
+      broadcast: broadcastDiscount,
     });
     setSaving(false);
     onSaved();
@@ -406,6 +408,20 @@ function AdminCardEditor({ product, gameId: _gameId, onSaved }: { product: Produ
           <p className="text-[10px] text-red-400/60">
             Цена со скидкой: {Math.max(1, Math.floor(Number(price) * (100 - Number(discountPct)) / 100)).toLocaleString()} sum
           </p>
+        )}
+        {discountEnabled && discountPct && (
+          <button
+            onClick={() => setBroadcastDiscount(!broadcastDiscount)}
+            className="flex items-center gap-1.5 active:opacity-70 mt-1"
+          >
+            {broadcastDiscount
+              ? <ToggleRight className="w-5 h-5 text-orange-400" />
+              : <ToggleLeft className="w-5 h-5 text-zinc-600" />
+            }
+            <span className={`text-[11px] font-bold ${broadcastDiscount ? "text-orange-400" : "text-zinc-600"}`}>
+              📣 Уведомить всех пользователей о скидке
+            </span>
+          </button>
         )}
       </div>
 

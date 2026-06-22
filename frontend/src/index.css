@@ -83,6 +83,27 @@ html.light-theme [style*="rgba(168,85,247,0.0"] { border-color: rgba(168,85,247,
 html.light-theme [style*="rgba(8,5,16"],
 html.light-theme [style*="rgba(7,8,15"] { background: rgba(255,255,255,0.97) !important; }
 
+/* Light theme — adapt white text to dark theme text */
+html.light-theme .text-white { color: var(--text) !important; }
+html.light-theme [class*="text-white\/"] { color: var(--text-dim) !important; }
+
+/* Protect: white text INSIDE or ON gradient-background elements stays white */
+html.light-theme [style*="linear-gradient"] .text-white,
+html.light-theme [style*="linear-gradient"] [class*="text-white\/"],
+html.light-theme .text-white[style*="linear-gradient"],
+html.light-theme [class*="text-white\/"][style*="linear-gradient"] { color: #ffffff !important; }
+
+/* Override explicit white-ish rgba(240,242,250,*) color values */
+html.light-theme [style*="rgba(240,242,250"] { color: var(--text-dim) !important; }
+
+/* Fix inputs in light mode */
+html.light-theme input { color: var(--text) !important; }
+html.light-theme input::placeholder { color: var(--text-muted) !important; }
+
+/* Sticky tabs backdrop in light mode */
+html.light-theme [style*="rgba(8,5,16,0.95)"],
+html.light-theme [style*="rgba(8,5,16, 0.95)"] { background: rgba(250,245,255,0.97) !important; }
+
 * { box-sizing: border-box; }
 
 body {

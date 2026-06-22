@@ -30,6 +30,11 @@ async def update_balance(user_id: int, amount: int):
     await db().users.update_one({"user_id": user_id}, {"$inc": {"balance": amount}})
 
 
+async def get_all_user_ids() -> list[int]:
+    users = await db().users.find({}, {"user_id": 1}).to_list(None)
+    return [u["user_id"] for u in users if "user_id" in u]
+
+
 # ── Games ────────────────────────────────────────────────────────────────────
 async def get_games() -> list:
     return await db().games.find({"is_active": True}).sort("order", 1).to_list(None)

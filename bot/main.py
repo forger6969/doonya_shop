@@ -1,7 +1,7 @@
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from backend.config import BOT_TOKEN, MINI_APP_URL, ADMIN_ID, SUPPORT_AGENT_IDS
+from backend.config import BOT_TOKEN, MINI_APP_URL, ADMIN_ID, ADMIN_IDS, SUPPORT_AGENT_IDS
 from backend.models import confirm_topup, reject_topup, complete_order, get_product, add_chat_message, get_chat
 from backend.database import get_db
 from backend.notify import notify_user_topup_confirmed, notify_user_topup_rejected, notify_user_order_ready
@@ -25,19 +25,32 @@ async def cmd_start(message: types.Message):
 
 # ── Callback handlers (inline buttons) ───────────────────────────────────────
 
+async def _edit_status(msg: types.Message, status_line: str) -> None:
+    """Edit admin message to prepend status line, remove inline buttons."""
+    try:
+        if msg.photo:
+            old = msg.caption or ""
+            await msg.edit_caption(caption=f"{status_line}\n\n{old}", parse_mode="HTML", reply_markup=None)
+        else:
+            old = msg.text or ""
+            await msg.edit_text(f"{status_line}\n\n{old}", parse_mode="HTML", reply_markup=None)
+    except Exception:
+        try:
+            await msg.edit_reply_markup(reply_markup=None)
+        except Exception:
+            pass
+
+
 @dp.callback_query(lambda c: c.data and c.data.startswith("confirm_topup:"))
 async def cb_confirm_topup(callback: types.CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("Нет доступа", show_alert=True)
         return
     topup_id = callback.data.removeprefix("confirm_topup:")
     result = await confirm_topup(topup_id)
     if result:
         await notify_user_topup_confirmed(result["user_id"], result["amount"])
-        try:
-            await callback.message.edit_reply_markup(reply_markup=None)
-        except Exception:
-            pass
+        await _edit_status(callback.message, f"✅ <b>ПОДТВЕРЖДЕНО</b> — баланс +{result['amount']:,} сум")
         await callback.answer("✅ Подтверждено! Баланс пополнен.")
     else:
         await callback.answer("Уже обработано", show_alert=True)
@@ -45,17 +58,14 @@ async def cb_confirm_topup(callback: types.CallbackQuery):
 
 @dp.callback_query(lambda c: c.data and c.data.startswith("reject_topup:"))
 async def cb_reject_topup(callback: types.CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("Нет доступа", show_alert=True)
         return
     topup_id = callback.data.removeprefix("reject_topup:")
     result = await reject_topup(topup_id)
     if result:
         await notify_user_topup_rejected(result["user_id"])
-        try:
-            await callback.message.edit_reply_markup(reply_markup=None)
-        except Exception:
-            pass
+        await _edit_status(callback.message, "❌ <b>ОТКЛОНЕНО</b>")
         await callback.answer("❌ Отклонено.")
     else:
         await callback.answer("Уже обработано", show_alert=True)
@@ -63,7 +73,7 @@ async def cb_reject_topup(callback: types.CallbackQuery):
 
 @dp.callback_query(lambda c: c.data and c.data.startswith("done_order:"))
 async def cb_done_order(callback: types.CallbackQuery):
-    if callback.from_user.id != ADMIN_ID:
+    if callback.from_user.id not in ADMIN_IDS:
         await callback.answer("Нет доступа", show_alert=True)
         return
     order_id = callback.data.removeprefix("done_order:")
@@ -76,10 +86,7 @@ async def cb_done_order(callback: types.CallbackQuery):
         except Exception:
             pass
         await notify_user_order_ready(order["user_id"], order_id, product_name)
-        try:
-            await callback.message.edit_reply_markup(reply_markup=None)
-        except Exception:
-            pass
+        await _edit_status(callback.message, "✅ <b>ВЫПОЛНЕН</b> — пользователь уведомлён")
         await callback.answer("✅ Заказ выполнен, пользователь уведомлён.")
     else:
         await callback.answer("Заказ не найден", show_alert=True)

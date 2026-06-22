@@ -114,7 +114,7 @@ export const adminTogglePromo = (id: string) => api.patch(`/admin/promos/${id}/t
 // Discount
 export const adminSetDiscount = (
   productId: string,
-  data: { discount_percent: number; discount_enabled: boolean; discount_until?: string | null }
+  data: { discount_percent: number; discount_enabled: boolean; discount_until?: string | null; broadcast?: boolean }
 ) => api.patch(`/admin/products/${productId}/discount`, data).then((r) => r.data);
 
 // Support WS URL helper

@@ -1,5 +1,7 @@
+import asyncio
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
 from backend.config import BOT_TOKEN, ADMIN_ID, MINI_APP_URL
 
 _bot: Bot | None = None
@@ -83,6 +85,50 @@ async def notify_user_topup_rejected(user_id: int):
         "❌ Ваш запрос на пополнение отклонён. Напишите в поддержку если считаете это ошибкой.",
         parse_mode="HTML",
     )
+
+
+async def broadcast_discount(
+    product_name: str,
+    discount_percent: int,
+    photo_url: str = "",
+    game_name: str = "",
+):
+    """Send discount announcement to all users (fire-and-forget, rate-limited)."""
+    from backend.models import get_all_user_ids
+    bot = get_bot()
+    user_ids = await get_all_user_ids()
+
+    game_line = f"🎮 <b>{game_name}</b>\n" if game_name else ""
+    text = (
+        f"🔥 <b>СКИДКА В DOONYA SHOP!</b>\n\n"
+        f"{game_line}"
+        f"Товар: <b>{product_name}</b>\n"
+        f"Скидка: <b>-{discount_percent}%</b> 🎉\n\n"
+        f"Успей купить по выгодной цене!"
+    )
+    kb = None
+    if MINI_APP_URL:
+        kb = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text="🛒 Открыть магазин", web_app=WebAppInfo(url=MINI_APP_URL))
+        ]])
+
+    sent = 0
+    for user_id in user_ids:
+        try:
+            if photo_url:
+                await bot.send_photo(user_id, photo_url, caption=text, parse_mode="HTML", reply_markup=kb)
+            else:
+                await bot.send_message(user_id, text, parse_mode="HTML", reply_markup=kb)
+            sent += 1
+        except (TelegramForbiddenError, TelegramBadRequest):
+            pass  # user blocked bot or chat not found
+        except Exception:
+            pass
+        # Rate limit: ~30 msg/sec max, stay safe at 20/sec
+        if sent % 20 == 0:
+            await asyncio.sleep(1)
+
+    return sent
 
 
 async def notify_user_order_ready(user_id: int, order_id: str, product_name: str = ""):

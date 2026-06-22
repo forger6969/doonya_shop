@@ -245,11 +245,13 @@ async def del_product(product_id: str, _=Depends(require_admin)):
 class DiscountSet(BaseModel):
     discount_percent: int = 0
     discount_enabled: bool = True
-    discount_until: str | None = None  # ISO datetime string or null
+    discount_until: str | None = None
+    broadcast: bool = False  # if True — send discount announcement to all users
 
 
 @router.patch("/products/{product_id}/discount")
 async def patch_discount(product_id: str, data: DiscountSet, _=Depends(require_admin)):
+    import asyncio
     from datetime import datetime as dt
     until = None
     if data.discount_until:
@@ -258,6 +260,26 @@ async def patch_discount(product_id: str, data: DiscountSet, _=Depends(require_a
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid discount_until format")
     await set_discount(product_id, data.discount_percent, data.discount_enabled, until)
+
+    # Broadcast to all users if requested and discount is being enabled
+    if data.broadcast and data.discount_enabled and data.discount_percent > 0:
+        try:
+            from backend.notify import broadcast_discount
+            from bson import ObjectId as ObjId
+            _db = get_db()
+            product = await _db.products.find_one({"_id": ObjId(product_id)})
+            if product:
+                game = await _db.games.find_one({"_id": ObjId(product["game_id"])}) if product.get("game_id") else None
+                game_name = game["name"] if game else ""
+                asyncio.create_task(broadcast_discount(
+                    product_name=product["name"],
+                    discount_percent=data.discount_percent,
+                    photo_url=product.get("icon_url") or product.get("photo_id") or "",
+                    game_name=game_name,
+                ))
+        except Exception:
+            pass
+
     return {"ok": True}
 
 
