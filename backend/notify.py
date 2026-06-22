@@ -70,9 +70,14 @@ async def notify_admin_order(
         text += "\n"
         for k, v in field_answers.items():
             text += f"\n{k}: <code>{v}</code>"
-    kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="✅ Выполнен", callback_data=f"done_order:{order_id}"),
-    ]])
+
+    contact_url = f"https://t.me/{username}" if username else f"tg://user?id={user_id}"
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Выполнен", callback_data=f"done_order:{order_id}"),
+            InlineKeyboardButton(text="✍️ Написать", url=contact_url),
+        ],
+    ])
     await bot.send_message(ADMIN_ID, text, parse_mode="HTML", reply_markup=kb)
 
 
