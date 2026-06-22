@@ -1555,34 +1555,45 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
             <p className="text-sm">Нет чатов по заказам</p>
           </div>
         ) : (
-          filtered.map((chat) => (
-            <button key={chat.order_id} onClick={() => openChat(chat)}
-              className="a-card flex items-center gap-3 p-3.5 active:opacity-70 text-left w-full">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black text-white flex-shrink-0"
-                style={{ background: chat.unread_by_admin > 0 ? "linear-gradient(135deg,#f59e0b,#d97706)" : "rgba(255,255,255,0.06)" }}>
-                <Gamepad2 className="w-4 h-4" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[13px] font-bold text-white truncate">{chat.product_name || "Заказ"}</p>
-                  <p className="text-[10px] text-zinc-700 flex-shrink-0">{fmtTs(chat.last_ts)}</p>
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  {chat.game_name && (
-                    <span className="text-[10px] font-bold text-amber-400/60">{chat.game_name}</span>
+          filtered.map((chat) => {
+            const displayName = chat.first_name || chat.username || `user ${chat.user_id}`;
+            const initial = displayName[0].toUpperCase();
+            return (
+              <button key={chat.order_id} onClick={() => openChat(chat)}
+                className="a-card flex items-center gap-3 p-3.5 active:opacity-70 text-left w-full">
+                {/* User avatar */}
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white flex-shrink-0 relative"
+                  style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+                  {initial}
+                  {chat.unread_by_admin > 0 && (
+                    <div className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full flex items-center justify-center px-0.5 border border-[#0d0e14]"
+                      style={{ background: "#ef4444" }}>
+                      <span className="text-[9px] font-black text-white leading-none">{chat.unread_by_admin > 9 ? "9+" : chat.unread_by_admin}</span>
+                    </div>
                   )}
-                  {chat.game_name && chat.last_message && <span className="text-[10px] text-zinc-700">·</span>}
-                  <p className="text-[12px] text-zinc-600 truncate">{chat.last_message || "—"}</p>
                 </div>
-              </div>
-              {chat.unread_by_admin > 0 && (
-                <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: "#f59e0b" }}>
-                  <span className="text-[10px] font-bold text-black">{chat.unread_by_admin}</span>
+
+                <div className="flex-1 min-w-0">
+                  {/* Name + time */}
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[13px] font-bold text-white truncate">
+                      {chat.first_name || chat.username || `user ${chat.user_id}`}
+                      {chat.username && chat.first_name && (
+                        <span className="text-zinc-600 font-normal text-[11px]"> @{chat.username}</span>
+                      )}
+                    </p>
+                    <p className="text-[10px] text-zinc-700 flex-shrink-0">{fmtTs(chat.last_ts)}</p>
+                  </div>
+                  {/* Product + game */}
+                  <p className="text-[11px] text-amber-400/70 truncate mt-0.5">
+                    {chat.product_name || "Заказ"}{chat.game_name ? ` · ${chat.game_name}` : ""}
+                  </p>
+                  {/* Last message */}
+                  <p className="text-[12px] text-zinc-600 truncate mt-0.5">{chat.last_message || "—"}</p>
                 </div>
-              )}
-            </button>
-          ))
+              </button>
+            );
+          })
         )}
       </div>
     </div>
@@ -1633,14 +1644,19 @@ export default function AdminPage() {
     }
   };
 
-  const NAV: { id: Section; label: string; Icon: React.ElementType }[] = [
-    { id: "dashboard", label: t.adHome,    Icon: LayoutDashboard },
-    { id: "payments",  label: t.adPay,     Icon: CreditCard },
-    { id: "orders",    label: t.adOrders,  Icon: ShoppingBag },
+  const [showMoreNav, setShowMoreNav] = useState(false);
+
+  const NAV_PRIMARY: { id: Section; label: string; Icon: React.ElementType }[] = [
+    { id: "dashboard",   label: t.adHome,   Icon: LayoutDashboard },
+    { id: "payments",    label: t.adPay,    Icon: CreditCard },
+    { id: "orders",      label: t.adOrders, Icon: ShoppingBag },
+    { id: "order_chats", label: "Чаты",     Icon: MessageCircle },
+  ];
+
+  const NAV_MORE: { id: Section; label: string; Icon: React.ElementType }[] = [
     { id: "catalog",   label: t.adCatalog, Icon: Gamepad2 },
     { id: "analytics", label: t.adStats,   Icon: BarChart2 },
     { id: "promos",    label: t.adPromos,  Icon: Tag },
-    { id: "order_chats", label: "Чаты", Icon: MessageCircle },
   ];
 
   return (
@@ -1700,15 +1716,48 @@ export default function AdminPage() {
       </div>
 
       {/* Bottom nav */}
-      <div className="border-t border-[#1a1c27]" style={{ background: "#0d0e14" }}>
+      <div className="border-t border-[#1a1c27] relative" style={{ background: "#0d0e14" }}>
+        {/* Overflow popup */}
+        {showMoreNav && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setShowMoreNav(false)} />
+            <div className="absolute bottom-full right-0 mb-1 mr-1 z-50 rounded-2xl overflow-hidden"
+              style={{ background: "#13141f", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 -8px 32px rgba(0,0,0,0.6)", minWidth: 160 }}>
+              {NAV_MORE.map(({ id, label, Icon }) => (
+                <button key={id} onClick={() => { setSection(id); setShowMoreNav(false); }}
+                  className="flex items-center gap-3 w-full px-4 py-3 active:opacity-70 transition-colors"
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  <Icon className={`w-4 h-4 ${section === id ? "text-amber-400" : "text-zinc-500"}`} />
+                  <span className={`text-[12px] font-bold ${section === id ? "text-amber-400" : "text-zinc-400"}`}>{label}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
         <div className="flex">
-          {NAV.map(({ id, label, Icon }) => (
-            <button key={id} onClick={() => setSection(id)}
-              className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors">
-              <Icon className={`w-4 h-4 transition-colors ${section === id ? "text-amber-400" : "text-zinc-700"}`} />
-              <span className={`text-[9px] font-bold uppercase tracking-wide ${section === id ? "text-amber-400" : "text-zinc-700"}`}>{label}</span>
-            </button>
-          ))}
+          {NAV_PRIMARY.map(({ id, label, Icon }) => {
+            const active = section === id;
+            const isOrderChats = id === "order_chats";
+            const badge = isOrderChats ? orderChatTarget ? 0 : 0 : 0;
+            return (
+              <button key={id} onClick={() => setSection(id)}
+                className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors relative">
+                <Icon className={`w-4 h-4 transition-colors ${active ? "text-amber-400" : "text-zinc-700"}`} />
+                <span className={`text-[9px] font-bold uppercase tracking-wide ${active ? "text-amber-400" : "text-zinc-700"}`}>{label}</span>
+              </button>
+            );
+          })}
+          {/* "..." more button */}
+          <button onClick={() => setShowMoreNav((v) => !v)}
+            className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors relative">
+            <div className={`flex items-center gap-[3px] h-4 ${NAV_MORE.some(n => n.id === section) ? "text-amber-400" : "text-zinc-700"}`}>
+              {[0,1,2].map(i => <div key={i} className="w-1 h-1 rounded-full bg-current" />)}
+            </div>
+            <span className={`text-[9px] font-bold uppercase tracking-wide ${NAV_MORE.some(n => n.id === section) ? "text-amber-400" : "text-zinc-700"}`}>
+              {NAV_MORE.some(n => n.id === section) ? NAV_MORE.find(n => n.id === section)?.label : "Ещё"}
+            </span>
+          </button>
         </div>
       </div>
     </div>
