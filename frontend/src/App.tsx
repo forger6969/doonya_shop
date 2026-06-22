@@ -152,8 +152,8 @@ export default function App() {
       <header
         className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0"
         style={{
-          background: "rgba(8,5,16,0.95)",
-          borderBottom: "1px solid rgba(168,85,247,0.12)",
+          background: "var(--header-bg)",
+          borderBottom: "1px solid var(--border)",
           backdropFilter: "blur(20px)",
         }}
       >
@@ -272,9 +272,9 @@ export default function App() {
       <nav
         className="fixed bottom-0 left-0 right-0 pb-safe"
         style={{
-          background: "rgba(8,5,16,0.97)",
+          background: "var(--nav-bg)",
           backdropFilter: "blur(24px)",
-          borderTop: "1px solid rgba(168,85,247,0.10)",
+          borderTop: "1px solid var(--border)",
         }}
       >
         <div className="flex">
@@ -294,9 +294,9 @@ export default function App() {
                     padding: "4px 14px",
                   } : { padding: "4px 14px" }}
                 >
-                  <Icon className="w-4 h-4" style={{ color: active ? "#EC4899" : "rgba(245,240,255,0.20)" }} />
+                  <Icon className="w-4 h-4" style={{ color: active ? "#EC4899" : "var(--text-muted)" }} />
                 </div>
-                <span className="text-[10px] font-bold tracking-wide" style={{ color: active ? "#EC4899" : "rgba(245,240,255,0.20)" }}>
+                <span className="text-[10px] font-bold tracking-wide" style={{ color: active ? "#EC4899" : "var(--text-muted)" }}>
                   {label}
                 </span>
               </button>
@@ -309,7 +309,7 @@ export default function App() {
             className="flex-1 flex flex-col items-center gap-1 py-3 relative"
           >
             <div className="relative flex items-center justify-center" style={{ padding: "4px 14px" }}>
-              <Bell className="w-4 h-4" style={{ color: "rgba(245,240,255,0.20)" }} />
+              <Bell className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
               {unreadCount > 0 && (
                 <div
                   className="absolute -top-1 -right-0 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
@@ -319,7 +319,7 @@ export default function App() {
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-bold tracking-wide" style={{ color: "rgba(245,240,255,0.20)" }}>Уведомления</span>
+            <span className="text-[10px] font-bold tracking-wide" style={{ color: "var(--text-muted)" }}>Уведомления</span>
           </button>
         </div>
       </nav>

@@ -109,7 +109,7 @@ function VariantCard({ item, gameId, onBuy, onDetail }: {
   const [g1, g2] = palette(gameId + item.id + (item.variant_label || ""));
   return (
     <div className="flex-shrink-0 w-[128px] rounded-2xl overflow-hidden flex flex-col active:opacity-80 relative"
-      style={{ background: "#100D1E", border: "1px solid rgba(168,85,247,0.15)" }}
+      style={{ background: "var(--bg-raised)", border: "1px solid var(--border-card)" }}
       onClick={onDetail}>
       {item.discount_percent ? <DiscountBadge pct={item.discount_percent} /> : null}
       <div className="h-[70px] flex items-center justify-center flex-shrink-0 overflow-hidden"
@@ -119,7 +119,7 @@ function VariantCard({ item, gameId, onBuy, onDetail }: {
           : <span className="text-xl font-black text-white/80">{initials(item.name)}</span>}
       </div>
       <div className="p-2.5 flex flex-col gap-1.5 flex-1">
-        <p className="text-[11px] font-bold text-white leading-tight line-clamp-2">{item.name}</p>
+        <p className="text-[11px] font-bold leading-tight line-clamp-2" style={{ color: "var(--text)" }}>{item.name}</p>
         <div className="flex items-center justify-between mt-auto pt-1">
           <CardPrice item={item} />
           <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
@@ -137,15 +137,23 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
   item: CardItem; onBuy: () => void; onDetail: () => void;
 }) {
   const { t } = useLang();
+  const [g1, g2] = palette(item.id + (item.variant_label || ""));
   return (
     <div className="rounded-2xl overflow-hidden flex flex-col active:opacity-80 relative"
-      style={{ background: "#100D1E", border: "1px solid rgba(168,85,247,0.15)" }}
+      style={{ background: "var(--bg-raised)", border: "1px solid var(--border-card)" }}
       onClick={onDetail}>
       {item.discount_percent ? <DiscountBadge pct={item.discount_percent} /> : null}
+      {/* Product photo */}
+      <div className="h-[80px] flex items-center justify-center flex-shrink-0 overflow-hidden"
+        style={item.photo_id ? undefined : { background: `linear-gradient(145deg,${g1},${g2})` }}>
+        {item.photo_id
+          ? <img src={item.photo_id} className="w-full h-full object-cover" alt={item.name} />
+          : <span className="text-xl font-black text-white/80">{initials(item.name)}</span>}
+      </div>
       <div className="p-3 pb-2 flex-1">
-        <p className="text-[13px] font-bold text-white leading-snug pr-6">{item.name}</p>
+        <p className="text-[13px] font-bold leading-snug pr-6" style={{ color: "var(--text)" }}>{item.name}</p>
         {item.raw.description && !item.variant_label && (
-          <p className="text-[11px] text-white/40 mt-0.5 line-clamp-2">{item.raw.description}</p>
+          <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: "var(--text-dim)" }}>{item.raw.description}</p>
         )}
       </div>
       <div className="px-3 pb-3 flex items-center justify-between gap-2">
@@ -220,7 +228,7 @@ function TopProductsSection({ onBuy, onDetail }: { onBuy: (p: Product) => void; 
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Flame className="w-4 h-4 text-orange-400" />
-        <p className="text-sm font-black text-white">Топ продаж</p>
+        <p className="text-sm font-black" style={{ color: "var(--text)" }}>Топ продаж</p>
       </div>
       <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4">
         {cards.slice(0, 8).map((item, i) => (
@@ -241,7 +249,7 @@ function OnSaleSection({ onBuy, onDetail }: { onBuy: (p: Product) => void; onDet
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Tag className="w-4 h-4 text-red-400" />
-        <p className="text-sm font-black text-white">Скидки</p>
+        <p className="text-sm font-black" style={{ color: "var(--text)" }}>Скидки</p>
       </div>
       <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4">
         {cards.slice(0, 10).map((item, i) => (
@@ -319,15 +327,15 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
 
       {/* Sticky category tabs */}
       {categories.length > 0 && (
-        <div className="sticky top-0 z-10 border-b border-white/[0.04]"
-          style={{ background: "rgba(8,5,16,0.95)", backdropFilter: "blur(16px)" }}>
+        <div className="sticky top-0 z-10 border-b"
+          style={{ background: "var(--header-bg)", backdropFilter: "blur(16px)", borderColor: "var(--border)" }}>
           <div className="flex gap-2 px-4 py-3 overflow-x-auto no-scrollbar">
             {categories.map((cat) => (
               <button key={cat.id} onClick={() => setActiveTab(cat.id)}
                 className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all active:scale-95"
                 style={activeTab === cat.id
                   ? { background: "linear-gradient(135deg,#EC4899,#A855F7)", color: "#fff", boxShadow: "0 4px 16px rgba(236,72,153,0.35)" }
-                  : { background: "#100D1E", color: "rgba(245,240,255,0.45)", border: "1px solid rgba(168,85,247,0.12)" }}>
+                  : { background: "var(--bg-raised)", color: "var(--text-dim)", border: "1px solid var(--border-card)" }}>
                 {cat.name}
               </button>
             ))}
@@ -342,14 +350,14 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
             <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#EC4899", borderTopColor: "transparent" }} />
           </div>
         ) : totalCards === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-14" style={{ color: "rgba(240,242,250,0.2)" }}>
+          <div className="flex flex-col items-center gap-3 py-14" style={{ color: "var(--text-muted)" }}>
             <ShoppingCart className="w-10 h-10" />
             <p className="text-sm">{t.comingSoon}</p>
           </div>
         ) : (
           <div>
             {visibleItems.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-14" style={{ color: "rgba(240,242,250,0.2)" }}>
+              <div className="flex flex-col items-center gap-3 py-14" style={{ color: "var(--text-muted)" }}>
                 <ShoppingCart className="w-10 h-10" />
                 <p className="text-sm">{t.comingSoon}</p>
               </div>
@@ -402,7 +410,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
   const hasAny = results.games.length + results.categories.length + results.products.length > 0;
   if (!hasAny) {
     return (
-      <div className="flex flex-col items-center gap-3 py-14" style={{ color: "rgba(240,242,250,0.2)" }}>
+      <div className="flex flex-col items-center gap-3 py-14" style={{ color: "var(--text-muted)" }}>
         <Search className="w-8 h-8" />
         <p className="text-sm">Ничего не найдено по «{query}»</p>
       </div>
@@ -416,7 +424,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
       {results.games.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.1em] mb-3"
-            style={{ color: "rgba(240,242,250,0.3)" }}>Игры</p>
+            style={{ color: "var(--text-muted)" }}>Игры</p>
           <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
             {results.games.map((g) => {
               const [c1, c2] = palette(g.id);
@@ -434,7 +442,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
                         </div>}
                   </div>
                   <p className="text-[11px] font-semibold text-center leading-tight w-full truncate"
-                    style={{ color: "rgba(240,242,250,0.6)" }}>{g.name}</p>
+                    style={{ color: "var(--text-dim)" }}>{g.name}</p>
                 </button>
               );
             })}
@@ -445,7 +453,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
       {results.categories.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.1em] mb-3"
-            style={{ color: "rgba(240,242,250,0.3)" }}>Категории</p>
+            style={{ color: "var(--text-muted)" }}>Категории</p>
           <div className="flex flex-wrap gap-2">
             {results.categories.map((c) => (
               <span key={c.id} className="px-3 py-1.5 rounded-full text-xs font-bold"
@@ -460,7 +468,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
       {productCards.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.1em] mb-3"
-            style={{ color: "rgba(240,242,250,0.3)" }}>Товары</p>
+            style={{ color: "var(--text-muted)" }}>Товары</p>
           <div className="grid grid-cols-2 gap-3">
             {productCards.map((item, i) => (
               <GameDetailProductCard
@@ -519,13 +527,9 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#EC4899" }} />
           <input value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder={t.searchGames}
-            className="w-full rounded-2xl pl-10 pr-9 py-3 text-sm text-white placeholder-white/25 outline-none transition-colors"
-            style={{
-              background: "#100D1E",
-              border: "1px solid rgba(168,85,247,0.15)",
-            }}
+            className="w-full rounded-2xl pl-10 pr-9 py-3 text-sm outline-none transition-colors s-input"
             onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(236,72,153,0.40)"; }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(168,85,247,0.15)"; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = ""; }}
           />
           {query && (
             <button onClick={() => setQuery("")} className="absolute right-3.5 top-1/2 -translate-y-1/2">
@@ -560,7 +564,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
                 {games.length > 0 && (
                   <div className="flex flex-col gap-3">
                     <p className="text-[11px] font-black uppercase tracking-[0.1em]"
-                      style={{ color: "rgba(240,242,250,0.3)" }}>Все игры</p>
+                      style={{ color: "var(--text-muted)" }}>Все игры</p>
                     <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
                       {games.map((g) => {
                         const [c1, c2] = palette(g.id);
@@ -579,7 +583,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
                               }
                             </div>
                             <p className="text-[11px] font-semibold text-center leading-tight w-full truncate"
-                              style={{ color: "rgba(240,242,250,0.65)" }}>{g.name}</p>
+                              style={{ color: "var(--text-dim)" }}>{g.name}</p>
                           </button>
                         );
                       })}
