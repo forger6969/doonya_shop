@@ -14,7 +14,11 @@ WEBHOOK_URL = f"https://doonya-shop-api.onrender.com{WEBHOOK_PATH}"
 async def lifespan(app: FastAPI):
     await connect_db()
     from bot.main import bot, dp
-    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+    await bot.set_webhook(
+        WEBHOOK_URL,
+        allowed_updates=["message", "callback_query", "inline_query"],
+        drop_pending_updates=True,
+    )
     app.state.bot = bot
     app.state.dp = dp
     yield

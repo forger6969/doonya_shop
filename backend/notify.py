@@ -132,17 +132,25 @@ async def broadcast_discount(
 
 
 async def notify_user_order_ready(user_id: int, order_id: str, product_name: str = ""):
+    import logging
     bot = get_bot()
     label = f"<b>{product_name}</b>" if product_name else "Ваш заказ"
-    review_url = f"{MINI_APP_URL}?review={order_id}" if MINI_APP_URL else ""
     kb = None
-    if review_url:
-        kb = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="⭐ Оставить отзыв", web_app=WebAppInfo(url=review_url)),
-        ]])
-    await bot.send_message(
-        user_id,
-        f"🎮 {label} выполнен!\n\nОставьте отзыв — это помогает другим покупателям 🙏",
-        parse_mode="HTML",
-        reply_markup=kb,
-    )
+    try:
+        review_url = f"{MINI_APP_URL}?review={order_id}" if MINI_APP_URL and MINI_APP_URL.startswith("https://") else ""
+        if review_url:
+            kb = InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(text="⭐ Оставить отзыв", web_app=WebAppInfo(url=review_url)),
+            ]])
+    except Exception as e:
+        logging.warning(f"notify_user_order_ready: keyboard build failed: {e}")
+        kb = None
+    try:
+        await bot.send_message(
+            user_id,
+            f"🎮 {label} выполнен!\n\nОставьте отзыв — это помогает другим покупателям 🙏",
+            parse_mode="HTML",
+            reply_markup=kb,
+        )
+    except Exception as e:
+        logging.error(f"notify_user_order_ready: send failed to {user_id}: {e}")

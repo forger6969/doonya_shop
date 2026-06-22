@@ -362,26 +362,31 @@ async def list_orders(status: str = "pending", _=Depends(require_admin)):
 
 @router.post("/order/{order_id}/complete")
 async def complete(order_id: str, _=Depends(require_admin)):
+    import logging
     order = await complete_order(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    product_name = ""
     try:
-        from backend.notify import notify_user_order_ready
-        await notify_user_order_ready(order["user_id"], order_id)
-    except Exception:
-        pass
-    try:
-        from backend.routers.notifications import notify_manager
         from bson import ObjectId as ObjId
         _db = get_db()
         product = await _db.products.find_one({"_id": ObjId(order["product_id"])})
         product_name = product["name"] if product else ""
+    except Exception as e:
+        logging.warning(f"complete order: product lookup failed: {e}")
+    try:
+        from backend.notify import notify_user_order_ready
+        await notify_user_order_ready(order["user_id"], order_id, product_name)
+    except Exception as e:
+        logging.error(f"complete order: notify failed: {e}")
+    try:
+        from backend.routers.notifications import notify_manager
         await notify_manager.send(
             order["user_id"], "order_ready",
             {"order_id": order_id, "product_name": product_name},
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logging.warning(f"complete order: ws notify failed: {e}")
     return {"ok": True}
 
 
