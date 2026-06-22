@@ -264,7 +264,7 @@ function Payments() {
 }
 
 // ─── Orders ───────────────────────────────────────────────────────────────────
-function Orders({ onChat }: { onChat: (user_id: number, name: string, username: string) => void }) {
+function Orders({ onChat }: { onChat: (order_id: string) => void }) {
   const { t } = useLang();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState("pending");
@@ -317,7 +317,7 @@ function Orders({ onChat }: { onChat: (user_id: number, name: string, username: 
                   </div>
                   {/* Chat button */}
                   <button
-                    onClick={() => onChat(o.user_id, o.first_name || o.username, o.username)}
+                    onClick={() => onChat(o.id)}
                     className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 active:opacity-70"
                     style={{ background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.18)" }}
                     title="Написать клиенту"
@@ -1336,7 +1336,7 @@ function AdminChat({ initialTarget }: { initialTarget?: { user_id: number; name:
 // ─── Admin Order Chats ────────────────────────────────────────────────────────
 interface OrderChatMsg { id: string; from: string; text: string; ts: string }
 
-function AdminOrderChats() {
+function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null }) {
   const [chats, setChats] = useState<AdminOrderChat[]>([]);
   const [selected, setSelected] = useState<AdminOrderChat | null>(null);
   const [messages, setMessages] = useState<OrderChatMsg[]>([]);
@@ -1346,6 +1346,7 @@ function AdminOrderChats() {
   const [games, setGames] = useState<{ id: string; name: string }[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const initialHandledRef = useRef(false);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -1405,6 +1406,16 @@ function AdminOrderChats() {
       wsRef.current.send(payload);
     }
   };
+
+  // Auto-open a specific order chat when navigated from Orders section
+  useEffect(() => {
+    if (!initialOrderId || initialHandledRef.current || chats.length === 0) return;
+    const target = chats.find((c) => c.order_id === initialOrderId);
+    if (target) {
+      initialHandledRef.current = true;
+      openChat(target);
+    }
+  }, [initialOrderId, chats, connected]);
 
   const send = () => {
     if (!selected || !text.trim() || wsRef.current?.readyState !== WebSocket.OPEN) return;
@@ -1587,11 +1598,11 @@ export default function AdminPage() {
   const [adminName, setAdminName] = useState("A");
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarRef = useRef<HTMLInputElement>(null);
-  const [chatTarget, setChatTarget] = useState<{ user_id: number; name: string; username: string } | null>(null);
+  const [orderChatTarget, setOrderChatTarget] = useState<string | null>(null);
 
-  const handleOpenChat = useCallback((user_id: number, name: string, username: string) => {
-    setChatTarget({ user_id, name, username });
-    setSection("chat");
+  const handleOpenChat = useCallback((order_id: string) => {
+    setOrderChatTarget(order_id);
+    setSection("order_chats");
   }, []);
 
   useEffect(() => {
@@ -1623,8 +1634,7 @@ export default function AdminPage() {
     { id: "catalog",   label: t.adCatalog, Icon: Gamepad2 },
     { id: "analytics", label: t.adStats,   Icon: BarChart2 },
     { id: "promos",    label: t.adPromos,  Icon: Tag },
-    { id: "chat",        label: "Чат",      Icon: MessageCircle },
-    { id: "order_chats", label: "Заказы",   Icon: ShoppingBag },
+    { id: "order_chats", label: "Чаты", Icon: MessageCircle },
   ];
 
   return (
@@ -1679,8 +1689,8 @@ export default function AdminPage() {
         {section === "catalog"     && <Catalog />}
         {section === "analytics"   && <Analytics />}
         {section === "promos"      && <Promos />}
-        {section === "chat"        && <AdminChat initialTarget={chatTarget} />}
-        {section === "order_chats" && <AdminOrderChats />}
+        {section === "chat"        && <AdminChat initialTarget={null} />}
+        {section === "order_chats" && <AdminOrderChats initialOrderId={orderChatTarget} />}
       </div>
 
       {/* Bottom nav */}
