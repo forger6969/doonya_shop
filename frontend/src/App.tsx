@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Grid2x2, MessageCircle, User, Bell } from "lucide-react";
+import { Grid2x2, MessageCircle, User, Bell, Moon, Sun } from "lucide-react";
 import { getMe } from "./api";
 import { useLang } from "./i18n";
 import CatalogPage from "./pages/CatalogPage";
@@ -55,6 +55,16 @@ export default function App() {
     { id: "support", Icon: MessageCircle, label: t.support },
     { id: "profile", Icon: User, label: t.profile },
   ];
+
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    const saved = localStorage.getItem("doonya_theme");
+    return saved ? saved === "dark" : true;
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("light-theme", !isDark);
+    localStorage.setItem("doonya_theme", isDark ? "dark" : "light");
+  }, [isDark]);
 
   const [tab, setTab] = useState<Tab>("catalog");
   const [showTopup, setShowTopup] = useState(false);
@@ -168,20 +178,38 @@ export default function App() {
             Doonya Shop
           </span>
         </div>
-        {user && (
+
+        <div className="flex items-center gap-2">
+          {/* Theme toggle */}
           <button
-            onClick={() => setShowTopup(true)}
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-70"
+            onClick={() => setIsDark((d) => !d)}
+            className="w-9 h-9 rounded-full flex items-center justify-center active:opacity-70 transition-all"
             style={{
-              background: "rgba(251,191,36,0.10)",
-              border: "1px solid rgba(251,191,36,0.20)",
+              background: isDark ? "rgba(168,85,247,0.12)" : "rgba(251,191,36,0.12)",
+              border: isDark ? "1px solid rgba(168,85,247,0.20)" : "1px solid rgba(251,191,36,0.25)",
             }}
           >
-            <span className="text-xs font-black" style={{ color: "#FBBF24" }}>
-              {user.balance.toLocaleString()} sum
-            </span>
+            {isDark
+              ? <Sun className="w-4 h-4" style={{ color: "#FBBF24" }} />
+              : <Moon className="w-4 h-4" style={{ color: "#A855F7" }} />
+            }
           </button>
-        )}
+
+          {user && (
+            <button
+              onClick={() => setShowTopup(true)}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-70"
+              style={{
+                background: "rgba(251,191,36,0.10)",
+                border: "1px solid rgba(251,191,36,0.20)",
+              }}
+            >
+              <span className="text-xs font-black" style={{ color: "#FBBF24" }}>
+                {user.balance.toLocaleString()} sum
+              </span>
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Pending topup indicator */}
