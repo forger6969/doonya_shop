@@ -172,6 +172,30 @@ async def _notify_user_bot(chat: dict, text: str) -> None:
         pass
 
 
+async def _enrich_usernames(chats: list) -> None:
+    """Backfill username/first_name from users collection for old chat docs that lack it."""
+    missing = [c for c in chats if not c.get("username") and not c.get("first_name")]
+    if not missing:
+        return
+    from backend.database import get_db
+    db = get_db()
+    ids = list({c["user_id"] for c in missing})
+    users = await db.users.find(
+        {"user_id": {"$in": ids}}, {"user_id": 1, "username": 1, "first_name": 1}
+    ).to_list(None)
+    umap = {u["user_id"]: u for u in users}
+    for c in missing:
+        u = umap.get(c["user_id"], {})
+        if u:
+            c["username"] = u.get("username", "")
+            c["first_name"] = u.get("first_name", "")
+            # Persist to DB so we don't need to look up again
+            await get_db().order_chats.update_one(
+                {"order_id": c["order_id"]},
+                {"$set": {"username": c["username"], "first_name": c["first_name"]}},
+            )
+
+
 async def require_admin(tg_user: dict = Depends(get_current_user)):
     if tg_user["id"] not in ADMIN_IDS:
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -181,6 +205,7 @@ async def require_admin(tg_user: dict = Depends(get_current_user)):
 @router.get("/admin/chats")
 async def admin_list_chats(game_id: str = "", product_id: str = "", _=Depends(require_admin)):
     chats = await list_order_chats(game_id=game_id, product_id=product_id)
+    await _enrich_usernames(chats)
     return [_fmt(c) for c in chats]
 
 
