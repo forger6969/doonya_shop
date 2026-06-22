@@ -587,7 +587,6 @@ function ProductList({ game, category, onBack }: { game: Game; category: Categor
 
 // ── CategoryList — categories within a game ───────────────────────────────────
 function CategoryList({ game, onBack }: { game: Game; onBack: () => void }) {
-  const { t } = useLang();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

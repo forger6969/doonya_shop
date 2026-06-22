@@ -37,6 +37,16 @@ async def migrate():
         icon = p.get("icon_url") or p.get("photo_id") or ""
 
         for i, v in enumerate(variants):
+            # Skip if a standalone product with same name already exists
+            existing = await db.products.find_one({
+                "game_id": p["game_id"],
+                "name": v["label"],
+                "is_active": True,
+            })
+            if existing:
+                print(f"   ⏭  {v['label']} already exists, skipping")
+                continue
+
             doc = {
                 "game_id": p["game_id"],
                 "name": v["label"],
