@@ -54,7 +54,7 @@ class PurchaseRequest(BaseModel):
 
 
 STARS_PRICE_PER_STAR = 225
-STARS_MIN_COUNT = 25
+STARS_MIN_COUNT = 50
 STARS_MAX_COUNT = 10_000
 
 

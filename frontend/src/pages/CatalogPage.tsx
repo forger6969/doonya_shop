@@ -488,8 +488,8 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 const STAR_PRICE = 225;
-const STAR_MIN = 25;
-const STAR_PRESETS = [25, 50, 100, 150, 250, 500];
+const STAR_MIN = 50;
+const STAR_PRESETS = [50, 100, 150, 250, 500, 1000];
 
 function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: () => void }) {
   const [username, setUsername] = useState("");
@@ -521,126 +521,94 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
   };
 
   if (done) return (
-    <div className="rounded-3xl p-5 flex flex-col items-center gap-3 text-center"
+    <div className="rounded-2xl p-4 flex items-center gap-3"
       style={{ background: "linear-gradient(135deg,#1a1a2e,#16213e)", border: "1px solid rgba(251,191,36,0.20)" }}>
-      <div className="text-4xl">✅</div>
-      <p className="font-black text-white text-base">Заказ принят!</p>
-      <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.45)" }}>
-        Звёзды поступят на @{username.replace(/^@/, "")} в ближайшее время
-      </p>
-      <button className="mt-1 px-5 py-2 rounded-xl text-xs font-bold text-amber-400 active:opacity-70"
+      <span className="text-2xl">✅</span>
+      <div className="flex-1 min-w-0">
+        <p className="font-black text-white text-[13px]">Заказ принят!</p>
+        <p className="text-[11px] truncate" style={{ color: "rgba(255,255,255,0.40)" }}>
+          Звёзды поступят на @{username.replace(/^@/, "")}
+        </p>
+      </div>
+      <button className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-amber-400 active:opacity-70 flex-shrink-0"
         style={{ background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.20)" }}
         onClick={() => { setDone(false); setUsername(""); setCount(100); }}>
-        Купить ещё
+        Ещё
       </button>
     </div>
   );
 
   return (
-    <div className="rounded-3xl overflow-hidden flex flex-col"
+    <div className="rounded-2xl overflow-hidden"
       style={{ background: "linear-gradient(135deg,#1a1040,#0d1527)", border: "1px solid rgba(251,191,36,0.18)" }}>
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-3"
+      <div className="flex items-center gap-2.5 px-3 py-2.5"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)", boxShadow: "0 4px 16px rgba(245,158,11,0.40)" }}>
-          <span className="text-xl">⭐</span>
-        </div>
-        <div>
-          <p className="font-black text-white text-[15px] leading-tight">Telegram Stars</p>
-          <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.40)" }}>1 ⭐ = {STAR_PRICE.toLocaleString()} сум</p>
-        </div>
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base"
+          style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>⭐</div>
+        <p className="font-black text-white text-[13px] flex-1">Telegram Stars</p>
+        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>1⭐ = {STAR_PRICE.toLocaleString()} сум</p>
       </div>
 
-      <div className="flex flex-col gap-3 p-4">
-        {/* Username input */}
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.35)" }}>
-            Telegram логин получателя
-          </p>
-          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}>
-            <span className="text-sm font-bold" style={{ color: "rgba(255,255,255,0.35)" }}>@</span>
-            <input
-              className="flex-1 bg-transparent outline-none text-sm font-semibold text-white placeholder:text-white/20"
-              placeholder="username"
-              value={username.replace(/^@/, "")}
-              onChange={(e) => setUsername(e.target.value.replace(/^@/, ""))}
-              autoCapitalize="none"
-              autoCorrect="off"
-            />
-          </div>
+      <div className="flex flex-col gap-2.5 p-3">
+        {/* Username */}
+        <div className="flex items-center gap-1.5 rounded-xl px-2.5 py-2"
+          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}>
+          <span className="text-sm font-bold" style={{ color: "rgba(255,255,255,0.30)" }}>@</span>
+          <input
+            className="flex-1 bg-transparent outline-none text-[13px] font-semibold text-white placeholder:text-white/20"
+            placeholder="telegram_username"
+            value={username.replace(/^@/, "")}
+            onChange={(e) => setUsername(e.target.value.replace(/^@/, ""))}
+            autoCapitalize="none"
+            autoCorrect="off"
+          />
         </div>
 
-        {/* Quantity presets */}
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.35)" }}>
-            Количество звёзд
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {STAR_PRESETS.map((n) => (
-              <button key={n}
-                onClick={() => setCount(n)}
-                className="py-2 rounded-xl text-sm font-black transition-all active:scale-95"
-                style={count === n
-                  ? { background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff", boxShadow: "0 2px 12px rgba(245,158,11,0.35)" }
-                  : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }
-                }>
-                {n} ⭐
-              </button>
-            ))}
-          </div>
-          {/* Custom input */}
-          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 mt-1"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}>
-            <span className="text-[11px] font-bold" style={{ color: "rgba(255,255,255,0.35)" }}>Своё кол-во:</span>
-            <input
-              type="number"
-              min={STAR_MIN}
-              className="flex-1 bg-transparent outline-none text-sm font-black text-white placeholder:text-white/20"
-              placeholder={`от ${STAR_MIN}`}
-              value={count === "" ? "" : STAR_PRESETS.includes(count as number) ? "" : count}
-              onChange={(e) => {
-                const v = e.target.value;
-                setCount(v === "" ? "" : Math.max(0, parseInt(v) || 0));
-              }}
-            />
-          </div>
+        {/* Presets */}
+        <div className="grid grid-cols-3 gap-1.5">
+          {STAR_PRESETS.map((n) => (
+            <button key={n} onClick={() => setCount(n)}
+              className="py-1.5 rounded-xl text-[12px] font-black transition-all active:scale-95"
+              style={count === n
+                ? { background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff" }
+                : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.50)" }
+              }>
+              {n} ⭐
+            </button>
+          ))}
         </div>
 
-        {/* Price */}
-        {stars > 0 && (
-          <div className="flex items-center justify-between rounded-2xl px-4 py-3"
-            style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.15)" }}>
-            <span className="text-[13px]" style={{ color: "rgba(255,255,255,0.50)" }}>
-              {stars} × {STAR_PRICE.toLocaleString()} сум
-            </span>
-            <span className="text-[15px] font-black" style={{ color: "#FBBF24" }}>
+        {/* Custom qty */}
+        <div className="flex items-center gap-2 rounded-xl px-2.5 py-2"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.30)" }}>Своё:</span>
+          <input
+            type="number" min={STAR_MIN}
+            className="flex-1 bg-transparent outline-none text-[13px] font-black text-white placeholder:text-white/20"
+            placeholder={`от ${STAR_MIN}`}
+            value={count === "" ? "" : STAR_PRESETS.includes(count as number) ? "" : count}
+            onChange={(e) => { const v = e.target.value; setCount(v === "" ? "" : Math.max(0, parseInt(v) || 0)); }}
+          />
+          {stars > 0 && (
+            <span className="text-[12px] font-black flex-shrink-0" style={{ color: "#FBBF24" }}>
               {total.toLocaleString()} сум
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
-        {error && <p className="text-red-400 text-[12px] font-semibold">{error}</p>}
+        {error && <p className="text-red-400 text-[11px] font-semibold -mt-1">{error}</p>}
 
-        {/* Buy button */}
-        <button
-          onClick={handleBuy}
-          disabled={loading || !stars || !username.trim()}
-          className="w-full py-3.5 rounded-2xl font-black text-sm text-white transition-all active:scale-[0.98]"
+        <button onClick={handleBuy} disabled={loading || !stars || !username.trim()}
+          className="w-full py-2.5 rounded-xl font-black text-[13px] text-white transition-all active:scale-[0.98]"
           style={loading || !stars || !username.trim()
             ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.25)", cursor: "not-allowed" }
-            : { background: "linear-gradient(135deg,#f59e0b,#d97706)", boxShadow: "0 4px 20px rgba(245,158,11,0.35)" }
-          }
-        >
-          {loading ? "Оформляем..." : `⭐ Купить за ${total > 0 ? total.toLocaleString() + " сум" : "..."}`}
+            : { background: "linear-gradient(135deg,#f59e0b,#d97706)", boxShadow: "0 3px 14px rgba(245,158,11,0.30)" }
+          }>
+          {loading ? "Оформляем..." : `⭐ Купить${total > 0 ? " · " + total.toLocaleString() + " сум" : ""}`}
         </button>
 
-        {notEnough && (
-          <p className="text-[11px] text-center" style={{ color: "rgba(255,255,255,0.30)" }}>
-            Нужно пополнить баланс
-          </p>
-        )}
+        {notEnough && <p className="text-[11px] text-center -mt-1" style={{ color: "rgba(255,255,255,0.28)" }}>Нужно пополнить баланс</p>}
       </div>
     </div>
   );
