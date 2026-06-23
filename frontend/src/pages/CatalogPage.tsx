@@ -489,7 +489,6 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
 
 const STAR_PRICE = 225;
 const STAR_MIN = 50;
-const STAR_PRESETS = [50, 100, 150, 250, 500, 1000];
 
 function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: () => void }) {
   const [username, setUsername] = useState("");
@@ -565,29 +564,15 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
           />
         </div>
 
-        {/* Presets */}
-        <div className="grid grid-cols-3 gap-1.5">
-          {STAR_PRESETS.map((n) => (
-            <button key={n} onClick={() => setCount(n)}
-              className="py-1.5 rounded-xl text-[12px] font-black transition-all active:scale-95"
-              style={count === n
-                ? { background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff" }
-                : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.50)" }
-              }>
-              {n} ⭐
-            </button>
-          ))}
-        </div>
-
-        {/* Custom qty */}
+        {/* Quantity */}
         <div className="flex items-center gap-2 rounded-xl px-2.5 py-2"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
-          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.30)" }}>Своё:</span>
+          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}>
+          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.30)" }}>⭐</span>
           <input
             type="number" min={STAR_MIN}
             className="flex-1 bg-transparent outline-none text-[13px] font-black text-white placeholder:text-white/20"
-            placeholder={`от ${STAR_MIN}`}
-            value={count === "" ? "" : STAR_PRESETS.includes(count as number) ? "" : count}
+            placeholder={`Кол-во (мин. ${STAR_MIN})`}
+            value={count === "" ? "" : count}
             onChange={(e) => { const v = e.target.value; setCount(v === "" ? "" : Math.max(0, parseInt(v) || 0)); }}
           />
           {stars > 0 && (
