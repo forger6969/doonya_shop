@@ -1778,7 +1778,6 @@ export default function AdminPage() {
           {NAV_PRIMARY.map(({ id, label, Icon }) => {
             const active = section === id;
             const isOrderChats = id === "order_chats";
-            const badge = isOrderChats ? orderChatTarget ? 0 : 0 : 0;
             return (
               <button key={id} onClick={() => setSection(id)}
                 className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors relative">
