@@ -1777,7 +1777,6 @@ export default function AdminPage() {
         <div className="flex">
           {NAV_PRIMARY.map(({ id, label, Icon }) => {
             const active = section === id;
-            const isOrderChats = id === "order_chats";
             return (
               <button key={id} onClick={() => setSection(id)}
                 className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors relative">
