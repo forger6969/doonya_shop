@@ -361,6 +361,8 @@ async def list_orders(status: str = "pending", _=Depends(require_admin)):
             "amount": o["amount"],
             "status": o["status"],
             "promo_code": o.get("promo_code", ""),
+            "variant_label": o.get("variant_label", ""),
+            "field_answers": o.get("field_answers", {}),
             "created_at": o["created_at"].isoformat(),
         }
         for o in orders

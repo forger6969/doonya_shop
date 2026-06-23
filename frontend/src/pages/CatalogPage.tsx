@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, X, ArrowLeft, ShoppingCart, Zap, Flame, Tag } from "lucide-react";
-import { getGames, getCategories, getProducts, getTopProducts, getOnSaleProducts, searchCatalog } from "../api";
+import { getGames, getCategories, getProducts, getTopProducts, getOnSaleProducts, searchCatalog, buyStars } from "../api";
 import { useLang } from "../i18n";
 import ProductDetailSheet from "./ProductDetailSheet";
 
@@ -487,6 +487,165 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
+const STAR_PRICE = 225;
+const STAR_MIN = 25;
+const STAR_PRESETS = [25, 50, 100, 150, 250, 500];
+
+function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: () => void }) {
+  const [username, setUsername] = useState("");
+  const [count, setCount] = useState<number | "">(100);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
+
+  const stars = typeof count === "number" && count >= STAR_MIN ? count : 0;
+  const total = stars * STAR_PRICE;
+  const notEnough = balance !== undefined && total > 0 && balance < total;
+
+  const handleBuy = async () => {
+    if (!username.trim()) { setError("Введите Telegram логин"); return; }
+    if (!stars) { setError(`Минимум ${STAR_MIN} звёзд`); return; }
+    if (notEnough) { setError("Недостаточно баланса — пополни счёт"); return; }
+    setError("");
+    setLoading(true);
+    try {
+      await buyStars(username.trim().replace(/^@/, ""), stars);
+      setDone(true);
+      onSuccess?.();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(msg || "Ошибка при заказе");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (done) return (
+    <div className="rounded-3xl p-5 flex flex-col items-center gap-3 text-center"
+      style={{ background: "linear-gradient(135deg,#1a1a2e,#16213e)", border: "1px solid rgba(251,191,36,0.20)" }}>
+      <div className="text-4xl">✅</div>
+      <p className="font-black text-white text-base">Заказ принят!</p>
+      <p className="text-[12px]" style={{ color: "rgba(255,255,255,0.45)" }}>
+        Звёзды поступят на @{username.replace(/^@/, "")} в ближайшее время
+      </p>
+      <button className="mt-1 px-5 py-2 rounded-xl text-xs font-bold text-amber-400 active:opacity-70"
+        style={{ background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.20)" }}
+        onClick={() => { setDone(false); setUsername(""); setCount(100); }}>
+        Купить ещё
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="rounded-3xl overflow-hidden flex flex-col"
+      style={{ background: "linear-gradient(135deg,#1a1040,#0d1527)", border: "1px solid rgba(251,191,36,0.18)" }}>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 pt-4 pb-3"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)", boxShadow: "0 4px 16px rgba(245,158,11,0.40)" }}>
+          <span className="text-xl">⭐</span>
+        </div>
+        <div>
+          <p className="font-black text-white text-[15px] leading-tight">Telegram Stars</p>
+          <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.40)" }}>1 ⭐ = {STAR_PRICE.toLocaleString()} сум</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 p-4">
+        {/* Username input */}
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.35)" }}>
+            Telegram логин получателя
+          </p>
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}>
+            <span className="text-sm font-bold" style={{ color: "rgba(255,255,255,0.35)" }}>@</span>
+            <input
+              className="flex-1 bg-transparent outline-none text-sm font-semibold text-white placeholder:text-white/20"
+              placeholder="username"
+              value={username.replace(/^@/, "")}
+              onChange={(e) => setUsername(e.target.value.replace(/^@/, ""))}
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+          </div>
+        </div>
+
+        {/* Quantity presets */}
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "rgba(255,255,255,0.35)" }}>
+            Количество звёзд
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {STAR_PRESETS.map((n) => (
+              <button key={n}
+                onClick={() => setCount(n)}
+                className="py-2 rounded-xl text-sm font-black transition-all active:scale-95"
+                style={count === n
+                  ? { background: "linear-gradient(135deg,#f59e0b,#d97706)", color: "#fff", boxShadow: "0 2px 12px rgba(245,158,11,0.35)" }
+                  : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.55)" }
+                }>
+                {n} ⭐
+              </button>
+            ))}
+          </div>
+          {/* Custom input */}
+          <div className="flex items-center gap-2 rounded-2xl px-3 py-2.5 mt-1"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}>
+            <span className="text-[11px] font-bold" style={{ color: "rgba(255,255,255,0.35)" }}>Своё кол-во:</span>
+            <input
+              type="number"
+              min={STAR_MIN}
+              className="flex-1 bg-transparent outline-none text-sm font-black text-white placeholder:text-white/20"
+              placeholder={`от ${STAR_MIN}`}
+              value={count === "" ? "" : STAR_PRESETS.includes(count as number) ? "" : count}
+              onChange={(e) => {
+                const v = e.target.value;
+                setCount(v === "" ? "" : Math.max(0, parseInt(v) || 0));
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Price */}
+        {stars > 0 && (
+          <div className="flex items-center justify-between rounded-2xl px-4 py-3"
+            style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.15)" }}>
+            <span className="text-[13px]" style={{ color: "rgba(255,255,255,0.50)" }}>
+              {stars} × {STAR_PRICE.toLocaleString()} сум
+            </span>
+            <span className="text-[15px] font-black" style={{ color: "#FBBF24" }}>
+              {total.toLocaleString()} сум
+            </span>
+          </div>
+        )}
+
+        {error && <p className="text-red-400 text-[12px] font-semibold">{error}</p>}
+
+        {/* Buy button */}
+        <button
+          onClick={handleBuy}
+          disabled={loading || !stars || !username.trim()}
+          className="w-full py-3.5 rounded-2xl font-black text-sm text-white transition-all active:scale-[0.98]"
+          style={loading || !stars || !username.trim()
+            ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.25)", cursor: "not-allowed" }
+            : { background: "linear-gradient(135deg,#f59e0b,#d97706)", boxShadow: "0 4px 20px rgba(245,158,11,0.35)" }
+          }
+        >
+          {loading ? "Оформляем..." : `⭐ Купить за ${total > 0 ? total.toLocaleString() + " сум" : "..."}`}
+        </button>
+
+        {notEnough && (
+          <p className="text-[11px] text-center" style={{ color: "rgba(255,255,255,0.30)" }}>
+            Нужно пополнить баланс
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CatalogPage({ onBuy, onTopup }: Props) {
   const { t } = useLang();
   const [games, setGames] = useState<Game[]>([]);
@@ -494,6 +653,11 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
   const [selected, setSelected] = useState<Game | null>(null);
   const [query, setQuery] = useState("");
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
+  const [userBalance, setUserBalance] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    import("../api").then(({ getMe }) => getMe().then((u) => setUserBalance(u.balance)).catch(() => {}));
+  }, []);
 
   useEffect(() => {
     getGames().then((g) => { setGames(g); setLoading(false); });
@@ -549,6 +713,8 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
         ) : (
           <>
             <BannerCarousel onTopup={onTopup} />
+
+            <StarsSection balance={userBalance} onSuccess={() => import("../api").then(({ getMe }) => getMe().then((u) => setUserBalance(u.balance)).catch(() => {}))} />
 
             {loading ? (
               <div className="flex justify-center py-10">

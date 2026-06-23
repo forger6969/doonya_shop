@@ -10,6 +10,8 @@ api.interceptors.request.use((config) => {
 
 // ── User ────────────────────────────────────────────────────────────────────
 export const getMe = () => api.post("/users/me").then((r) => r.data);
+export const buyStars = (telegram_username: string, stars_count: number) =>
+  api.post("/orders/buy-stars", { telegram_username, stars_count }).then((r) => r.data);
 export const getOrders = () => api.get("/users/orders").then((r) => r.data);
 export const getMyTopups = () => api.get("/users/topups").then((r) => r.data);
 export const saveEmail = (email: string) => api.post("/users/email", { email }).then((r) => r.data);

@@ -22,7 +22,7 @@ import { useLang, type Lang } from "../i18n";
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Stats { pending_topups: number; pending_orders: number; total_games: number; total_products: number; total_revenue: number }
 interface Topup { id: string; user_id: number; amount: number; unique_amount: number; method: string; receipt_url: string; status: string; created_at: string }
-interface Order { id: string; user_id: number; username: string; first_name: string; amount: number; status: string; promo_code: string; created_at: string }
+interface Order { id: string; user_id: number; username: string; first_name: string; amount: number; status: string; promo_code: string; variant_label?: string; field_answers?: Record<string, string>; product_id?: string; created_at: string }
 interface Game { id: string; name: string; description: string; icon_url: string }
 interface Category { id: string; game_id: string; name: string }
 interface PurchaseField { label: string; required: boolean }
@@ -303,7 +303,15 @@ function Orders({ onChat }: { onChat: (order_id: string) => void }) {
                     <ShoppingBag className="w-4 h-4 text-violet-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold text-white">{fmt(o.amount)}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-[13px] font-bold text-white">{fmt(o.amount)}</p>
+                      {o.variant_label && (
+                        <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md"
+                          style={{ background: "rgba(251,191,36,0.12)", color: "#FBBF24" }}>
+                          {o.variant_label}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                       <span className="text-[11px] text-zinc-400 font-semibold truncate max-w-[120px]">{userName}</span>
                       {o.username && (
@@ -314,6 +322,16 @@ function Orders({ onChat }: { onChat: (order_id: string) => void }) {
                         <span className="text-[10px] text-violet-400 font-bold">{o.promo_code}</span>
                       )}
                     </div>
+                    {o.field_answers && Object.keys(o.field_answers).length > 0 && (
+                      <div className="flex flex-col gap-0.5 mt-1.5">
+                        {Object.entries(o.field_answers).map(([k, v]) => (
+                          <p key={k} className="text-[10px]" style={{ color: "var(--text-muted, #6b7280)" }}>
+                            <span className="text-zinc-600">{k}:</span>{" "}
+                            <span className="text-zinc-300 font-mono">{v}</span>
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   {/* Chat button */}
                   <button

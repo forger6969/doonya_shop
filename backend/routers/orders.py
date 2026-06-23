@@ -53,6 +53,84 @@ class PurchaseRequest(BaseModel):
         return {str(k)[:100]: str(val)[:500] for k, val in v.items()}
 
 
+STARS_PRICE_PER_STAR = 225
+STARS_MIN_COUNT = 25
+STARS_MAX_COUNT = 10_000
+
+
+class BuyStarsRequest(BaseModel):
+    telegram_username: str
+    stars_count: int
+
+    @field_validator("telegram_username")
+    @classmethod
+    def _validate_username(cls, v: str) -> str:
+        v = v.strip().lstrip("@")
+        if not v or len(v) > 32:
+            raise ValueError("Invalid Telegram username")
+        return v
+
+    @field_validator("stars_count")
+    @classmethod
+    def _validate_stars(cls, v: int) -> int:
+        if v < STARS_MIN_COUNT:
+            raise ValueError(f"Minimum {STARS_MIN_COUNT} stars")
+        if v > STARS_MAX_COUNT:
+            raise ValueError(f"Maximum {STARS_MAX_COUNT} stars")
+        return v
+
+
+@router.post("/buy-stars")
+async def buy_stars(req: BuyStarsRequest, tg_user: dict = Depends(get_current_user)):
+    user_id = tg_user["id"]
+    check_rate_limit(f"buy_stars:{user_id}", max_calls=5, window_seconds=60)
+    user = await get_or_create_user(user_id, tg_user.get("username", ""), tg_user.get("first_name", ""))
+
+    total_price = req.stars_count * STARS_PRICE_PER_STAR
+    if user["balance"] < total_price:
+        raise HTTPException(status_code=402, detail="Insufficient balance")
+
+    order_id = await create_order(
+        user_id=user_id,
+        product_id="stars",
+        game_id="telegram",
+        amount=total_price,
+        original_price=total_price,
+        variant_label=f"{req.stars_count} ⭐",
+        field_answers={"Telegram логин": f"@{req.telegram_username}", "Кол-во звёзд": str(req.stars_count)},
+    )
+
+    try:
+        await get_or_create_order_chat(
+            order_id=order_id,
+            user_id=user_id,
+            product_id="stars",
+            game_id="telegram",
+            product_name=f"Telegram Stars × {req.stars_count}",
+            game_name="Telegram",
+            username=tg_user.get("username", ""),
+            first_name=tg_user.get("first_name", ""),
+        )
+    except Exception:
+        pass
+
+    try:
+        from backend.notify import notify_admin_order
+        await notify_admin_order(
+            order_id, user_id,
+            f"⭐ Telegram Stars",
+            total_price,
+            variant_label=f"{req.stars_count} ⭐ → @{req.telegram_username}",
+            field_answers={"Telegram логин": f"@{req.telegram_username}", "Кол-во звёзд": str(req.stars_count)},
+            username=tg_user.get("username", ""),
+            first_name=tg_user.get("first_name", ""),
+        )
+    except Exception:
+        pass
+
+    return {"ok": True, "order_id": order_id, "amount": total_price}
+
+
 class ReviewRequest(BaseModel):
     order_id: str
     rating: int
