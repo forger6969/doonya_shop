@@ -1,11 +1,12 @@
 import cloudinary
 import cloudinary.uploader
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from bson import ObjectId
 from backend.auth import get_current_user
 from backend.database import get_db
 from backend.config import CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+from backend.ratelimit import check_rate_limit
 from backend.models import (
     get_or_create_user, get_product, create_order,
     create_review, get_promo_by_code, apply_promo, use_promo,
@@ -27,6 +28,30 @@ class PurchaseRequest(BaseModel):
     variant_label: str = ""
     field_answers: dict = {}
 
+    @field_validator("product_id")
+    @classmethod
+    def _validate_product_id(cls, v: str) -> str:
+        if len(v) > 100:
+            raise ValueError("product_id too long")
+        return v
+
+    @field_validator("promo_code")
+    @classmethod
+    def _validate_promo_code(cls, v: str) -> str:
+        return v[:50]
+
+    @field_validator("variant_label")
+    @classmethod
+    def _validate_variant(cls, v: str) -> str:
+        return v[:200]
+
+    @field_validator("field_answers")
+    @classmethod
+    def _validate_fields(cls, v: dict) -> dict:
+        if len(v) > 20:
+            raise ValueError("Too many field_answers")
+        return {str(k)[:100]: str(val)[:500] for k, val in v.items()}
+
 
 class ReviewRequest(BaseModel):
     order_id: str
@@ -38,6 +63,7 @@ class ReviewRequest(BaseModel):
 @router.post("/buy")
 async def buy_product(req: PurchaseRequest, tg_user: dict = Depends(get_current_user)):
     user_id = tg_user["id"]
+    check_rate_limit(f"buy:{user_id}", max_calls=5, window_seconds=60)
     user = await get_or_create_user(user_id, tg_user.get("username", ""), tg_user.get("first_name", ""))
 
     product = await get_product(req.product_id)
@@ -98,6 +124,8 @@ async def buy_product(req: PurchaseRequest, tg_user: dict = Depends(get_current_
             game_id=product.get("game_id", ""),
             product_name=product.get("name", ""),
             game_name=game["name"] if game else "",
+            username=tg_user.get("username", ""),
+            first_name=tg_user.get("first_name", ""),
         )
     except Exception:
         pass
@@ -174,7 +202,9 @@ async def leave_review(req: ReviewRequest, tg_user: dict = Depends(get_current_u
 
 @router.post("/upload-photo")
 async def upload_review_photo(file: UploadFile = File(...), _=Depends(get_current_user)):
-    contents = await file.read()
+    contents = await file.read(10 * 1024 * 1024 + 1)
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Photo file too large (max 10 MB)")
     result = cloudinary.uploader.upload(
         contents,
         folder="doonya_shop/reviews",

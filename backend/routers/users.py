@@ -1,7 +1,7 @@
 import cloudinary
 import cloudinary.uploader
-from fastapi import APIRouter, Depends, UploadFile, File
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from pydantic import BaseModel, field_validator
 from backend.auth import get_current_user
 from backend.models import get_or_create_user, get_user, get_user_orders
 from backend.database import get_db
@@ -18,6 +18,14 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 class EmailSave(BaseModel):
     email: str
+
+    @field_validator("email")
+    @classmethod
+    def _validate_email(cls, v: str) -> str:
+        v = v.strip()[:254]
+        if v and "@" not in v:
+            raise ValueError("Invalid email address")
+        return v
 
 
 @router.post("/me")
@@ -40,7 +48,9 @@ async def get_me(tg_user: dict = Depends(get_current_user)):
 @router.post("/avatar")
 async def upload_avatar(file: UploadFile = File(...), tg_user: dict = Depends(get_current_user)):
     db = get_db()
-    contents = await file.read()
+    contents = await file.read(5 * 1024 * 1024 + 1)
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Avatar file too large (max 5 MB)")
     result = cloudinary.uploader.upload(
         contents,
         folder="doonya_shop/avatars",

@@ -1,18 +1,36 @@
+import os
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from aiogram.types import Update
-from backend.database import connect_db, close_db
+from backend.database import connect_db, close_db, get_db
 from backend.routers import users, catalog, topup, orders, admin, support, notifications, order_chat
-from backend.config import BOT_TOKEN
+
+logging.basicConfig(level=logging.INFO)
 
 WEBHOOK_PATH = "/webhook"
-WEBHOOK_URL = f"https://doonya-shop-api.onrender.com{WEBHOOK_PATH}"
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", f"https://doonya-shop-api.onrender.com{WEBHOOK_PATH}")
+
+
+async def _create_indexes():
+    db = get_db()
+    await db.users.create_index("user_id", unique=True, background=True)
+    await db.orders.create_index("user_id", background=True)
+    await db.orders.create_index("status", background=True)
+    await db.orders.create_index("product_id", background=True)
+    await db.topups.create_index("user_id", background=True)
+    await db.topups.create_index("status", background=True)
+    await db.order_chats.create_index("order_id", unique=True, background=True)
+    await db.order_chats.create_index("user_id", background=True)
+    await db.support_chats.create_index("user_id", unique=True, background=True)
+    await db.notifications.create_index([("user_id", 1), ("read", 1)], background=True)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_db()
+    await _create_indexes()
     from bot.main import bot, dp
     await bot.set_webhook(
         WEBHOOK_URL,

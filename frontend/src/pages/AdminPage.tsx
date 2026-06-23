@@ -1347,6 +1347,13 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
   const wsRef = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialHandledRef = useRef(false);
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -1358,43 +1365,57 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
 
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData || "";
-    const url = `${getOrderChatWsUrl()}?initData=${encodeURIComponent(initData)}`;
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
-    ws.onopen = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
-    ws.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (data.type === "order_chats") {
-          setChats(data.chats || []);
-        } else if (data.type === "order_history") {
-          setMessages(data.messages || []);
-        } else if (data.type === "message") {
-          const oid = data.order_id;
-          setChats((prev) => {
-            const idx = prev.findIndex((c) => c.order_id === oid);
-            if (idx >= 0) {
-              const next = [...prev];
-              next[idx] = { ...next[idx], last_message: data.text, last_ts: data.ts,
-                unread_by_admin: data.from === "user" ? (next[idx].unread_by_admin || 0) + 1 : next[idx].unread_by_admin };
-              return next;
-            }
-            return prev;
-          });
-          setSelected((sel) => {
-            if (sel?.order_id === oid) {
-              setMessages((prev) =>
-                prev.find((m) => m.id === data.id) ? prev : [...prev, { id: data.id, from: data.from, text: data.text, ts: data.ts }]
-              );
-            }
-            return sel;
-          });
-        }
-      } catch { /* ignore */ }
+
+    const connect = () => {
+      if (!mountedRef.current) return;
+      const url = `${getOrderChatWsUrl()}?initData=${encodeURIComponent(initData)}`;
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+      ws.onopen = () => { if (mountedRef.current) setConnected(true); };
+      ws.onclose = () => {
+        if (!mountedRef.current) return;
+        setConnected(false);
+        reconnectRef.current = setTimeout(connect, 3000);
+      };
+      ws.onerror = () => setConnected(false);
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.type === "order_chats") {
+            setChats(data.chats || []);
+          } else if (data.type === "order_history") {
+            setMessages(data.messages || []);
+          } else if (data.type === "message") {
+            const oid = data.order_id;
+            setChats((prev) => {
+              const idx = prev.findIndex((c) => c.order_id === oid);
+              if (idx >= 0) {
+                const next = [...prev];
+                next[idx] = { ...next[idx], last_message: data.text, last_ts: data.ts,
+                  unread_by_admin: data.from === "user" ? (next[idx].unread_by_admin || 0) + 1 : next[idx].unread_by_admin };
+                return next;
+              }
+              return prev;
+            });
+            setSelected((sel) => {
+              if (sel?.order_id === oid) {
+                setMessages((prev) =>
+                  prev.find((m) => m.id === data.id) ? prev : [...prev, { id: data.id, from: data.from, text: data.text, ts: data.ts }]
+                );
+              }
+              return sel;
+            });
+          }
+        } catch { /* ignore */ }
+      };
     };
-    return () => ws.close();
+
+    connect();
+
+    return () => {
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
+      wsRef.current?.close();
+    };
   }, []);
 
   const openChat = (chat: AdminOrderChat) => {

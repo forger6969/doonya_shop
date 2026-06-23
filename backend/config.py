@@ -16,16 +16,19 @@ UZCARD_HOLDER: str = os.getenv("UZCARD_HOLDER", "H.D")
 VISA_REQUISITES: str = os.getenv("VISA_REQUISITES", "4413 5976 0450 1484")
 VISA_HOLDER: str = os.getenv("VISA_HOLDER", "H.D")
 
-# Multi-admin support
-ADMIN_IDS: set = {ADMIN_ID} | {
-    int(x.strip()) for x in os.getenv("EXTRA_ADMIN_IDS", "7004667100").split(",") if x.strip()
-}
+# Multi-admin support — filter out ADMIN_ID=0 (env var not configured)
+ADMIN_IDS: set = {x for x in (
+    {ADMIN_ID} | {int(x.strip()) for x in os.getenv("EXTRA_ADMIN_IDS", "7004667100").split(",") if x.strip()}
+) if x != 0}
 
 CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME", "")
 CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")
 CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
 
-# Support agents (can reply to users in chat)
+# Support agents (can reply to users in order chats)
 SUPPORT_AGENT_IDS: set = {
     int(x.strip()) for x in os.getenv("SUPPORT_AGENT_IDS", "1771984046,8235243143").split(",") if x.strip()
 }
+
+# All users who can act as chat agents (admins + support agents)
+AGENT_IDS: set = ADMIN_IDS | SUPPORT_AGENT_IDS

@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 from bson import ObjectId
 from backend.database import get_db
@@ -38,9 +39,10 @@ async def get_all_user_ids() -> list[int]:
 async def list_all_users(limit: int = 200, search: str = "") -> list[dict]:
     query: dict = {}
     if search:
+        safe = re.escape(search[:100])
         query["$or"] = [
-            {"first_name": {"$regex": search, "$options": "i"}},
-            {"username": {"$regex": search, "$options": "i"}},
+            {"first_name": {"$regex": safe, "$options": "i"}},
+            {"username": {"$regex": safe, "$options": "i"}},
         ]
     users = await db().users.find(query, {
         "user_id": 1, "username": 1, "first_name": 1, "balance": 1, "created_at": 1,
@@ -125,7 +127,10 @@ async def get_products(game_id: str, category_id: str = "") -> list:
 
 
 async def get_product(product_id: str) -> dict | None:
-    return await db().products.find_one({"_id": ObjectId(product_id), "is_active": True})
+    try:
+        return await db().products.find_one({"_id": ObjectId(product_id), "is_active": True})
+    except Exception:
+        return None
 
 
 async def create_product(game_id: str, name: str, description: str, price: int, photo_id: str = "", category_id: str = "") -> str:
@@ -496,7 +501,7 @@ async def get_chat(user_id: int) -> dict | None:
 
 
 async def list_active_chats(limit: int = 50) -> list:
-    return await db().support_chats.find({}).sort("last_ts", -1).limit(limit).to_list(None)
+    return await db().support_chats.find({}, {"messages": 0}).sort("last_ts", -1).limit(limit).to_list(None)
 
 
 async def mark_chat_read(user_id: int):
@@ -512,6 +517,7 @@ import uuid as _uuid
 async def get_or_create_order_chat(
     order_id: str, user_id: int, product_id: str, game_id: str,
     product_name: str = "", game_name: str = "",
+    username: str = "", first_name: str = "",
 ) -> dict:
     now = datetime.utcnow()
     await db().order_chats.update_one(
@@ -520,6 +526,8 @@ async def get_or_create_order_chat(
             "$setOnInsert": {
                 "order_id": order_id,
                 "user_id": user_id,
+                "username": username,
+                "first_name": first_name,
                 "product_id": product_id,
                 "game_id": game_id,
                 "product_name": product_name,
@@ -568,7 +576,7 @@ async def list_order_chats(game_id: str = "", product_id: str = "", limit: int =
         query["game_id"] = game_id
     if product_id:
         query["product_id"] = product_id
-    return await db().order_chats.find(query).sort("last_ts", -1).limit(limit).to_list(None)
+    return await db().order_chats.find(query, {"messages": 0}).sort("last_ts", -1).limit(limit).to_list(None)
 
 
 async def mark_order_chat_read_admin(order_id: str):
@@ -580,19 +588,30 @@ async def mark_order_chat_read_user(order_id: str):
 
 
 async def get_user_order_chats(user_id: int) -> list:
-    return await db().order_chats.find({"user_id": user_id}).sort("last_ts", -1).to_list(None)
+    return await db().order_chats.find({"user_id": user_id}, {"messages": 0}).sort("last_ts", -1).to_list(None)
 
 
 async def get_product_stats(product_id: str) -> dict:
     pipeline = [
         {"$match": {"product_id": product_id}},
-        {"$group": {
-            "_id": None,
-            "revenue": {"$sum": "$amount"},
-            "count": {"$sum": 1},
-        }},
+        {"$group": {"_id": None, "revenue": {"$sum": "$amount"}, "count": {"$sum": 1}}},
     ]
     rows = await db().orders.aggregate(pipeline).to_list(None)
     if rows:
         return {"revenue": rows[0]["revenue"], "count": rows[0]["count"]}
     return {"revenue": 0, "count": 0}
+
+
+async def get_all_product_stats(product_ids: list[str]) -> dict[str, dict]:
+    """Batch product stats — single aggregate instead of N queries."""
+    if not product_ids:
+        return {}
+    pipeline = [
+        {"$match": {"product_id": {"$in": product_ids}, "status": {"$ne": "refunded"}}},
+        {"$group": {"_id": "$product_id", "revenue": {"$sum": "$amount"}, "count": {"$sum": 1}}},
+    ]
+    rows = await db().orders.aggregate(pipeline).to_list(None)
+    result: dict[str, dict] = {pid: {"revenue": 0, "count": 0} for pid in product_ids}
+    for row in rows:
+        result[row["_id"]] = {"revenue": row["revenue"], "count": row["count"]}
+    return result

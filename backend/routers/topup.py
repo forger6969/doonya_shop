@@ -69,7 +69,9 @@ async def submit_topup(
     user_id = tg_user["id"]
     await get_or_create_user(user_id, tg_user.get("username", ""), tg_user.get("first_name", ""))
 
-    contents = await receipt.read()
+    contents = await receipt.read(10 * 1024 * 1024 + 1)
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Receipt file too large (max 10 MB)")
     upload_result = cloudinary.uploader.upload(
         contents,
         folder="doonya_shop/receipts",

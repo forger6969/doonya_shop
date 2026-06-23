@@ -26,27 +26,49 @@ export default function OrderChatSheet({ orderId, productName, onClose }: Props)
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
   useEffect(() => {
     const initData = window.Telegram?.WebApp?.initData || "";
-    const url = `${getOrderChatWsUrl(orderId)}&initData=${encodeURIComponent(initData)}`;
-    const ws = new WebSocket(url);
-    wsRef.current = ws;
-    ws.onopen = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
-    ws.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (data.type === "history") {
-          setMessages(data.messages || []);
-        } else if (data.type === "message") {
-          setMessages((prev) =>
-            prev.find((m) => m.id === data.id) ? prev : [...prev, { id: data.id, from: data.from, text: data.text, ts: data.ts }]
-          );
-        }
-      } catch { /* ignore */ }
+
+    const connect = () => {
+      if (!mountedRef.current) return;
+      const url = `${getOrderChatWsUrl(orderId)}&initData=${encodeURIComponent(initData)}`;
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+      ws.onopen = () => { if (mountedRef.current) setConnected(true); };
+      ws.onclose = () => {
+        if (!mountedRef.current) return;
+        setConnected(false);
+        reconnectRef.current = setTimeout(connect, 3000);
+      };
+      ws.onerror = () => setConnected(false);
+      ws.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (data.type === "history") {
+            setMessages(data.messages || []);
+          } else if (data.type === "message") {
+            setMessages((prev) =>
+              prev.find((m) => m.id === data.id) ? prev : [...prev, { id: data.id, from: data.from, text: data.text, ts: data.ts }]
+            );
+          }
+        } catch { /* ignore */ }
+      };
     };
-    return () => ws.close();
+
+    connect();
+
+    return () => {
+      if (reconnectRef.current) clearTimeout(reconnectRef.current);
+      wsRef.current?.close();
+    };
   }, [orderId]);
 
   const handleClose = () => {

@@ -1,8 +1,11 @@
 import json
+import logging
 from datetime import datetime
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 from backend.auth import get_current_user, verify_telegram_init_data
-from backend.config import ADMIN_IDS
+from backend.config import ADMIN_IDS, AGENT_IDS
+
+logger = logging.getLogger(__name__)
 from backend.models import (
     get_order_chat, add_order_chat_msg, list_order_chats,
     mark_order_chat_read_admin, mark_order_chat_read_user, get_user_order_chats,
@@ -76,7 +79,7 @@ async def order_chat_ws(websocket: WebSocket):
 
     await websocket.accept()
     user_id: int = tg_user["id"]
-    is_admin = user_id in ADMIN_IDS
+    is_admin = user_id in AGENT_IDS
 
     if is_admin:
         manager.connect_admin(user_id, websocket)
@@ -168,8 +171,8 @@ async def _notify_user_bot(chat: dict, text: str) -> None:
             ]])
 
         await bot.send_message(chat["user_id"], caption, parse_mode="HTML", reply_markup=kb)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("_notify_user_bot failed for order %s: %s", chat.get("order_id"), e)
 
 
 async def _enrich_usernames(chats: list) -> None:
@@ -178,9 +181,9 @@ async def _enrich_usernames(chats: list) -> None:
     if not missing:
         return
     from backend.database import get_db
-    db = get_db()
+    _db = get_db()
     ids = list({c["user_id"] for c in missing})
-    users = await db.users.find(
+    users = await _db.users.find(
         {"user_id": {"$in": ids}}, {"user_id": 1, "username": 1, "first_name": 1}
     ).to_list(None)
     umap = {u["user_id"]: u for u in users}
@@ -189,15 +192,14 @@ async def _enrich_usernames(chats: list) -> None:
         if u:
             c["username"] = u.get("username", "")
             c["first_name"] = u.get("first_name", "")
-            # Persist to DB so we don't need to look up again
-            await get_db().order_chats.update_one(
+            await _db.order_chats.update_one(
                 {"order_id": c["order_id"]},
                 {"$set": {"username": c["username"], "first_name": c["first_name"]}},
             )
 
 
 async def require_admin(tg_user: dict = Depends(get_current_user)):
-    if tg_user["id"] not in ADMIN_IDS:
+    if tg_user["id"] not in AGENT_IDS:
         raise HTTPException(status_code=403, detail="Forbidden")
     return tg_user
 

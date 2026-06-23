@@ -12,7 +12,7 @@ from backend.models import (
     get_games, get_products,
     get_categories, get_category, create_category, update_category, delete_category,
     create_promo, list_promos, delete_promo, toggle_promo,
-    get_sales_by_day, get_top_products, get_top_users, get_product_stats,
+    get_sales_by_day, get_top_products, get_top_users, get_all_product_stats,
     set_discount,
 )
 
@@ -189,10 +189,10 @@ async def list_all_products(game_id: str, category_id: str = "", _=Depends(requi
     products = await get_products(game_id, category_id)
     cats = await get_categories(game_id)
     cat_map = {str(c["_id"]): c["name"] for c in cats}
-    result = []
-    for p in products:
-        stats = await get_product_stats(str(p["_id"]))
-        result.append({
+    product_ids = [str(p["_id"]) for p in products]
+    stats_map = await get_all_product_stats(product_ids)
+    return [
+        {
             "id": str(p["_id"]),
             "category_id": p.get("category_id", ""),
             "category_name": cat_map.get(p.get("category_id", ""), ""),
@@ -200,15 +200,16 @@ async def list_all_products(game_id: str, category_id: str = "", _=Depends(requi
             "description": p.get("description", ""),
             "price": p["price"],
             "icon_url": p.get("icon_url", "") or p.get("photo_id", ""),
-            "sales_count": stats["count"],
-            "revenue": stats["revenue"],
+            "sales_count": stats_map[str(p["_id"])]["count"],
+            "revenue": stats_map[str(p["_id"])]["revenue"],
             "variants": p.get("variants", []),
             "purchase_fields": p.get("purchase_fields", []),
             "discount_percent": p.get("discount_percent", 0),
             "discount_enabled": p.get("discount_enabled", False),
             "discount_until": p.get("discount_until").isoformat() if p.get("discount_until") else None,
-        })
-    return result
+        }
+        for p in products
+    ]
 
 
 @router.post("/products")
