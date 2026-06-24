@@ -87,7 +87,7 @@ export default function TopupPage({ onBack }: Props) {
 
   const handleAmountNext = () => {
     const n = parseInt(amount);
-    if (!n || n < 50000) { setError("Минимум 50 000 сум"); return; }
+    if (!n || n < 5000) { setError("Минимум 5 000 сум"); return; }
     setError("");
     setStep("method");
   };
@@ -191,13 +191,13 @@ export default function TopupPage({ onBack }: Props) {
             <input
               type="number"
               className="bg-transparent text-3xl font-black outline-none placeholder:text-white/20 w-full text-white"
-              placeholder="50 000"
+              placeholder="5 000"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAmountNext()}
             />
             <p className="text-xs mt-1" style={{ color: "rgba(168,85,247,0.55)" }}>
-              Минимум от 50 000 сум
+              Минимум от 5 000 сум
             </p>
           </div>
 

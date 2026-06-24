@@ -139,29 +139,29 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
   const { t } = useLang();
   const [g1, g2] = palette(item.id + (item.variant_label || ""));
   return (
-    <div className="rounded-2xl overflow-hidden flex flex-col active:opacity-80 relative"
+    <div className="rounded-xl overflow-hidden flex flex-col active:opacity-80 relative"
       style={{ background: "var(--bg-raised)", border: "1px solid var(--border-card)" }}
       onClick={onDetail}>
       {item.discount_percent ? <DiscountBadge pct={item.discount_percent} /> : null}
       {/* Product photo */}
-      <div className="h-[80px] flex items-center justify-center flex-shrink-0 overflow-hidden"
+      <div className="h-[64px] flex items-center justify-center flex-shrink-0 overflow-hidden"
         style={item.photo_id ? undefined : { background: `linear-gradient(145deg,${g1},${g2})` }}>
         {item.photo_id
           ? <img src={item.photo_id} className="w-full h-full object-cover" alt={item.name} />
           : <span className="text-xl font-black text-white/80">{initials(item.name)}</span>}
       </div>
-      <div className="p-3 pb-2 flex-1">
-        <p className="text-[13px] font-bold leading-snug pr-6" style={{ color: "var(--text)" }}>{item.name}</p>
+      <div className="p-2 pb-1 flex-1">
+        <p className="text-[12px] font-bold leading-snug pr-5" style={{ color: "var(--text)" }}>{item.name}</p>
         {item.raw.description && !item.variant_label && (
-          <p className="text-[11px] mt-0.5 line-clamp-2" style={{ color: "var(--text-dim)" }}>{item.raw.description}</p>
+          <p className="text-[10px] mt-0.5 line-clamp-1" style={{ color: "var(--text-dim)" }}>{item.raw.description}</p>
         )}
       </div>
-      <div className="px-3 pb-3 flex items-center justify-between gap-2">
+      <div className="px-2 pb-2 flex items-center justify-between gap-1.5">
         <CardPrice item={item} />
         <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-white active:opacity-70"
+          className="flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10px] font-bold text-white active:opacity-70 flex-shrink-0"
           style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}>
-          <ShoppingCart className="w-3 h-3" /> {t.buy}
+          <ShoppingCart className="w-2.5 h-2.5" /> {t.buy}
         </button>
       </div>
     </div>
