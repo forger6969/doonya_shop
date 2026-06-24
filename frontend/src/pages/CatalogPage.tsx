@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, X, ArrowLeft, ShoppingCart, Zap, Flame, Tag } from "lucide-react";
-import { getGames, getCategories, getProducts, getTopProducts, getOnSaleProducts, searchCatalog, buyStars } from "../api";
+import { getGames, getCategories, getProducts, getTopProducts, getOnSaleProducts, searchCatalog, buyStars, getActiveBanners, type Banner } from "../api";
 import { useLang } from "../i18n";
 import ProductDetailSheet from "./ProductDetailSheet";
 
@@ -612,6 +612,14 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
   );
 }
 
+const GRADIENT_MAP: Record<string, string> = {
+  pink:   "linear-gradient(135deg,#EC4899,#A855F7)",
+  gold:   "linear-gradient(135deg,#F59E0B,#EF4444)",
+  blue:   "linear-gradient(135deg,#3B82F6,#06B6D4)",
+  green:  "linear-gradient(135deg,#10B981,#3B82F6)",
+  orange: "linear-gradient(135deg,#F97316,#EAB308)",
+};
+
 export default function CatalogPage({ onBuy, onTopup }: Props) {
   const { t } = useLang();
   const [games, setGames] = useState<Game[]>([]);
@@ -620,6 +628,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
   const [query, setQuery] = useState("");
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [userBalance, setUserBalance] = useState<number | undefined>(undefined);
+  const [banners, setBanners] = useState<Banner[]>([]);
 
   useEffect(() => {
     import("../api").then(({ getMe }) => getMe().then((u) => setUserBalance(u.balance)).catch(() => {}));
@@ -627,6 +636,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
 
   useEffect(() => {
     getGames().then((g) => { setGames(g); setLoading(false); });
+    getActiveBanners().then(setBanners).catch(() => {});
   }, []);
 
   if (selected) {
@@ -678,6 +688,25 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
           />
         ) : (
           <>
+            {/* Admin banners */}
+            {banners.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {banners.map((b) => (
+                  <div key={b.id} className="rounded-2xl p-4 flex items-center gap-3"
+                    style={{
+                      background: GRADIENT_MAP[b.gradient] ?? GRADIENT_MAP.pink,
+                      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+                    }}>
+                    <span className="text-3xl flex-shrink-0">{b.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-white text-sm">{b.title}</p>
+                      {b.subtitle && <p className="text-white/75 text-[12px] mt-0.5">{b.subtitle}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <BannerCarousel onTopup={onTopup} />
 
             <StarsSection balance={userBalance} onSuccess={() => import("../api").then(({ getMe }) => getMe().then((u) => setUserBalance(u.balance)).catch(() => {}))} />

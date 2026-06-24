@@ -465,3 +465,66 @@ async def del_promo(promo_id: str, _=Depends(require_admin)):
 async def toggle(promo_id: str, _=Depends(require_admin)):
     await toggle_promo(promo_id)
     return {"ok": True}
+
+
+# ── Banners ────────────────────────────────────────────────────────────────────
+
+class BannerCreate(BaseModel):
+    title: str
+    subtitle: str = ""
+    gradient: str = "pink"
+    emoji: str = "🎉"
+
+
+def _fmt_banner(b: dict) -> dict:
+    return {
+        "id": str(b["_id"]),
+        "title": b["title"],
+        "subtitle": b.get("subtitle", ""),
+        "gradient": b.get("gradient", "pink"),
+        "emoji": b.get("emoji", "🎉"),
+        "active": b.get("active", True),
+        "created_at": b["created_at"].isoformat(),
+    }
+
+
+@router.get("/banners")
+async def get_banners(_=Depends(require_admin)):
+    from datetime import datetime, timezone
+    db = get_db()
+    banners = await db.banners.find().sort("created_at", -1).to_list(50)
+    return [_fmt_banner(b) for b in banners]
+
+
+@router.post("/banners")
+async def create_banner(data: BannerCreate, _=Depends(require_admin)):
+    from datetime import datetime, timezone
+    db = get_db()
+    result = await db.banners.insert_one({
+        "title": data.title.strip(),
+        "subtitle": data.subtitle.strip(),
+        "gradient": data.gradient,
+        "emoji": data.emoji,
+        "active": True,
+        "created_at": datetime.now(timezone.utc),
+    })
+    return {"ok": True, "id": str(result.inserted_id)}
+
+
+@router.delete("/banners/{banner_id}")
+async def delete_banner(banner_id: str, _=Depends(require_admin)):
+    from bson import ObjectId
+    db = get_db()
+    await db.banners.delete_one({"_id": ObjectId(banner_id)})
+    return {"ok": True}
+
+
+@router.patch("/banners/{banner_id}/toggle")
+async def toggle_banner(banner_id: str, _=Depends(require_admin)):
+    from bson import ObjectId
+    db = get_db()
+    b = await db.banners.find_one({"_id": ObjectId(banner_id)})
+    if not b:
+        raise HTTPException(status_code=404, detail="Banner not found")
+    await db.banners.update_one({"_id": ObjectId(banner_id)}, {"$set": {"active": not b.get("active", True)}})
+    return {"ok": True}

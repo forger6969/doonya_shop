@@ -114,6 +114,15 @@ export const adminCreatePromo = (data: { code: string; discount_pct: number; min
 export const adminDeletePromo = (id: string) => api.delete(`/admin/promos/${id}`).then((r) => r.data);
 export const adminTogglePromo = (id: string) => api.patch(`/admin/promos/${id}/toggle`).then((r) => r.data);
 
+// Banners
+export interface Banner { id: string; title: string; subtitle: string; gradient: string; emoji: string; active: boolean; created_at: string }
+export const getActiveBanners = () => api.get("/catalog/banners").then((r) => r.data as Banner[]);
+export const adminGetBanners = () => api.get("/admin/banners").then((r) => r.data as Banner[]);
+export const adminCreateBanner = (data: { title: string; subtitle: string; gradient: string; emoji: string }) =>
+  api.post("/admin/banners", data).then((r) => r.data);
+export const adminDeleteBanner = (id: string) => api.delete(`/admin/banners/${id}`).then((r) => r.data);
+export const adminToggleBanner = (id: string) => api.patch(`/admin/banners/${id}/toggle`).then((r) => r.data);
+
 // Discount
 export const adminSetDiscount = (
   productId: string,

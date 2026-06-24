@@ -122,3 +122,19 @@ async def search(q: str = ""):
     products = [_fmt_product(p) for p in raw_products]
 
     return {"games": games, "categories": categories, "products": products}
+
+
+@router.get("/banners")
+async def get_active_banners():
+    db = get_db()
+    banners = await db.banners.find({"active": True}).sort("created_at", -1).to_list(10)
+    return [
+        {
+            "id": str(b["_id"]),
+            "title": b["title"],
+            "subtitle": b.get("subtitle", ""),
+            "gradient": b.get("gradient", "pink"),
+            "emoji": b.get("emoji", "🎉"),
+        }
+        for b in banners
+    ]

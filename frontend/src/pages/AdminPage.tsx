@@ -14,6 +14,7 @@ import {
   adminCreateProduct, adminPatchProduct, adminDeleteProduct, adminSetDiscount,
   adminSalesStats, adminProductStats, adminUserStats,
   adminGetPromos, adminCreatePromo, adminDeletePromo, adminTogglePromo,
+  adminGetBanners, adminCreateBanner, adminDeleteBanner, adminToggleBanner, type Banner,
   getSupportWsUrl, agentGetAllUsers,
   getOrderChatWsUrl, adminGetOrderChats, type AdminOrderChat,
 } from "../api";
@@ -29,7 +30,7 @@ interface PurchaseField { label: string; required: boolean }
 interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
-type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "chat" | "order_chats";
+type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "banners" | "chat" | "order_chats";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 const fmt = (n: number) => n.toLocaleString("ru-RU") + " sum";
@@ -1639,12 +1640,146 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
   );
 }
 
+// ─── Banners ──────────────────────────────────────────────────────────────────
+const GRADIENT_OPTIONS = [
+  { id: "pink",   label: "Pink",   style: "linear-gradient(135deg,#EC4899,#A855F7)" },
+  { id: "gold",   label: "Gold",   style: "linear-gradient(135deg,#F59E0B,#EF4444)" },
+  { id: "blue",   label: "Blue",   style: "linear-gradient(135deg,#3B82F6,#06B6D4)" },
+  { id: "green",  label: "Green",  style: "linear-gradient(135deg,#10B981,#3B82F6)" },
+  { id: "orange", label: "Orange", style: "linear-gradient(135deg,#F97316,#EAB308)" },
+];
+
+function Banners() {
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: "", subtitle: "", gradient: "pink", emoji: "🎉" });
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const load = async () => { setLoading(true); setBanners(await adminGetBanners()); setLoading(false); };
+  useEffect(() => { load(); }, []);
+
+  const save = async () => {
+    if (!form.title.trim()) return;
+    setSaving(true); setErr("");
+    try {
+      await adminCreateBanner(form);
+      setForm({ title: "", subtitle: "", gradient: "pink", emoji: "🎉" });
+      setShowForm(false);
+      load();
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || "Error");
+    } finally { setSaving(false); }
+  };
+
+  const gradientStyle = (id: string) => GRADIENT_OPTIONS.find(g => g.id === id)?.style ?? GRADIENT_OPTIONS[0].style;
+
+  return (
+    <div className="flex flex-col flex-1">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">Каталог</p>
+          <h2 className="text-xl font-black text-white mt-0.5">Баннеры</h2>
+        </div>
+        <button onClick={() => setShowForm(!showForm)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold ${showForm ? "bg-white/10 text-white" : "a-card text-zinc-400"}`}>
+          <Plus className="w-3.5 h-3.5" /> Создать
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="mx-4 mb-3 a-card p-4 flex flex-col gap-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Новый баннер</p>
+
+          {/* Preview */}
+          <div className="rounded-2xl p-4 flex items-center gap-3"
+            style={{ background: gradientStyle(form.gradient), boxShadow: "0 4px 20px rgba(0,0,0,0.3)" }}>
+            <span className="text-3xl">{form.emoji || "🎉"}</span>
+            <div className="flex-1 min-w-0">
+              <p className="font-black text-white text-sm truncate">{form.title || "Заголовок"}</p>
+              {form.subtitle && <p className="text-white/70 text-[11px] truncate mt-0.5">{form.subtitle}</p>}
+            </div>
+          </div>
+
+          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder="Заголовок *" className="a-input" />
+          <input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })}
+            placeholder="Подзаголовок (необязательно)" className="a-input" />
+
+          <div className="flex gap-2 items-center">
+            <input value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })}
+              placeholder="Эмодзи" className="a-input w-20 text-center text-xl" maxLength={4} />
+            <div className="flex gap-1.5 flex-1">
+              {GRADIENT_OPTIONS.map(g => (
+                <button key={g.id} onClick={() => setForm({ ...form, gradient: g.id })}
+                  className="flex-1 h-8 rounded-xl transition-all"
+                  style={{
+                    background: g.style,
+                    border: form.gradient === g.id ? "2px solid white" : "2px solid transparent",
+                    opacity: form.gradient === g.id ? 1 : 0.5,
+                  }} />
+              ))}
+            </div>
+          </div>
+
+          {err && <div className="flex items-center gap-2 text-red-400 text-[11px]"><AlertCircle className="w-3.5 h-3.5" />{err}</div>}
+          <button onClick={save} disabled={saving || !form.title.trim()} className="a-btn">
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Создать баннер</>}
+          </button>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2 mx-4 mb-4">
+        {loading ? <div className="a-card flex justify-center py-10"><Spin /></div>
+          : banners.length === 0
+          ? <div className="a-card flex flex-col items-center gap-2 py-10">
+              <Package className="w-8 h-8 text-zinc-700" />
+              <p className="text-zinc-600 text-sm">Баннеров пока нет</p>
+            </div>
+          : banners.map((b) => (
+            <div key={b.id} className="rounded-2xl overflow-hidden"
+              style={{ border: `1px solid ${b.active ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.04)"}`, opacity: b.active ? 1 : 0.5 }}>
+              {/* Banner preview */}
+              <div className="p-3 flex items-center gap-3"
+                style={{ background: b.active ? gradientStyle(b.gradient) : "#1a1c27" }}>
+                <span className="text-2xl">{b.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-white text-sm truncate">{b.title}</p>
+                  {b.subtitle && <p className="text-white/70 text-[11px] truncate">{b.subtitle}</p>}
+                </div>
+              </div>
+              {/* Controls */}
+              <div className="flex items-center gap-2 px-3 py-2" style={{ background: "#13141f" }}>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${b.active ? "bg-emerald-400/10 text-emerald-400" : "bg-zinc-700/40 text-zinc-500"}`}>
+                  {b.active ? "Активен" : "Скрыт"}
+                </span>
+                <div className="flex-1" />
+                <button onClick={async () => { await adminToggleBanner(b.id); load(); }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold active:opacity-70"
+                  style={{ background: "rgba(255,255,255,0.05)", color: b.active ? "#facc15" : "#10b981" }}>
+                  {b.active ? <><ToggleLeft className="w-3.5 h-3.5" /> Скрыть</> : <><ToggleRight className="w-3.5 h-3.5" /> Показать</>}
+                </button>
+                <button onClick={async () => { if (confirm("Удалить баннер?")) { await adminDeleteBanner(b.id); load(); } }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center active:opacity-70"
+                  style={{ background: "rgba(239,68,68,0.10)", color: "#f87171" }}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { t, lang, setLang } = useLang();
   const [section, setSection] = useState<Section>(() => {
     const param = new URLSearchParams(window.location.search).get("section") as Section | null;
-    if (param && (["dashboard","payments","orders","catalog","analytics","promos","chat","order_chats"] as string[]).includes(param)) {
+    if (param && (["dashboard","payments","orders","catalog","analytics","promos","banners","chat","order_chats"] as string[]).includes(param)) {
       window.history.replaceState({}, "", window.location.pathname);
       return param;
     }
@@ -1696,6 +1831,7 @@ export default function AdminPage() {
     { id: "catalog",   label: t.adCatalog, Icon: Gamepad2 },
     { id: "analytics", label: t.adStats,   Icon: BarChart2 },
     { id: "promos",    label: t.adPromos,  Icon: Tag },
+    { id: "banners",   label: "Баннеры",   Icon: Package },
   ];
 
   return (
@@ -1750,6 +1886,7 @@ export default function AdminPage() {
         {section === "catalog"     && <Catalog />}
         {section === "analytics"   && <Analytics />}
         {section === "promos"      && <Promos />}
+        {section === "banners"     && <Banners />}
         {section === "chat"        && <AdminChat initialTarget={null} />}
         {section === "order_chats" && <AdminOrderChats initialOrderId={orderChatTarget} />}
       </div>
