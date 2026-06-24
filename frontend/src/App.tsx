@@ -319,16 +319,7 @@ export default function App() {
             </p>
             <p className="font-black text-white text-sm mt-0.5 truncate">{activeOrder.productName}</p>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-[11px] font-bold" style={{ color: "rgba(168,85,247,0.6)" }}>Открыть чат ›</span>
-            <button
-              onClick={(e) => { e.stopPropagation(); clearActiveOrder(); setActiveOrder(null); }}
-              className="w-6 h-6 rounded-full flex items-center justify-center active:opacity-70"
-              style={{ background: "rgba(255,255,255,0.06)" }}
-            >
-              <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>✕</span>
-            </button>
-          </div>
+          <span className="text-[11px] font-bold flex-shrink-0" style={{ color: "rgba(168,85,247,0.6)" }}>Открыть чат ›</span>
         </button>
       )}
 
