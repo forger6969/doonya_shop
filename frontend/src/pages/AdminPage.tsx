@@ -308,7 +308,7 @@ function Orders({ onChat }: { onChat: (order_id: string) => void }) {
                       <p className="text-[13px] font-bold text-white">{fmt(o.amount)}</p>
                       {o.variant_label && (
                         <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-md"
-                          style={{ background: "rgba(251,191,36,0.12)", color: "#FBBF24" }}>
+                          style={{ background: "rgba(34,197,94,0.10)", color: "#22c55e" }}>
                           {o.variant_label}
                         </span>
                       )}
@@ -1671,7 +1671,7 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
 
 // ─── Banners ──────────────────────────────────────────────────────────────────
 const GRADIENT_OPTIONS = [
-  { id: "pink",   label: "Pink",   style: "linear-gradient(135deg,#EC4899,#A855F7)" },
+  { id: "pink",   label: "Green",  style: "#22c55e" },
   { id: "gold",   label: "Gold",   style: "linear-gradient(135deg,#F59E0B,#EF4444)" },
   { id: "blue",   label: "Blue",   style: "linear-gradient(135deg,#3B82F6,#06B6D4)" },
   { id: "green",  label: "Green",  style: "linear-gradient(135deg,#10B981,#3B82F6)" },

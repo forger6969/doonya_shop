@@ -63,7 +63,7 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
       <div className="flex items-center justify-center h-40">
         <div
           className="w-7 h-7 rounded-full animate-spin"
-          style={{ border: "2px solid rgba(236,72,153,0.15)", borderTopColor: "#EC4899" }}
+          style={{ border: "2px solid rgba(34,197,94,0.15)", borderTopColor: "#22c55e" }}
         />
       </div>
     );
@@ -88,7 +88,10 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
         <div className="relative">
           <div
             className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black overflow-hidden relative"
-            style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}
+            style={{
+              background: "#1e1e1e",
+              border: "2px solid rgba(34,197,94,0.35)",
+            }}
           >
             {user.avatar_url
               ? <img src={user.avatar_url} className="w-full h-full object-cover" alt="avatar" />
@@ -104,8 +107,8 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
             onClick={() => avatarRef.current?.click()}
             className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center active:opacity-70"
             style={{
-              background: "linear-gradient(135deg,#EC4899,#A855F7)",
-              border: "2px solid var(--bg, #080510)",
+              background: "#22c55e",
+              border: "2px solid var(--bg, #0d0d0d)",
             }}
           >
             <Camera className="w-3.5 h-3.5 text-white" />
@@ -122,23 +125,23 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
       <div
         className="rounded-2xl p-5 flex flex-col gap-4"
         style={{
-          background: "linear-gradient(135deg,#2d0a4e 0%,#1a0535 50%,#080510 100%)",
-          border: "1px solid rgba(168,85,247,0.20)",
+          background: "var(--bg-raised)",
+          border: "1px solid rgba(34,197,94,0.15)",
         }}
       >
         <div>
           <p className="s-label mb-1">{t.balance}</p>
-          <p className="text-3xl font-black" style={{ color: "#FBBF24" }}>
+          <p className="text-3xl font-black" style={{ color: "#22c55e" }}>
             {user.balance.toLocaleString()}{" "}
-            <span className="text-lg font-bold" style={{ color: "rgba(251,191,36,0.45)" }}>sum</span>
+            <span className="text-lg font-bold" style={{ color: "rgba(34,197,94,0.45)" }}>sum</span>
           </p>
         </div>
         <button
           onClick={onTopup}
           className="w-full py-3.5 rounded-2xl font-black text-sm text-white active:opacity-70"
           style={{
-            background: "linear-gradient(135deg,#EC4899,#A855F7)",
-            boxShadow: "0 4px 20px rgba(236,72,153,0.35)",
+            background: "#22c55e",
+            boxShadow: "0 4px 20px rgba(34,197,94,0.28)",
           }}
         >
           + {t.topUpBalance}
@@ -148,7 +151,7 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
       {/* Tabs */}
       <div
         className="flex p-1 gap-1 rounded-2xl"
-        style={{ background: "var(--bg-surface, #121526)" }}
+        style={{ background: "var(--bg-surface)" }}
       >
         {(["orders", "topups", "settings"] as const).map((tb) => {
           const active = tab === tb;
@@ -158,9 +161,9 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
               onClick={() => setTab(tb)}
               className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
               style={active ? {
-                background: "rgba(236,72,153,0.15)",
+                background: "rgba(34,197,94,0.12)",
                 borderRadius: 10,
-                color: "#EC4899",
+                color: "#22c55e",
               } : {
                 color: "rgba(240,242,250,0.35)",
               }}
@@ -185,8 +188,8 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
                   key={o.id}
                   className="rounded-2xl px-4 py-3 flex items-center gap-3"
                   style={{
-                    background: "var(--bg-raised, #0D1020)",
-                    border: "1px solid var(--border, rgba(255,255,255,0.07))",
+                    background: "var(--bg-raised)",
+                    border: "1px solid var(--border)",
                   }}
                 >
                   <div className="flex-1 min-w-0">
@@ -207,14 +210,14 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
                         onClick={() => onOpenOrderChat(o.id, chat?.product_name)}
                         className="relative w-8 h-8 rounded-xl flex items-center justify-center active:opacity-70 flex-shrink-0"
                         style={{
-                          background: unread > 0 ? "rgba(236,72,153,0.15)" : "var(--bg-surface)",
-                          border: `1px solid ${unread > 0 ? "rgba(236,72,153,0.30)" : "var(--border)"}`,
+                          background: unread > 0 ? "rgba(34,197,94,0.12)" : "var(--bg-surface)",
+                          border: `1px solid ${unread > 0 ? "rgba(34,197,94,0.28)" : "var(--border)"}`,
                         }}
                       >
-                        <MessageCircle className="w-3.5 h-3.5" style={{ color: unread > 0 ? "#EC4899" : "var(--text-muted)" }} />
+                        <MessageCircle className="w-3.5 h-3.5" style={{ color: unread > 0 ? "#22c55e" : "var(--text-muted)" }} />
                         {unread > 0 && (
                           <div className="absolute -top-1 -right-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
-                            style={{ background: "#EC4899" }}>
+                            style={{ background: "#22c55e" }}>
                             <span className="text-[8px] font-black text-white leading-none">{unread > 9 ? "9+" : unread}</span>
                           </div>
                         )}
@@ -239,8 +242,8 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
                 key={tp.id}
                 className="rounded-2xl px-4 py-3 flex justify-between items-center"
                 style={{
-                  background: "var(--bg-raised, #0D1020)",
-                  border: "1px solid var(--border, rgba(255,255,255,0.07))",
+                  background: "var(--bg-raised)",
+                  border: "1px solid var(--border)",
                 }}
               >
                 <div>
@@ -267,7 +270,7 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
             <p className="s-label">{t.language}</p>
             <div
               className="flex p-1 gap-1 rounded-xl"
-              style={{ background: "var(--bg-surface, #121526)" }}
+              style={{ background: "var(--bg-surface)" }}
             >
               {(["ru", "uz"] as Lang[]).map((l) => {
                 const active = lang === l;
@@ -277,9 +280,9 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
                     onClick={() => setLang(l)}
                     className="flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-colors"
                     style={active ? {
-                      background: "rgba(236,72,153,0.15)",
+                      background: "rgba(34,197,94,0.12)",
                       borderRadius: 10,
-                      color: "#EC4899",
+                      color: "#22c55e",
                     } : {
                       color: "rgba(240,242,250,0.30)",
                     }}
@@ -306,7 +309,7 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
                 onClick={handleSaveEmail}
                 disabled={!email.trim() || emailSaving}
                 className="px-4 py-2.5 rounded-xl text-xs font-black disabled:opacity-30 active:opacity-70 transition-opacity flex-shrink-0"
-                style={{ background: emailSaved ? "#10B981" : "linear-gradient(135deg,#EC4899,#A855F7)", color: "#fff" }}
+                style={{ background: emailSaved ? "#10B981" : "#22c55e", color: "#fff" }}
               >
                 {emailSaved ? t.saved : t.save}
               </button>
@@ -323,15 +326,15 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
           <div
             className="rounded-2xl p-4 flex items-center gap-3"
             style={{
-              background: "var(--bg-raised, #0D1020)",
-              border: "1px solid var(--border, rgba(255,255,255,0.07))",
+              background: "var(--bg-raised)",
+              border: "1px solid var(--border)",
             }}
           >
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(236,72,153,0.12)" }}
+              style={{ background: "rgba(34,197,94,0.10)" }}
             >
-              <User className="w-5 h-5" style={{ color: "#F97316" }} />
+              <User className="w-5 h-5" style={{ color: "#22c55e" }} />
             </div>
             <div className="min-w-0">
               <p className="s-label mb-0.5">{t.telegramAccount}</p>

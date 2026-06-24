@@ -26,9 +26,9 @@ interface Props {
 }
 
 const PALETTES = [
-  ["#EC4899","#A855F7"],["#A855F7","#6366F1"],["#F472B6","#EC4899"],
-  ["#C084FC","#818CF8"],["#FB7185","#EC4899"],["#E879F9","#A855F7"],
-  ["#F9A8D4","#C084FC"],["#EC4899","#8B5CF6"],["#A78BFA","#EC4899"],["#F0ABFC","#A855F7"],
+  ["#22c55e","#f97316"],["#f97316","#0ea5e9"],["#22c55e","#22c55e"],
+  ["#22c55e","#818CF8"],["#FB7185","#22c55e"],["#22c55e","#f97316"],
+  ["#22c55e","#22c55e"],["#22c55e","#22c55e"],["#22c55e","#22c55e"],["#22c55e","#f97316"],
 ];
 function palette(id: string) {
   const hash = [...id].reduce((a, c) => a + c.charCodeAt(0), 0);
@@ -226,13 +226,13 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                         onClick={() => setSelectedVariant(v)}
                         className="px-3.5 py-2 rounded-xl text-sm font-bold transition-colors"
                         style={selectedVariant?.label === v.label
-                          ? { background: "rgba(236,72,153,0.12)", border: "1px solid rgba(236,72,153,0.35)", color: "#EC4899" }
+                          ? { background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.12)", color: "#22c55e" }
                           : { background: "var(--bg-surface)", border: "1px solid var(--border-card)", color: "var(--text-dim)" }
                         }
                       >
                         {v.label}
                         <span className="ml-2 text-[11px]"
-                          style={{ color: selectedVariant?.label === v.label ? "rgba(236,72,153,0.65)" : "var(--text-muted)" }}>
+                          style={{ color: selectedVariant?.label === v.label ? "rgba(34,197,94,0.12)" : "var(--text-muted)" }}>
                           {v.price.toLocaleString()}
                         </span>
                       </button>
@@ -250,7 +250,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.12em] mb-0.5"
                       style={{ color: "var(--text-muted)" }}>{t.price}</p>
-                    <p className="font-black" style={{ fontSize: "1.5rem", color: "#FBBF24" }}>
+                    <p className="font-black" style={{ fontSize: "1.5rem", color: "#22c55e" }}>
                       {(selectedVariant ? selectedVariant.price : detail.price).toLocaleString()}
                       <span className="text-base ml-1.5" style={{ color: "rgba(251,191,36,0.45)" }}>sum</span>
                     </p>
@@ -269,8 +269,8 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                     disabled={detail.variants.length > 0 && !selectedVariant}
                     className="flex items-center gap-2 px-5 py-3 rounded-xl font-black text-sm text-white active:opacity-70 disabled:opacity-40"
                     style={{
-                      background: "linear-gradient(135deg,#EC4899,#A855F7)",
-                      boxShadow: "0 4px 24px rgba(236,72,153,0.40)",
+                      background: "#22c55e",
+                      boxShadow: "0 4px 24px rgba(34,197,94,0.12)",
                     }}
                   >
                     <ShoppingCart className="w-4 h-4" />

@@ -79,8 +79,8 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
       <div
         className="relative w-full rounded-t-3xl flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto"
         style={{
-          background: "#100D1E",
-          borderTop: "1px solid rgba(168,85,247,0.15)",
+          background: "#181818",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
           borderRadius: "24px 24px 0 0",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -91,7 +91,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
           <div className="flex flex-col gap-4 py-2">
             {/* Success header */}
             <div className="flex flex-col items-center gap-3 py-4">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.15)" }}>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(34,197,94,0.12)" }}>
                 <Check className="w-9 h-9 text-emerald-400" />
               </div>
               <div className="text-center">
@@ -103,11 +103,11 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
             {/* Order in progress indicator */}
             <div
               className="w-full rounded-2xl p-4 flex items-center gap-3"
-              style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.18)" }}
+              style={{ background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.18)" }}
             >
               <div
                 className="w-8 h-8 rounded-full flex-shrink-0 animate-spin"
-                style={{ border: "2px solid rgba(168,85,247,0.2)", borderTopColor: "#A855F7" }}
+                style={{ border: "2px solid rgba(34,197,94,0.18)", borderTopColor: "#22c55e" }}
               />
               <div>
                 <p className="text-sm font-bold text-white">{t.inProgress}</p>
@@ -118,16 +118,16 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
             {/* Product card */}
             <div
               className="w-full rounded-2xl p-4 flex flex-col gap-1"
-              style={{ background: "#15112A", border: "1px solid rgba(168,85,247,0.12)" }}
+              style={{ background: "#202020", border: "1px solid rgba(255,255,255,0.08)" }}
             >
               {product.gameName && (
-                <p className="text-xs font-semibold" style={{ color: "rgba(168,85,247,0.7)" }}>{product.gameName}</p>
+                <p className="text-xs font-semibold" style={{ color: "rgba(34,197,94,0.60)" }}>{product.gameName}</p>
               )}
               <p className="font-black text-white">{product.name}</p>
               {selectedVariant && (
                 <p className="text-sm" style={{ color: "var(--text-dim)" }}>{selectedVariant.label}</p>
               )}
-              <p className="text-sm font-bold mt-1" style={{ color: "#FBBF24" }}>
+              <p className="text-sm font-bold mt-1" style={{ color: "#22c55e" }}>
                 {finalPrice.toLocaleString()} sum
               </p>
             </div>
@@ -139,8 +139,8 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
               style={{
                 padding: 16,
                 borderRadius: 16,
-                background: "linear-gradient(135deg,#EC4899,#A855F7)",
-                boxShadow: "0 4px 24px rgba(236,72,153,0.35)",
+                background: "#22c55e",
+                boxShadow: "0 4px 24px rgba(34,197,94,0.28)",
               }}
             >
               {t.backToShop}
@@ -169,17 +169,17 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                         onClick={() => { setSelectedVariant(v); setDiscount(0); setPromoCode(""); setPromoInput(""); }}
                         className="px-3.5 py-2 rounded-xl text-sm font-bold transition-colors"
                         style={active ? {
-                          background: "rgba(236,72,153,0.12)",
-                          border: "1px solid rgba(236,72,153,0.35)",
-                          color: "#EC4899",
+                          background: "rgba(34,197,94,0.10)",
+                          border: "1px solid rgba(34,197,94,0.35)",
+                          color: "#22c55e",
                         } : {
-                          background: "#15112A",
-                          border: "1px solid rgba(168,85,247,0.12)",
-                          color: "rgba(245,240,255,0.50)",
+                          background: "#202020",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          color: "rgba(245,245,245,0.45)",
                         }}
                       >
                         {v.label}
-                        <span className="ml-2 text-[11px]" style={{ color: active ? "rgba(236,72,153,0.7)" : "rgba(245,240,255,0.25)" }}>
+                        <span className="ml-2 text-[11px]" style={{ color: active ? "rgba(34,197,94,0.60)" : "rgba(245,245,245,0.22)" }}>
                           {v.price.toLocaleString()}
                         </span>
                       </button>
@@ -212,7 +212,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
             {(!hasVariants || selectedVariant) && (
               <div
                 className="rounded-2xl overflow-hidden"
-                style={{ background: "#15112A", border: "1px solid rgba(168,85,247,0.12)" }}
+                style={{ background: "#202020", border: "1px solid rgba(255,255,255,0.08)" }}
               >
                 <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.04]">
                   <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-dim)" }}>
@@ -220,7 +220,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                   </div>
                   <div className="flex items-center gap-2">
                     {discount > 0 && <span className="text-[12px] line-through" style={{ color: "var(--text-muted)" }}>{basePrice.toLocaleString()}</span>}
-                    <span className="font-black text-[1.1rem]" style={{ color: "#FBBF24", fontWeight: 900 }}>
+                    <span className="font-black text-[1.1rem]" style={{ color: "#22c55e", fontWeight: 900 }}>
                       {finalPrice.toLocaleString()} sum
                     </span>
                   </div>
@@ -265,9 +265,9 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                     disabled={!promoInput.trim() || promoLoading}
                     className="px-3 py-2.5 rounded-xl text-sm font-bold active:opacity-70 disabled:opacity-30 flex-shrink-0"
                     style={{
-                      background: "rgba(168,85,247,0.15)",
-                      border: "1px solid rgba(168,85,247,0.25)",
-                      color: "#C084FC",
+                      background: "rgba(34,197,94,0.10)",
+                      border: "1px solid rgba(34,197,94,0.22)",
+                      color: "#22c55e",
                     }}
                   >
                     {t.apply}
@@ -296,8 +296,8 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                 style={{
                   padding: 16,
                   borderRadius: 16,
-                  background: canBuy ? "linear-gradient(135deg,#EC4899,#A855F7)" : "#15112A",
-                  boxShadow: canBuy ? "0 4px 24px rgba(236,72,153,0.40)" : "none",
+                  background: canBuy ? "#22c55e" : "#202020",
+                  boxShadow: canBuy ? "0 4px 24px rgba(34,197,94,0.30)" : "none",
                 }}
               >
                 {loading ? t.processingShortly : canBuy ? `${t.confirm} · ${finalPrice.toLocaleString()} sum` : hasVariants && !selectedVariant ? t.pickVariant : t.confirm}

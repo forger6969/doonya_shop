@@ -161,7 +161,7 @@ function NotifIcon({ type }: { type: NotifType }) {
 }
 
 function notifAccent(type: NotifType) {
-  if (type === "order_ready")     return { bg: "rgba(236,72,153,0.10)",  border: "rgba(236,72,153,0.18)" };
+  if (type === "order_ready")     return { bg: "rgba(34,197,94,0.10)",  border: "rgba(34,197,94,0.10)" };
   if (type === "topup_confirmed") return { bg: "rgba(16,185,129,0.10)",  border: "rgba(16,185,129,0.18)" };
   if (type === "topup_rejected")  return { bg: "rgba(239,68,68,0.10)",   border: "rgba(239,68,68,0.18)" };
   return                                 { bg: "rgba(245,158,11,0.10)",  border: "rgba(245,158,11,0.18)" };
@@ -244,7 +244,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
             <p className="text-[15px] font-black" style={{ color: "var(--text)" }}>{t.notifications}</p>
             {unread > 0 && (
               <div className="rounded-full px-2 py-0.5"
-                style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}>
+                style={{ background: "#22c55e" }}>
                 <span className="text-[10px] font-black text-white">{unread}</span>
               </div>
             )}
@@ -297,7 +297,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
                         <button
                           onClick={() => { onReviewOrder(n.order_id!); onClose(); }}
                           className="mt-2.5 px-3 py-1.5 rounded-lg text-[11px] font-bold active:opacity-70 transition-opacity"
-                          style={{ background: "rgba(236,72,153,0.10)", border: "1px solid rgba(236,72,153,0.22)", color: "#EC4899" }}
+                          style={{ background: "rgba(34,197,94,0.10)", border: "1px solid rgba(34,197,94,0.10)", color: "#22c55e" }}
                         >
                           {t.leaveReviewBtn}
                         </button>
@@ -306,7 +306,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
 
                     {/* Unread dot */}
                     {!n.read && (
-                      <div className="w-2 h-2 rounded-full flex-shrink-0 mt-2" style={{ background: "#EC4899" }} />
+                      <div className="w-2 h-2 rounded-full flex-shrink-0 mt-2" style={{ background: "#22c55e" }} />
                     )}
                   </div>
                 );

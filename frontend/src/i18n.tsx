@@ -98,6 +98,9 @@ export interface Translations {
   startOver: string; back: string; topupAmountLabel: string;
   // Catalog additional
   categories: string; legalDisclaimer: string; legalNoRefund: string;
+  // App
+  pendingTopup: string; activeOrder: string; goToOrderChat: string;
+  orderReceived: string; orderAccepted: string;
 }
 
 const ru: Translations = {
@@ -184,6 +187,11 @@ const ru: Translations = {
   categories: 'Категории',
   legalDisclaimer: 'Пополненные средства являются внутренним балансом магазина и не подлежат возврату. Баланс нельзя вывести на карту или счёт — он используется исключительно для покупок в Doonya Shop. Перед пополнением убедитесь, что вы хотите приобрести товары в нашем магазине.',
   legalNoRefund: 'не подлежат возврату',
+  pendingTopup: 'Незавершённое пополнение',
+  activeOrder: 'Активный заказ',
+  goToOrderChat: '💬 Перейти в чат заказа',
+  orderReceived: 'Заказ получен — закрыть',
+  orderAccepted: 'Заказ принят, ожидайте выполнения',
 };
 
 const uz: Translations = {
@@ -270,6 +278,11 @@ const uz: Translations = {
   categories: 'Kategoriyalar',
   legalDisclaimer: "To'ldirilgan mablag' do'kon ichki balansi bo'lib, qaytarilmaydi va kartaga chiqarib bo'lmaydi. Faqat Doonya Shop xaridlari uchun ishlatiladi. To'ldirishdan oldin mahsulot sotib olishni istayotganingizga ishonch hosil qiling.",
   legalNoRefund: 'qaytarilmaydi',
+  pendingTopup: "Tugatilmagan to'ldirish",
+  activeOrder: 'Faol buyurtma',
+  goToOrderChat: "💬 Buyurtma chatiga o'tish",
+  orderReceived: "Buyurtma qabul qilindi — yopish",
+  orderAccepted: "Buyurtma qabul qilindi, bajarilishini kuting",
 };
 
 const ALL: Record<Lang, Translations> = { ru, uz };

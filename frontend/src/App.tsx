@@ -71,7 +71,7 @@ export default function App() {
   const { t } = useLang();
   const NAV: { id: Tab; Icon: React.ElementType; label: string }[] = [
     { id: "catalog", Icon: Grid2x2, label: t.shop },
-    { id: "chats", Icon: MessageCircle, label: "Чаты" },
+    { id: "chats", Icon: MessageCircle, label: t.chats },
     { id: "profile", Icon: User, label: t.profile },
   ];
 
@@ -112,7 +112,6 @@ export default function App() {
     getMe().then(setUser).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  // Poll unread order chat count for badge
   useEffect(() => {
     if (!user) return;
     const refresh = () =>
@@ -126,7 +125,6 @@ export default function App() {
     return () => window.clearInterval(id);
   }, [user?.user_id]);
 
-  // Pending topup indicator timer — only active on main screen
   useEffect(() => {
     if (showTopup) {
       window.clearInterval(pendingTimerRef.current);
@@ -163,7 +161,8 @@ export default function App() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-dvh">
-        <div className="w-8 h-8 rounded-full animate-spin" style={{ border: "2px solid rgba(236,72,153,0.15)", borderTopColor: "#EC4899" }} />
+        <div className="w-8 h-8 rounded-full animate-spin"
+          style={{ border: "2px solid rgba(34,197,94,0.15)", borderTopColor: "#22c55e" }} />
       </div>
     );
   }
@@ -173,7 +172,7 @@ export default function App() {
 
   if (showTopup) {
     return (
-      <div className="min-h-dvh p-4 pb-8" style={{ background: "var(--bg, #07080F)" }}>
+      <div className="min-h-dvh p-4 pb-8" style={{ background: "var(--bg, #0d0d0d)" }}>
         <Suspense fallback={null}>
           <TopupPage onBack={() => { setShowTopup(false); refreshUser(); }} />
         </Suspense>
@@ -186,7 +185,7 @@ export default function App() {
   const timerWarn   = pendingTimeLeft < 300;
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg, #080510)" }}>
+    <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg, #0d0d0d)" }}>
       {/* Header */}
       <header
         className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0"
@@ -199,21 +198,11 @@ export default function App() {
         <div className="flex items-center gap-2.5">
           <div
             className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{
-              background: "linear-gradient(135deg,#EC4899,#A855F7)",
-              boxShadow: "0 0 16px rgba(236,72,153,0.50)",
-            }}
+            style={{ background: "#22c55e" }}
           >
             <Grid2x2 className="w-4 h-4 text-white" />
           </div>
-          <span
-            className="font-black text-[16px] tracking-tight"
-            style={{
-              background: "linear-gradient(135deg,#EC4899,#A855F7)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
+          <span className="font-black text-[16px] tracking-tight" style={{ color: "var(--text)" }}>
             Doonya Shop
           </span>
         </div>
@@ -224,13 +213,13 @@ export default function App() {
             onClick={() => setIsDark((d) => !d)}
             className="w-9 h-9 rounded-full flex items-center justify-center active:opacity-70 transition-all"
             style={{
-              background: isDark ? "rgba(168,85,247,0.12)" : "rgba(251,191,36,0.12)",
-              border: isDark ? "1px solid rgba(168,85,247,0.20)" : "1px solid rgba(251,191,36,0.25)",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
             }}
           >
             {isDark
-              ? <Sun className="w-4 h-4" style={{ color: "#FBBF24" }} />
-              : <Moon className="w-4 h-4" style={{ color: "#A855F7" }} />
+              ? <Sun className="w-4 h-4" style={{ color: "#f97316" }} />
+              : <Moon className="w-4 h-4" style={{ color: "var(--text-dim)" }} />
             }
           </button>
 
@@ -239,11 +228,11 @@ export default function App() {
               onClick={() => setShowTopup(true)}
               className="flex items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-70"
               style={{
-                background: "rgba(251,191,36,0.10)",
-                border: "1px solid rgba(251,191,36,0.20)",
+                background: "rgba(34,197,94,0.10)",
+                border: "1px solid rgba(34,197,94,0.22)",
               }}
             >
-              <span className="text-xs font-black" style={{ color: "#FBBF24" }}>
+              <span className="text-xs font-black" style={{ color: "#22c55e" }}>
                 {user.balance.toLocaleString()} sum
               </span>
             </button>
@@ -260,39 +249,35 @@ export default function App() {
             background: timerUrgent
               ? "rgba(239,68,68,0.10)"
               : timerWarn
-              ? "rgba(234,179,8,0.10)"
-              : "rgba(249,115,22,0.10)",
-            border: `1px solid ${timerUrgent ? "rgba(239,68,68,0.30)" : timerWarn ? "rgba(234,179,8,0.30)" : "rgba(249,115,22,0.30)"}`,
+              ? "rgba(249,115,22,0.10)"
+              : "rgba(249,115,22,0.08)",
+            border: `1px solid ${timerUrgent ? "rgba(239,68,68,0.28)" : "rgba(249,115,22,0.28)"}`,
           }}
         >
           <div className="relative flex-shrink-0 w-9 h-9">
             <div
               className="absolute inset-0 rounded-full animate-ping"
-              style={{
-                background: timerUrgent ? "rgba(239,68,68,0.25)" : timerWarn ? "rgba(234,179,8,0.25)" : "rgba(249,115,22,0.25)",
-              }}
+              style={{ background: timerUrgent ? "rgba(239,68,68,0.20)" : "rgba(249,115,22,0.20)" }}
             />
             <div
               className="absolute inset-0 rounded-full flex items-center justify-center"
-              style={{
-                background: timerUrgent ? "rgba(239,68,68,0.20)" : timerWarn ? "rgba(234,179,8,0.20)" : "rgba(249,115,22,0.20)",
-              }}
+              style={{ background: timerUrgent ? "rgba(239,68,68,0.15)" : "rgba(249,115,22,0.15)" }}
             >
               <span className="text-base">⏳</span>
             </div>
           </div>
           <div className="flex-1 text-left min-w-0">
             <p className="text-[11px] font-bold uppercase tracking-wider"
-              style={{ color: timerUrgent ? "#f87171" : timerWarn ? "#facc15" : "#fb923c" }}>
-              Незавершённое пополнение
+              style={{ color: timerUrgent ? "#ef4444" : "#f97316" }}>
+              {t.pendingTopup}
             </p>
             <p className="font-black text-white text-sm mt-0.5">
               {fmtTime(pendingTimeLeft)}{" "}
-              <span className="font-normal text-white/40 text-xs">осталось</span>
+              <span className="font-normal text-white/40 text-xs">{t.timeLeftLabel}</span>
             </p>
           </div>
           <span className="text-lg font-bold flex-shrink-0"
-            style={{ color: timerUrgent ? "#f87171" : timerWarn ? "#facc15" : "#fb923c" }}>
+            style={{ color: timerUrgent ? "#ef4444" : "#f97316" }}>
             ›
           </span>
         </button>
@@ -304,25 +289,27 @@ export default function App() {
           onClick={() => setShowOrderStatus(true)}
           className="mx-4 mt-3 flex items-center gap-3 px-4 py-3 rounded-2xl active:opacity-75"
           style={{
-            background: "rgba(168,85,247,0.08)",
-            border: "1px solid rgba(168,85,247,0.25)",
+            background: "rgba(34,197,94,0.06)",
+            border: "1px solid rgba(34,197,94,0.20)",
           }}
         >
           <div className="relative flex-shrink-0 w-9 h-9">
             <div className="absolute inset-0 rounded-full animate-ping opacity-40"
-              style={{ background: "rgba(168,85,247,0.30)" }} />
+              style={{ background: "rgba(34,197,94,0.25)" }} />
             <div className="absolute inset-0 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(168,85,247,0.20)" }}>
+              style={{ background: "rgba(34,197,94,0.15)" }}>
               <span className="text-base">📦</span>
             </div>
           </div>
           <div className="flex-1 text-left min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#C084FC" }}>
-              Активный заказ
+            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#22c55e" }}>
+              {t.activeOrder}
             </p>
             <p className="font-black text-white text-sm mt-0.5 truncate">{activeOrder.productName}</p>
           </div>
-          <span className="text-[11px] font-bold flex-shrink-0" style={{ color: "rgba(168,85,247,0.6)" }}>Подробнее ›</span>
+          <span className="text-[11px] font-bold flex-shrink-0" style={{ color: "rgba(34,197,94,0.6)" }}>
+            ›
+          </span>
         </button>
       )}
 
@@ -364,17 +351,20 @@ export default function App() {
                 className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
               >
                 <div className="relative flex items-center justify-center transition-all"
-                  style={active ? { background: "rgba(236,72,153,0.15)", borderRadius: 20, padding: "4px 14px" } : { padding: "4px 14px" }}
+                  style={active
+                    ? { background: "rgba(34,197,94,0.12)", borderRadius: 20, padding: "4px 14px" }
+                    : { padding: "4px 14px" }}
                 >
-                  <Icon className="w-4 h-4" style={{ color: active ? "#EC4899" : "var(--text-muted)" }} />
+                  <Icon className="w-4 h-4" style={{ color: active ? "#22c55e" : "var(--text-muted)" }} />
                   {badge > 0 && (
                     <div className="absolute -top-1 -right-0 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
-                      style={{ background: "#EC4899" }}>
+                      style={{ background: "#22c55e" }}>
                       <span className="text-[8px] font-black text-white leading-none">{badge > 9 ? "9+" : badge}</span>
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-bold tracking-wide" style={{ color: active ? "#EC4899" : "var(--text-muted)" }}>
+                <span className="text-[10px] font-bold tracking-wide"
+                  style={{ color: active ? "#22c55e" : "var(--text-muted)" }}>
                   {label}
                 </span>
               </button>
@@ -391,13 +381,15 @@ export default function App() {
               {unreadCount > 0 && (
                 <div
                   className="absolute -top-1 -right-0 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
-                  style={{ background: "#EC4899" }}
+                  style={{ background: "#22c55e" }}
                 >
                   <span className="text-[8px] font-black text-white leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-bold tracking-wide" style={{ color: "var(--text-muted)" }}>Уведомления</span>
+            <span className="text-[10px] font-bold tracking-wide" style={{ color: "var(--text-muted)" }}>
+              {t.notifications}
+            </span>
           </button>
         </div>
       </nav>
@@ -451,49 +443,47 @@ export default function App() {
           <div
             className="relative w-full rounded-t-3xl flex flex-col gap-4 p-5"
             style={{
-              background: "#100D1E",
-              borderTop: "1px solid rgba(168,85,247,0.20)",
+              background: "#181818",
+              borderTop: "1px solid rgba(255,255,255,0.10)",
               borderRadius: "24px 24px 0 0",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="w-9 h-1 rounded-full bg-white/10 mx-auto -mt-1" />
 
-            {/* Status header */}
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12 flex-shrink-0">
                 <div className="absolute inset-0 rounded-full animate-ping opacity-30"
-                  style={{ background: "rgba(168,85,247,0.40)" }} />
+                  style={{ background: "rgba(34,197,94,0.35)" }} />
                 <div className="absolute inset-0 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(168,85,247,0.18)", border: "1px solid rgba(168,85,247,0.30)" }}>
+                  style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.28)" }}>
                   <span className="text-2xl">📦</span>
                 </div>
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#C084FC" }}>Активный заказ</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#22c55e" }}>
+                  {t.activeOrder}
+                </p>
                 <p className="font-black text-white text-lg leading-tight">{activeOrder.productName}</p>
               </div>
             </div>
 
-            {/* Status card */}
             <div className="rounded-2xl p-4 flex items-center gap-3"
-              style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.18)" }}>
+              style={{ background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.18)" }}>
               <div className="w-8 h-8 rounded-full flex-shrink-0 animate-spin"
-                style={{ border: "2px solid rgba(168,85,247,0.2)", borderTopColor: "#A855F7" }} />
+                style={{ border: "2px solid rgba(34,197,94,0.18)", borderTopColor: "#22c55e" }} />
               <div>
-                <p className="text-sm font-bold text-white">В обработке</p>
-                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
-                  Заказ принят, ожидайте выполнения
+                <p className="text-sm font-bold text-white">{t.inProgress}</p>
+                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.40)" }}>
+                  {t.orderAccepted}
                 </p>
               </div>
             </div>
 
-            {/* Order ID */}
             <p className="text-[11px] text-center font-mono" style={{ color: "rgba(255,255,255,0.20)" }}>
               ID: {activeOrder.orderId}
             </p>
 
-            {/* Go to chat button */}
             <button
               onClick={() => {
                 setShowOrderStatus(false);
@@ -502,15 +492,14 @@ export default function App() {
               className="w-full font-black text-[15px] text-white active:opacity-70"
               style={{
                 padding: 16,
-                borderRadius: 16,
-                background: "linear-gradient(135deg,#EC4899,#A855F7)",
-                boxShadow: "0 4px 24px rgba(236,72,153,0.35)",
+                borderRadius: 14,
+                background: "#22c55e",
+                boxShadow: "0 4px 20px rgba(34,197,94,0.28)",
               }}
             >
-              💬 Перейти в чат заказа
+              {t.goToOrderChat}
             </button>
 
-            {/* Mark as done */}
             <button
               onClick={() => {
                 clearActiveOrder();
@@ -518,15 +507,14 @@ export default function App() {
                 setShowOrderStatus(false);
               }}
               className="w-full py-2.5 text-[13px] font-semibold active:opacity-50"
-              style={{ color: "rgba(240,242,250,0.25)" }}
+              style={{ color: "rgba(255,255,255,0.25)" }}
             >
-              Заказ получен — закрыть
+              {t.orderReceived}
             </button>
           </div>
         </div>
       )}
 
-      {/* Notification sheet */}
       <NotificationSheet
         open={showNotifications}
         onClose={() => setShowNotifications(false)}
