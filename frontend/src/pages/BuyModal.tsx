@@ -11,7 +11,7 @@ interface Product {
   variants?: Variant[];
   purchase_fields?: PurchaseField[];
 }
-interface Props { product: Product; balance: number; onClose: () => void; onSuccess: () => void }
+interface Props { product: Product; balance: number; onClose: () => void; onSuccess: (orderId?: string) => void }
 
 export default function BuyModal({ product, balance, onClose, onSuccess }: Props) {
   const { t } = useLang();
@@ -35,6 +35,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
 
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [orderId, setOrderId] = useState<string | undefined>();
 
   const basePrice = selectedVariant ? selectedVariant.price : product.price;
   const finalPrice = Math.max(0, basePrice - discount);
@@ -63,7 +64,8 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
     if (!canBuy || loading) return;
     setLoading(true);
     try {
-      await buyProduct(product.id, promoCode, selectedVariant?.label ?? "", fieldAnswers);
+      const res = await buyProduct(product.id, promoCode, selectedVariant?.label ?? "", fieldAnswers);
+      setOrderId(res?.order_id);
       setDone(true);
     } catch (e: any) {
       window.Telegram?.WebApp?.showAlert(e?.response?.data?.detail || "Purchase failed");
@@ -132,7 +134,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
 
             {/* Back to shop button */}
             <button
-              onClick={onSuccess}
+              onClick={() => onSuccess(orderId)}
               className="w-full font-black text-[15px] text-white active:opacity-70"
               style={{
                 padding: 16,

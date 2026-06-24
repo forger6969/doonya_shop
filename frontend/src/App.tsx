@@ -31,6 +31,22 @@ const SUPPORT_AGENT_IDS = new Set([1771984046, 8235243143]);
 
 const TOPUP_SESSION_KEY = "topup_pending";
 const TOPUP_SESSION_VERSION = 2;
+const ACTIVE_ORDER_KEY = "doonya_active_order";
+
+interface ActiveOrder { orderId: string; productName: string; amount: number; createdAt: number }
+
+function saveActiveOrder(order: ActiveOrder) {
+  localStorage.setItem(ACTIVE_ORDER_KEY, JSON.stringify(order));
+}
+function clearActiveOrder() {
+  localStorage.removeItem(ACTIVE_ORDER_KEY);
+}
+function readActiveOrder(): ActiveOrder | null {
+  try {
+    const raw = localStorage.getItem(ACTIVE_ORDER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
 
 function fmtTime(s: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -82,6 +98,7 @@ export default function App() {
   });
 
   const [orderChat, setOrderChat] = useState<{ orderId: string; productName?: string } | null>(null);
+  const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(() => readActiveOrder());
   const [chatUnread, setChatUnread] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const { notifs, unreadCount, markAllRead, addTopupExpired } = useNotifications(
@@ -276,6 +293,45 @@ export default function App() {
         </button>
       )}
 
+      {/* Active order banner */}
+      {activeOrder && (
+        <button
+          onClick={() => {
+            setOrderChat({ orderId: activeOrder.orderId, productName: activeOrder.productName });
+          }}
+          className="mx-4 mt-3 flex items-center gap-3 px-4 py-3 rounded-2xl active:opacity-75"
+          style={{
+            background: "rgba(168,85,247,0.08)",
+            border: "1px solid rgba(168,85,247,0.25)",
+          }}
+        >
+          <div className="relative flex-shrink-0 w-9 h-9">
+            <div className="absolute inset-0 rounded-full animate-ping opacity-40"
+              style={{ background: "rgba(168,85,247,0.30)" }} />
+            <div className="absolute inset-0 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(168,85,247,0.20)" }}>
+              <span className="text-base">📦</span>
+            </div>
+          </div>
+          <div className="flex-1 text-left min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#C084FC" }}>
+              Активный заказ
+            </p>
+            <p className="font-black text-white text-sm mt-0.5 truncate">{activeOrder.productName}</p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-[11px] font-bold" style={{ color: "rgba(168,85,247,0.6)" }}>Открыть чат ›</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); clearActiveOrder(); setActiveOrder(null); }}
+              className="w-6 h-6 rounded-full flex items-center justify-center active:opacity-70"
+              style={{ background: "rgba(255,255,255,0.06)" }}
+            >
+              <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>✕</span>
+            </button>
+          </div>
+        </button>
+      )}
+
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pb-24">
         {tab === "catalog" && (
@@ -356,7 +412,20 @@ export default function App() {
           product={buyProduct}
           balance={user.balance}
           onClose={() => setBuyProduct(null)}
-          onSuccess={() => { setBuyProduct(null); refreshUser(); }}
+          onSuccess={(orderId) => {
+            if (orderId) {
+              const order: ActiveOrder = {
+                orderId,
+                productName: buyProduct.name,
+                amount: buyProduct.price,
+                createdAt: Date.now(),
+              };
+              saveActiveOrder(order);
+              setActiveOrder(order);
+            }
+            setBuyProduct(null);
+            refreshUser();
+          }}
         />
       )}
 
@@ -373,7 +442,14 @@ export default function App() {
         <OrderChatSheet
           orderId={orderChat.orderId}
           productName={orderChat.productName}
-          onClose={() => setOrderChat(null)}
+          onClose={() => {
+            setOrderChat(null);
+            // clear active order banner once user has opened the chat
+            if (activeOrder && orderChat.orderId === activeOrder.orderId) {
+              clearActiveOrder();
+              setActiveOrder(null);
+            }
+          }}
         />
       )}
 
