@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, X, ArrowLeft, ShoppingCart, Zap, Flame, Tag } from "lucide-react";
+import { Search, X, ArrowLeft, ShoppingCart, Flame, Tag } from "lucide-react";
 import { getGames, getCategories, getProducts, getTopProducts, getOnSaleProducts, searchCatalog, buyStars, getActiveBanners, type Banner } from "../api";
 import { useLang } from "../i18n";
 import ProductDetailSheet from "./ProductDetailSheet";
@@ -146,7 +146,7 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
       {/* Product photo */}
       <div className="w-full flex-shrink-0 overflow-hidden"
         style={{
-          aspectRatio: "4/3",
+          aspectRatio: "1/1",
           background: item.photo_id ? "#0a0a14" : `linear-gradient(145deg,${g1},${g2})`,
         }}>
         {item.photo_id
@@ -173,53 +173,24 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
   );
 }
 
-// ─── Banner ───────────────────────────────────────────────────────────────────
+// ─── Promo strip ─────────────────────────────────────────────────────────────
 
-function BannerCarousel({ onTopup }: { onTopup: () => void }) {
+function PromoStrip({ onTopup }: { onTopup: () => void }) {
   const { t } = useLang();
-  const [active, setActive] = useState(0);
-  const banners = [
-    { title: t.topUpBalance, sub: t.bannerSub1, action: t.topUpNow, grad: BANNER_GRADS[0] },
-    { title: t.fastDelivery, sub: t.bannerSub2, action: t.browseGames, grad: BANNER_GRADS[1] },
-    { title: t.bestPrices, sub: t.bannerSub3, action: t.shopNow, grad: BANNER_GRADS[2] },
-  ];
   return (
-    <div className="relative -mx-4">
-      <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
-        onScroll={(e) => setActive(Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth))}>
-        {banners.map((b, i) => (
-          <button key={i} onClick={() => { if (i === 0) onTopup(); }}
-            className="flex-shrink-0 w-full snap-center px-4 active:opacity-90">
-            <div className="rounded-2xl overflow-hidden relative h-36"
-              style={{
-                background: `linear-gradient(135deg,${b.grad[0]},${b.grad[1]})`,
-                border: "1px solid rgba(139,92,246,0.15)",
-              }}>
-              <div className="absolute inset-0 p-5 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <Zap className="w-3.5 h-3.5 text-white/40" />
-                    <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: "rgba(240,242,250,0.3)" }}>Doonya Shop</span>
-                  </div>
-                  <p className="text-white font-black text-[22px] leading-tight tracking-tight">{b.title}</p>
-                  <p className="text-xs mt-1" style={{ color: "rgba(240,242,250,0.45)" }}>{b.sub}</p>
-                </div>
-                <div className="flex items-center gap-1.5 w-fit px-4 py-1.5 rounded-full"
-                  style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)" }}>
-                  <span className="text-white text-[11px] font-bold">{b.action}</span>
-                </div>
-              </div>
-            </div>
-          </button>
-        ))}
+    <button onClick={onTopup} className="flex items-center justify-between p-3.5 rounded-2xl w-full active:opacity-80"
+      style={{ background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.16)" }}>
+      <div className="flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base flex-shrink-0"
+          style={{ background: "rgba(34,197,94,0.15)" }}>💰</div>
+        <div className="text-left">
+          <p className="text-sm font-black" style={{ color: "var(--text)" }}>{t.topUpBalance}</p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t.bannerSub1}</p>
+        </div>
       </div>
-      <div className="flex justify-center gap-1.5 mt-2.5">
-        {banners.map((_, i) => (
-          <div key={i} className={`rounded-full transition-all ${active === i ? "w-4 h-1.5" : "w-1.5 h-1.5 bg-white/15"}`}
-            style={active === i ? { background: "#22c55e" } : undefined} />
-        ))}
-      </div>
-    </div>
+      <span className="text-xs font-bold px-3 py-1.5 rounded-lg text-white flex-shrink-0"
+        style={{ background: "#22c55e" }}>{t.topUpNow} →</span>
+    </button>
   );
 }
 
@@ -725,7 +696,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
               </div>
             )}
 
-            <BannerCarousel onTopup={onTopup} />
+            <PromoStrip onTopup={onTopup} />
 
             <StarsSection balance={userBalance} onSuccess={() => import("../api").then(({ getMe }) => getMe().then((u) => setUserBalance(u.balance)).catch(() => {}))} />
 
@@ -739,29 +710,32 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
                 <OnSaleSection onBuy={onBuy} onDetail={(p) => setDetailProduct(p)} />
                 <TopProductsSection onBuy={onBuy} onDetail={(p) => setDetailProduct(p)} />
 
-                {/* Games list — icon grid */}
+                {/* Games list — 4-column grid */}
                 {games.length > 0 && (
                   <div className="flex flex-col gap-3">
                     <p className="text-[11px] font-black uppercase tracking-[0.1em]"
                       style={{ color: "var(--text-muted)" }}>{t.allGames}</p>
-                    <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+                    <div className="grid grid-cols-4 gap-3">
                       {games.map((g) => {
                         const [c1, c2] = palette(g.id);
                         return (
                           <button key={g.id} onClick={() => setSelected(g)}
-                            className="flex flex-col items-center gap-2 flex-shrink-0 active:opacity-70 w-[72px]">
-                            <div className="w-[72px] h-[72px] rounded-[20px] overflow-hidden flex-shrink-0"
-                              style={g.photo_id
-                                ? { border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }
-                                : { background: `linear-gradient(145deg,${c1},${c2})`, boxShadow: `0 8px 24px ${c1}50` }}>
+                            className="flex flex-col items-center gap-1.5 active:opacity-70">
+                            <div className="w-full rounded-2xl overflow-hidden"
+                              style={{
+                                aspectRatio: "1/1",
+                                ...(g.photo_id
+                                  ? { border: "1px solid var(--border)" }
+                                  : { background: `linear-gradient(145deg,${c1},${c2})` }),
+                              }}>
                               {g.photo_id
                                 ? <img src={g.photo_id} className="w-full h-full object-cover" alt={g.name} />
                                 : <div className="w-full h-full flex items-center justify-center">
-                                    <span className="text-2xl font-black text-white">{initials(g.name)}</span>
+                                    <span className="text-xl font-black text-white">{initials(g.name)}</span>
                                   </div>
                               }
                             </div>
-                            <p className="text-[11px] font-semibold text-center leading-tight w-full truncate"
+                            <p className="text-[10px] font-semibold text-center leading-tight w-full truncate"
                               style={{ color: "var(--text-dim)" }}>{g.name}</p>
                           </button>
                         );

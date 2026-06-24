@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, lazy, Suspense } from "react";
-import { Grid2x2, MessageCircle, User, Bell, Moon, Sun } from "lucide-react";
+import { MessageCircle, User, Bell, Moon, Sun } from "lucide-react";
 import { getMe, getMyOrderChats } from "./api";
 import { useLang } from "./i18n";
 // Critical path — loaded immediately
@@ -70,7 +70,7 @@ function readPendingSession(): { expiresAt: number } | null {
 export default function App() {
   const { t } = useLang();
   const NAV: { id: Tab; Icon: React.ElementType; label: string }[] = [
-    { id: "catalog", Icon: Grid2x2, label: t.shop },
+    { id: "catalog", Icon: ({ className, style }: { className?: string; style?: React.CSSProperties }) => <span style={{ ...style, fontSize: 18, lineHeight: 1 }}>🎮</span>, label: t.shop },
     { id: "chats", Icon: MessageCircle, label: t.chats },
     { id: "profile", Icon: User, label: t.profile },
   ];
@@ -188,52 +188,40 @@ export default function App() {
     <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg, #0d0d0d)" }}>
       {/* Header */}
       <header
-        className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0"
+        className="flex items-center justify-between px-4 py-3 flex-shrink-0"
         style={{
           background: "var(--header-bg)",
           borderBottom: "1px solid var(--border)",
-          backdropFilter: "blur(20px)",
+          backdropFilter: "blur(12px)",
         }}
       >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "#22c55e" }}
-          >
-            <Grid2x2 className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-black text-[16px] tracking-tight" style={{ color: "var(--text)" }}>
-            Doonya Shop
-          </span>
+        {/* Logo */}
+        <div className="flex items-center gap-2">
+          <span className="text-[20px] leading-none">🎮</span>
+          <span className="font-black text-[17px] tracking-tight" style={{ color: "var(--text)" }}>Doonya</span>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Theme toggle */}
           <button
             onClick={() => setIsDark((d) => !d)}
-            className="w-9 h-9 rounded-full flex items-center justify-center active:opacity-70 transition-all"
-            style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-            }}
+            className="w-7 h-7 rounded-full flex items-center justify-center active:opacity-70"
+            style={{ background: "var(--bg-surface)" }}
           >
             {isDark
-              ? <Sun className="w-4 h-4" style={{ color: "#f97316" }} />
-              : <Moon className="w-4 h-4" style={{ color: "var(--text-dim)" }} />
+              ? <Sun className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
+              : <Moon className="w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
             }
           </button>
 
           {user && (
             <button
               onClick={() => setShowTopup(true)}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-70"
-              style={{
-                background: "rgba(34,197,94,0.10)",
-                border: "1px solid rgba(34,197,94,0.22)",
-              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl active:opacity-70"
+              style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.20)" }}
             >
-              <span className="text-xs font-black" style={{ color: "#22c55e" }}>
-                {user.balance.toLocaleString()} sum
+              <span className="text-[13px] font-black" style={{ color: "#22c55e" }}>
+                💰 {user.balance.toLocaleString()}
               </span>
             </button>
           )}
@@ -334,11 +322,7 @@ export default function App() {
       {/* Bottom nav */}
       <nav
         className="fixed bottom-0 left-0 right-0 pb-safe"
-        style={{
-          background: "var(--nav-bg)",
-          backdropFilter: "blur(24px)",
-          borderTop: "1px solid var(--border)",
-        }}
+        style={{ background: "var(--nav-bg)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)" }}
       >
         <div className="flex">
           {NAV.map(({ id, Icon, label }) => {
@@ -348,23 +332,19 @@ export default function App() {
               <button
                 key={id}
                 onClick={() => { setTab(id); if (id === "chats") setChatUnread(0); }}
-                className="flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
+                className="flex-1 flex flex-col items-center gap-0.5 pt-2 pb-3 relative"
+                style={{ borderTop: `2px solid ${active ? "#22c55e" : "transparent"}` }}
               >
-                <div className="relative flex items-center justify-center transition-all"
-                  style={active
-                    ? { background: "rgba(34,197,94,0.12)", borderRadius: 20, padding: "4px 14px" }
-                    : { padding: "4px 14px" }}
-                >
-                  <Icon className="w-4 h-4" style={{ color: active ? "#22c55e" : "var(--text-muted)" }} />
+                <div className="relative flex items-center justify-center h-6">
+                  <Icon className="w-5 h-5" style={{ color: active ? "#22c55e" : "var(--text-muted)" }} />
                   {badge > 0 && (
-                    <div className="absolute -top-1 -right-0 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
+                    <div className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
                       style={{ background: "#22c55e" }}>
                       <span className="text-[8px] font-black text-white leading-none">{badge > 9 ? "9+" : badge}</span>
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-bold tracking-wide"
-                  style={{ color: active ? "#22c55e" : "var(--text-muted)" }}>
+                <span className="text-[10px] font-semibold" style={{ color: active ? "#22c55e" : "var(--text-muted)" }}>
                   {label}
                 </span>
               </button>
@@ -374,22 +354,19 @@ export default function App() {
           {/* Notifications bell */}
           <button
             onClick={() => { setShowNotifications(true); markAllRead(); }}
-            className="flex-1 flex flex-col items-center gap-1 py-3 relative"
+            className="flex-1 flex flex-col items-center gap-0.5 pt-2 pb-3 relative"
+            style={{ borderTop: "2px solid transparent" }}
           >
-            <div className="relative flex items-center justify-center" style={{ padding: "4px 14px" }}>
-              <Bell className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
+            <div className="relative flex items-center justify-center h-6">
+              <Bell className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
               {unreadCount > 0 && (
-                <div
-                  className="absolute -top-1 -right-0 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
-                  style={{ background: "#22c55e" }}
-                >
+                <div className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
+                  style={{ background: "#22c55e" }}>
                   <span className="text-[8px] font-black text-white leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-bold tracking-wide" style={{ color: "var(--text-muted)" }}>
-              {t.notifications}
-            </span>
+            <span className="text-[10px] font-semibold" style={{ color: "var(--text-muted)" }}>{t.notifications}</span>
           </button>
         </div>
       </nav>
