@@ -1,6 +1,7 @@
 import cloudinary
 import cloudinary.uploader
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from backend.cache import cache_invalidate
 from pydantic import BaseModel
 from backend.config import ADMIN_IDS, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
 from backend.auth import get_current_user
@@ -102,6 +103,7 @@ async def list_all_games(_=Depends(require_admin)):
 @router.post("/games")
 async def add_game(data: GameCreate, _=Depends(require_admin)):
     game_id = await create_game(data.name, data.description, data.icon_url)
+    cache_invalidate("catalog:games")
     return {"ok": True, "game_id": game_id}
 
 
@@ -110,15 +112,17 @@ async def patch_game(game_id: str, data: GameUpdate, _=Depends(require_admin)):
     fields = {k: v for k, v in data.model_dump().items() if v is not None}
     if "icon_url" in fields:
         fields["photo_id"] = fields["icon_url"]
-    # banner_url stored as-is, no alias needed
     if fields:
         await update_game(game_id, **fields)
+    cache_invalidate("catalog:games")
+    cache_invalidate(f"catalog:products:{game_id}")
     return {"ok": True}
 
 
 @router.delete("/games/{game_id}")
 async def del_game(game_id: str, _=Depends(require_admin)):
     await delete_game(game_id)
+    cache_invalidate("catalog:")
     return {"ok": True}
 
 
@@ -218,6 +222,8 @@ async def list_all_products(game_id: str, category_id: str = "", _=Depends(requi
 @router.post("/products")
 async def add_product(data: ProductCreate, _=Depends(require_admin)):
     pid = await create_product(data.game_id, data.name, data.description, data.price, data.icon_url, data.category_id)
+    cache_invalidate(f"catalog:products:{data.game_id}")
+    cache_invalidate("catalog:top")
     return {"ok": True, "product_id": pid}
 
 
@@ -237,12 +243,16 @@ async def patch_product(product_id: str, data: ProductUpdate, _=Depends(require_
             fields[k] = v
     if fields:
         await update_product(product_id, **fields)
+    cache_invalidate("catalog:products:")
+    cache_invalidate("catalog:top")
     return {"ok": True}
 
 
 @router.delete("/products/{product_id}")
 async def del_product(product_id: str, _=Depends(require_admin)):
     await delete_product(product_id)
+    cache_invalidate("catalog:products:")
+    cache_invalidate("catalog:top")
     return {"ok": True}
 
 

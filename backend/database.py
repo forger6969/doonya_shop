@@ -11,12 +11,15 @@ def get_db() -> AsyncIOMotorDatabase:
 
 async def connect_db():
     global _client, _db
-    _client = AsyncIOMotorClient(MONGODB_URI)
+    _client = AsyncIOMotorClient(
+        MONGODB_URI,
+        maxPoolSize=20,
+        minPoolSize=5,
+        maxIdleTimeMS=30_000,
+        serverSelectionTimeoutMS=5_000,
+        connectTimeoutMS=5_000,
+    )
     _db = _client[DB_NAME]
-    await _db.users.create_index("user_id", unique=True)
-    await _db.topups.create_index("user_id")
-    await _db.orders.create_index("user_id")
-    await _db.products.create_index("game_id")
     print("✅ MongoDB connected")
 
 

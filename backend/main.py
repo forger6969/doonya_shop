@@ -3,6 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from aiogram.types import Update
 from backend.database import connect_db, close_db, get_db
 from backend.routers import users, catalog, topup, orders, admin, support, notifications, order_chat
@@ -44,8 +45,9 @@ async def lifespan(app: FastAPI):
     await close_db()
 
 
-app = FastAPI(title="Doonya Shop API", lifespan=lifespan)
+app = FastAPI(title="Doonya Shop API", lifespan=lifespan, docs_url=None, redoc_url=None)
 
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

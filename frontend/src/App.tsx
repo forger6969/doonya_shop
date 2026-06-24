@@ -1,17 +1,19 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { Grid2x2, MessageCircle, User, Bell, Moon, Sun } from "lucide-react";
 import { getMe, getMyOrderChats } from "./api";
 import { useLang } from "./i18n";
+// Critical path — loaded immediately
 import CatalogPage from "./pages/CatalogPage";
 import ProfilePage from "./pages/ProfilePage";
-import SupportAgentPage from "./pages/SupportAgentPage";
-import OrderChatsPage from "./pages/OrderChatsPage";
-import TopupPage from "./pages/TopupPage";
-import AdminPage from "./pages/AdminPage";
 import BuyModal from "./pages/BuyModal";
-import ReviewSheet from "./pages/ReviewSheet";
 import NotificationSheet, { useNotifications } from "./pages/NotificationSheet";
 import OrderChatSheet from "./pages/OrderChatSheet";
+// Non-critical — lazy loaded
+const SupportAgentPage  = lazy(() => import("./pages/SupportAgentPage"));
+const OrderChatsPage    = lazy(() => import("./pages/OrderChatsPage"));
+const TopupPage         = lazy(() => import("./pages/TopupPage"));
+const AdminPage         = lazy(() => import("./pages/AdminPage"));
+const ReviewSheet       = lazy(() => import("./pages/ReviewSheet"));
 
 type Tab = "catalog" | "chats" | "profile";
 interface UserT { user_id: number; balance: number; first_name: string }
@@ -166,13 +168,15 @@ export default function App() {
     );
   }
 
-  if (isAdmin) return <AdminPage />;
-  if (isSupportAgent) return <SupportAgentPage />;
+  if (isAdmin) return <Suspense fallback={null}><AdminPage /></Suspense>;
+  if (isSupportAgent) return <Suspense fallback={null}><SupportAgentPage /></Suspense>;
 
   if (showTopup) {
     return (
       <div className="min-h-dvh p-4 pb-8" style={{ background: "var(--bg, #07080F)" }}>
-        <TopupPage onBack={() => { setShowTopup(false); refreshUser(); }} />
+        <Suspense fallback={null}>
+          <TopupPage onBack={() => { setShowTopup(false); refreshUser(); }} />
+        </Suspense>
       </div>
     );
   }
@@ -328,7 +332,9 @@ export default function App() {
           <CatalogPage onBuy={setBuyProduct} onTopup={() => setShowTopup(true)} />
         )}
         {tab === "chats" && (
-          <OrderChatsPage onOpenChat={(orderId, productName) => setOrderChat({ orderId, productName })} />
+          <Suspense fallback={null}>
+            <OrderChatsPage onOpenChat={(orderId, productName) => setOrderChat({ orderId, productName })} />
+          </Suspense>
         )}
         {tab === "profile" && (
           <ProfilePage
@@ -421,10 +427,12 @@ export default function App() {
 
       {/* Review sheet */}
       {reviewOrderId && !isAdmin && (
-        <ReviewSheet
-          orderId={reviewOrderId}
-          onClose={() => setReviewOrderId(null)}
-        />
+        <Suspense fallback={null}>
+          <ReviewSheet
+            orderId={reviewOrderId}
+            onClose={() => setReviewOrderId(null)}
+          />
+        </Suspense>
       )}
 
       {/* Order chat sheet */}

@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, HTTPException
 from backend.database import get_db
 from backend.models import (
@@ -5,9 +6,18 @@ from backend.models import (
     is_discount_active, calc_discounted_price,
     get_active_discounts, get_top_catalog_products,
 )
+from backend.cache import cache_get, cache_set
 from bson import ObjectId
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
+
+GAMES_TTL = 60
+PRODUCTS_TTL = 30
+BANNERS_TTL = 60
+
+
+async def _gather_cats_products(game_id: str):
+    return await asyncio.gather(get_categories(game_id), get_products(game_id))
 
 
 def _fmt_product(p: dict, category_name: str = "") -> dict:
@@ -30,8 +40,11 @@ def _fmt_product(p: dict, category_name: str = "") -> dict:
 
 @router.get("/games")
 async def list_games():
+    cached = cache_get("catalog:games")
+    if cached is not None:
+        return cached
     games = await get_games()
-    return [
+    result = [
         {
             "id": str(g["_id"]),
             "name": g["name"],
@@ -41,6 +54,8 @@ async def list_games():
         }
         for g in games
     ]
+    cache_set("catalog:games", result, GAMES_TTL)
+    return result
 
 
 @router.get("/games/{game_id}/categories")
@@ -54,15 +69,18 @@ async def list_categories(game_id: str):
 
 @router.get("/games/{game_id}/products")
 async def list_products(game_id: str):
+    key = f"catalog:products:{game_id}"
+    cached = cache_get(key)
+    if cached is not None:
+        return cached
     game = await get_game(game_id)
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
-
-    cats = await get_categories(game_id)
+    cats, products = await _gather_cats_products(game_id)
     cat_map = {str(c["_id"]): c["name"] for c in cats}
-
-    products = await get_products(game_id)
-    return [_fmt_product(p, cat_map.get(p.get("category_id", ""), "")) for p in products]
+    result = [_fmt_product(p, cat_map.get(p.get("category_id", ""), "")) for p in products]
+    cache_set(key, result, PRODUCTS_TTL)
+    return result
 
 
 @router.get("/products/{product_id}")
@@ -96,14 +114,24 @@ async def product_reviews(product_id: str):
 
 @router.get("/top")
 async def top_products():
+    cached = cache_get("catalog:top")
+    if cached is not None:
+        return cached
     products = await get_top_catalog_products(6)
-    return [_fmt_product(p) for p in products]
+    result = [_fmt_product(p) for p in products]
+    cache_set("catalog:top", result, PRODUCTS_TTL)
+    return result
 
 
 @router.get("/on-sale")
 async def on_sale_products():
+    cached = cache_get("catalog:on_sale")
+    if cached is not None:
+        return cached
     products = await get_active_discounts(20)
-    return [_fmt_product(p) for p in products]
+    result = [_fmt_product(p) for p in products]
+    cache_set("catalog:on_sale", result, PRODUCTS_TTL)
+    return result
 
 
 @router.get("/search")
@@ -127,9 +155,12 @@ async def search(q: str = ""):
 
 @router.get("/banners")
 async def get_active_banners():
+    cached = cache_get("catalog:banners")
+    if cached is not None:
+        return cached
     db = get_db()
     banners = await db.banners.find({"active": True}).sort("created_at", -1).to_list(10)
-    return [
+    result = [
         {
             "id": str(b["_id"]),
             "title": b["title"],
@@ -139,3 +170,5 @@ async def get_active_banners():
         }
         for b in banners
     ]
+    cache_set("catalog:banners", result, BANNERS_TTL)
+    return result

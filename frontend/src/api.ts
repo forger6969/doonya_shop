@@ -8,6 +8,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// ── Client-side TTL cache ───────────────────────────────────────────────────
+const _cache = new Map<string, { data: unknown; exp: number }>();
+
+function withCache<T>(key: string, fn: () => Promise<T>, ttlMs = 30_000): Promise<T> {
+  const hit = _cache.get(key);
+  if (hit && Date.now() < hit.exp) return Promise.resolve(hit.data as T);
+  return fn().then((data) => { _cache.set(key, { data, exp: Date.now() + ttlMs }); return data; });
+}
+
+export function invalidateCatalogCache() { _cache.clear(); }
+
 // ── User ────────────────────────────────────────────────────────────────────
 export const getMe = () => api.post("/users/me").then((r) => r.data);
 export const buyStars = (telegram_username: string, stars_count: number) =>
@@ -27,12 +38,12 @@ export const agentGetChats = () => api.get("/support/agent/chats").then((r) => r
 export const agentGetChat = (userId: number) => api.get(`/support/agent/chats/${userId}`).then((r) => r.data);
 export const agentGetAllUsers = (search = "") => api.get("/support/agent/users", { params: search ? { search } : {} }).then((r) => r.data as { user_id: number; username: string; first_name: string; balance: number }[]);
 
-// ── Catalog ──────────────────────────────────────────────────────────────────
-export const getGames = () => api.get("/catalog/games").then((r) => r.data);
-export const getCategories = (gameId: string) => api.get(`/catalog/games/${gameId}/categories`).then((r) => r.data);
-export const getProducts = (gameId: string) => api.get(`/catalog/games/${gameId}/products`).then((r) => r.data);
-export const getProduct = (id: string) => api.get(`/catalog/products/${id}`).then((r) => r.data);
-export const getReviews = (id: string) => api.get(`/catalog/products/${id}/reviews`).then((r) => r.data);
+// ── Catalog (cached) ──────────────────────────────────────────────────────────
+export const getGames    = () => withCache("games", () => api.get("/catalog/games").then((r) => r.data), 60_000);
+export const getCategories = (gameId: string) => withCache(`cats:${gameId}`, () => api.get(`/catalog/games/${gameId}/categories`).then((r) => r.data), 60_000);
+export const getProducts = (gameId: string) => withCache(`prods:${gameId}`, () => api.get(`/catalog/games/${gameId}/products`).then((r) => r.data), 30_000);
+export const getProduct  = (id: string) => withCache(`prod:${id}`, () => api.get(`/catalog/products/${id}`).then((r) => r.data), 30_000);
+export const getReviews  = (id: string) => api.get(`/catalog/products/${id}/reviews`).then((r) => r.data);
 export const getTopProducts = () => api.get("/catalog/top").then((r) => r.data);
 export const getOnSaleProducts = () => api.get("/catalog/on-sale").then((r) => r.data);
 export const searchCatalog = (q: string) => api.get("/catalog/search", { params: { q } }).then((r) => r.data);
