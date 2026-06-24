@@ -37,6 +37,7 @@ async def list_games():
             "name": g["name"],
             "description": g.get("description", ""),
             "photo_id": g.get("photo_id", "") or g.get("icon_url", ""),
+            "banner_url": g.get("banner_url", ""),
         }
         for g in games
     ]

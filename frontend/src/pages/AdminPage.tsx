@@ -24,7 +24,7 @@ import { useLang, type Lang } from "../i18n";
 interface Stats { pending_topups: number; pending_orders: number; total_games: number; total_products: number; total_revenue: number }
 interface Topup { id: string; user_id: number; amount: number; unique_amount: number; method: string; receipt_url: string; status: string; created_at: string }
 interface Order { id: string; user_id: number; username: string; first_name: string; amount: number; status: string; promo_code: string; variant_label?: string; field_answers?: Record<string, string>; product_id?: string; created_at: string }
-interface Game { id: string; name: string; description: string; icon_url: string }
+interface Game { id: string; name: string; description: string; icon_url: string; banner_url?: string }
 interface Category { id: string; game_id: string; name: string }
 interface PurchaseField { label: string; required: boolean }
 interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
@@ -742,6 +742,11 @@ function Catalog() {
     load();
   };
 
+  const updateBanner = async (id: string, url: string) => {
+    await adminPatchGame(id, { banner_url: url });
+    load();
+  };
+
   if (selected) return <CategoryList game={selected} onBack={() => { setSelected(null); load(); }} />;
 
   return (
@@ -779,18 +784,42 @@ function Catalog() {
           : games.map((g, i) => (
             <div key={g.id}>
               {i > 0 && <Divider />}
-              <div className="flex items-center gap-3 px-4 py-3">
-                <UploadBtn current={g.icon_url} onDone={(url) => updateIcon(g.id, url)} />
-                <button onClick={() => setSelected(g)} className="flex-1 text-left min-w-0 active:opacity-70">
-                  <p className="text-[13px] font-bold text-white">{g.name}</p>
-                  <p className="text-[11px] text-zinc-600">Категории и товары</p>
-                </button>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => adminDeleteGame(g.id).then(load)}
-                    className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70">
-                    <Trash2 className="w-3.5 h-3.5 text-red-400" />
+              <div className="flex flex-col gap-0">
+                {/* Banner preview / upload */}
+                <div className="relative w-full h-14 overflow-hidden rounded-t-xl"
+                  style={{ background: g.banner_url ? "transparent" : "rgba(255,255,255,0.03)" }}>
+                  {g.banner_url
+                    ? <img src={g.banner_url} className="w-full h-full object-cover" alt="banner" />
+                    : <div className="w-full h-full flex items-center justify-center">
+                        <p className="text-[10px] text-zinc-700">Баннер не загружен</p>
+                      </div>
+                  }
+                  <label className="absolute inset-0 flex items-center justify-center cursor-pointer active:opacity-70"
+                    style={{ background: "rgba(0,0,0,0.45)" }}>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg"
+                      style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)" }}>
+                      <Upload className="w-3 h-3 text-white" />
+                      <span className="text-[10px] font-bold text-white">Баннер</span>
+                    </div>
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0]; if (!file) return;
+                      const { url } = await adminUpload(file); updateBanner(g.id, url);
+                    }} />
+                  </label>
+                </div>
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <UploadBtn current={g.icon_url} onDone={(url) => updateIcon(g.id, url)} />
+                  <button onClick={() => setSelected(g)} className="flex-1 text-left min-w-0 active:opacity-70">
+                    <p className="text-[13px] font-bold text-white">{g.name}</p>
+                    <p className="text-[11px] text-zinc-600">Категории и товары</p>
                   </button>
-                  <ChevronRight className="w-4 h-4 text-zinc-700" />
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => adminDeleteGame(g.id).then(load)}
+                      className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center active:opacity-70">
+                      <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                    </button>
+                    <ChevronRight className="w-4 h-4 text-zinc-700" />
+                  </div>
                 </div>
               </div>
             </div>

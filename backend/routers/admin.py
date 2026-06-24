@@ -81,6 +81,7 @@ class GameUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     icon_url: str | None = None
+    banner_url: str | None = None
 
 
 @router.get("/games")
@@ -92,6 +93,7 @@ async def list_all_games(_=Depends(require_admin)):
             "name": g["name"],
             "description": g.get("description", ""),
             "icon_url": g.get("icon_url", "") or g.get("photo_id", ""),
+            "banner_url": g.get("banner_url", ""),
         }
         for g in games
     ]
@@ -108,6 +110,7 @@ async def patch_game(game_id: str, data: GameUpdate, _=Depends(require_admin)):
     fields = {k: v for k, v in data.model_dump().items() if v is not None}
     if "icon_url" in fields:
         fields["photo_id"] = fields["icon_url"]
+    # banner_url stored as-is, no alias needed
     if fields:
         await update_game(game_id, **fields)
     return {"ok": True}

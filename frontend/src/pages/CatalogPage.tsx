@@ -7,7 +7,7 @@ import ProductDetailSheet from "./ProductDetailSheet";
 interface Variant { label: string; price: number }
 interface PurchaseField { label: string; required: boolean }
 interface Category { id: string; name: string }
-interface Game { id: string; name: string; description: string; photo_id: string }
+interface Game { id: string; name: string; description: string; photo_id: string; banner_url?: string }
 interface Product {
   id: string; name: string; description?: string; price: number;
   discounted_price?: number; discount_percent?: number;
@@ -305,15 +305,24 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header banner */}
-      <div className="relative h-32 flex-shrink-0"
-        style={{ background: `linear-gradient(135deg,${g1}cc,${g2}cc)` }}>
+      <div className="relative flex-shrink-0 overflow-hidden"
+        style={{
+          height: game.banner_url ? 160 : 128,
+          background: game.banner_url ? "transparent" : `linear-gradient(135deg,${g1}cc,${g2}cc)`,
+        }}>
+        {game.banner_url && (
+          <>
+            <img src={game.banner_url} className="absolute inset-0 w-full h-full object-cover" alt={game.name} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.10) 50%, transparent 100%)" }} />
+          </>
+        )}
         <div className="absolute inset-0 flex flex-col justify-end p-4">
           <div className="flex items-end gap-3">
             <GameIcon game={game} size="lg" />
             <div className="flex-1 min-w-0 pb-1">
               <p className="text-white font-black text-xl leading-tight tracking-tight">{game.name}</p>
               {game.description && (
-                <p className="text-xs mt-0.5 line-clamp-1" style={{ color: "rgba(240,242,250,0.55)" }}>{game.description}</p>
+                <p className="text-xs mt-0.5 line-clamp-1" style={{ color: "rgba(240,242,250,0.70)" }}>{game.description}</p>
               )}
             </div>
           </div>
