@@ -774,14 +774,14 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
               </div>
             ) : (
               <div className="flex flex-col gap-6">
+                {/* ⭐ Stars — наверху, как просил nyx */}
+                <StarsSection balance={userBalance} onSuccess={() => import("../api").then(({ getMe }) => getMe().then((u) => setUserBalance(u.balance)).catch(() => {}))} />
+
                 {/* 🔥 Hot products feed */}
                 <HotFeed onBuy={onBuy} onDetail={(p) => setDetailProduct(p)} />
 
                 {/* 🏷️ Sale feed */}
                 <SaleFeed onBuy={onBuy} onDetail={(p) => setDetailProduct(p)} />
-
-                {/* Stars section */}
-                <StarsSection balance={userBalance} onSuccess={() => import("../api").then(({ getMe }) => getMe().then((u) => setUserBalance(u.balance)).catch(() => {}))} />
               </div>
             )}
           </>
