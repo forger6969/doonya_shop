@@ -492,7 +492,7 @@ const STAR_MIN = 50;
 
 function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: () => void }) {
   const [username, setUsername] = useState("");
-  const [count, setCount] = useState<number | "">(100);
+  const [count, setCount] = useState<number | "">("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
@@ -531,7 +531,7 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
       </div>
       <button className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-amber-400 active:opacity-70 flex-shrink-0"
         style={{ background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.20)" }}
-        onClick={() => { setDone(false); setUsername(""); setCount(100); }}>
+        onClick={() => { setDone(false); setUsername(""); setCount(""); }}>
         Ещё
       </button>
     </div>
@@ -565,22 +565,35 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
         </div>
 
         {/* Quantity */}
-        <div className="flex items-center gap-2 rounded-xl px-2.5 py-2"
-          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}>
-          <span className="text-[11px]" style={{ color: "rgba(255,255,255,0.30)" }}>⭐</span>
-          <input
-            type="number" min={STAR_MIN}
-            className="flex-1 bg-transparent outline-none text-[13px] font-black text-white placeholder:text-white/20"
-            placeholder={`Кол-во (мин. ${STAR_MIN})`}
-            value={count === "" ? "" : count}
-            onChange={(e) => { const v = e.target.value; setCount(v === "" ? "" : Math.max(0, parseInt(v) || 0)); }}
-          />
-          {stars > 0 && (
-            <span className="text-[12px] font-black flex-shrink-0" style={{ color: "#FBBF24" }}>
-              {total.toLocaleString()} сум
-            </span>
-          )}
-        </div>
+        {(() => {
+          const isBelowMin = typeof count === "number" && count > 0 && count < STAR_MIN;
+          return (
+            <div className="flex items-center gap-2 rounded-xl px-2.5 py-2 transition-colors"
+              style={{
+                background: isBelowMin ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.05)",
+                border: isBelowMin ? "1px solid rgba(239,68,68,0.55)" : "1px solid rgba(255,255,255,0.09)",
+              }}>
+              <span className="text-[11px]" style={{ color: isBelowMin ? "rgba(239,68,68,0.7)" : "rgba(255,255,255,0.30)" }}>⭐</span>
+              <input
+                type="number" min={STAR_MIN}
+                className="flex-1 bg-transparent outline-none text-[13px] font-black text-white placeholder:text-white/20"
+                placeholder={`мин. ${STAR_MIN}`}
+                value={count === "" ? "" : count}
+                onChange={(e) => { const v = e.target.value; setCount(v === "" ? "" : Math.max(0, parseInt(v) || 0)); }}
+              />
+              {stars > 0 && (
+                <span className="text-[12px] font-black flex-shrink-0" style={{ color: "#FBBF24" }}>
+                  {total.toLocaleString()} сум
+                </span>
+              )}
+              {isBelowMin && (
+                <span className="text-[10px] font-bold flex-shrink-0" style={{ color: "rgba(239,68,68,0.8)" }}>
+                  мин. {STAR_MIN}
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         {error && <p className="text-red-400 text-[11px] font-semibold -mt-1">{error}</p>}
 
