@@ -144,11 +144,16 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
       onClick={onDetail}>
       {item.discount_percent ? <DiscountBadge pct={item.discount_percent} /> : null}
       {/* Product photo */}
-      <div className="h-[64px] flex items-center justify-center flex-shrink-0 overflow-hidden"
-        style={item.photo_id ? undefined : { background: `linear-gradient(145deg,${g1},${g2})` }}>
+      <div className="w-full flex-shrink-0 overflow-hidden"
+        style={{
+          aspectRatio: "16/7",
+          background: item.photo_id ? "#0a0a14" : `linear-gradient(145deg,${g1},${g2})`,
+        }}>
         {item.photo_id
-          ? <img src={item.photo_id} className="w-full h-full object-cover" alt={item.name} />
-          : <span className="text-xl font-black text-white/80">{initials(item.name)}</span>}
+          ? <img src={item.photo_id} className="w-full h-full object-contain" alt={item.name} />
+          : <div className="w-full h-full flex items-center justify-center">
+              <span className="text-xl font-black text-white/80">{initials(item.name)}</span>
+            </div>}
       </div>
       <div className="p-2 pb-1 flex-1">
         <p className="text-[12px] font-bold leading-snug pr-5" style={{ color: "var(--text)" }}>{item.name}</p>
