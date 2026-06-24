@@ -19,6 +19,7 @@ export interface Translations {
   selectVariant: string; price: string; promoCode: string; apply: string;
   orderPlaced: string; processingShortly: string; confirm: string; cancel: string;
   insufficientBalance: string; sending: string;
+  inProgress: string; deliveryNote: string; backToShop: string;
   // Support
   newRequest: string; history: string; yourMessage: string; send: string;
   sentSuccess: string; requestSentDesc: string;
@@ -84,6 +85,7 @@ const ru: Translations = {
   selectVariant: 'Выберите вариант', price: 'Цена', promoCode: 'Промокод', apply: 'Применить',
   orderPlaced: 'Заказ оформлен!', processingShortly: 'Обрабатывается...', confirm: 'Подтвердить',
   cancel: 'Отмена', insufficientBalance: 'Недостаточно средств. Пополните баланс.', sending: 'Отправка...',
+  inProgress: 'В обработке', deliveryNote: 'Доставим в течение нескольких минут', backToShop: 'Вернуться в магазин',
   newRequest: 'Новое обращение', history: 'История', yourMessage: 'Опишите проблему...',
   send: 'Отправить', sentSuccess: 'Отправлено!', requestSentDesc: 'Мы ответим как можно скорее',
   leaveReview: 'Оставить отзыв', shareExperience: 'Поделитесь своим опытом',
@@ -141,6 +143,7 @@ const uz: Translations = {
   selectVariant: 'Variantni tanlang', price: 'Narx', promoCode: 'Promo kod', apply: "Qo'llash",
   orderPlaced: 'Buyurtma qabul qilindi!', processingShortly: 'Jarayonda...', confirm: 'Tasdiqlash',
   cancel: 'Bekor qilish', insufficientBalance: "Mablag' yetarli emas. Balansni to'ldiring.", sending: 'Yuborilmoqda...',
+  inProgress: 'Jarayonda', deliveryNote: "Bir necha daqiqa ichida yetkazib beramiz", backToShop: "Do'konga qaytish",
   newRequest: 'Yangi murojaat', history: 'Tarix', yourMessage: 'Muammoni tavsiflang...',
   send: 'Yuborish', sentSuccess: 'Yuborildi!', requestSentDesc: "Imkon qadar tezroq javob beramiz",
   leaveReview: 'Sharh qoldirish', shareExperience: 'Tajribangiz bilan ulashing',

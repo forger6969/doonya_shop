@@ -65,7 +65,6 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
     try {
       await buyProduct(product.id, promoCode, selectedVariant?.label ?? "", fieldAnswers);
       setDone(true);
-      setTimeout(onSuccess, 1400);
     } catch (e: any) {
       window.Telegram?.WebApp?.showAlert(e?.response?.data?.detail || "Purchase failed");
       setLoading(false);
@@ -87,14 +86,63 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
         <div className="w-9 h-1 rounded-full bg-white/10 mx-auto -mt-1 flex-shrink-0" />
 
         {done ? (
-          <div className="flex flex-col items-center gap-3 py-8">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.15)" }}>
-              <Check className="w-9 h-9 text-emerald-400" />
+          <div className="flex flex-col gap-4 py-2">
+            {/* Success header */}
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(16,185,129,0.15)" }}>
+                <Check className="w-9 h-9 text-emerald-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-black text-white">{t.orderPlaced}</p>
+                <p className="text-sm mt-1" style={{ color: "var(--text-dim)" }}>{t.processingShortly}</p>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-xl font-black text-white">{t.orderPlaced}</p>
-              <p className="text-sm mt-1" style={{ color: "var(--text-dim)" }}>{t.processingShortly}</p>
+
+            {/* Order in progress indicator */}
+            <div
+              className="w-full rounded-2xl p-4 flex items-center gap-3"
+              style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.18)" }}
+            >
+              <div
+                className="w-8 h-8 rounded-full flex-shrink-0 animate-spin"
+                style={{ border: "2px solid rgba(168,85,247,0.2)", borderTopColor: "#A855F7" }}
+              />
+              <div>
+                <p className="text-sm font-bold text-white">{t.inProgress}</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-dim)" }}>{t.deliveryNote}</p>
+              </div>
             </div>
+
+            {/* Product card */}
+            <div
+              className="w-full rounded-2xl p-4 flex flex-col gap-1"
+              style={{ background: "#15112A", border: "1px solid rgba(168,85,247,0.12)" }}
+            >
+              {product.gameName && (
+                <p className="text-xs font-semibold" style={{ color: "rgba(168,85,247,0.7)" }}>{product.gameName}</p>
+              )}
+              <p className="font-black text-white">{product.name}</p>
+              {selectedVariant && (
+                <p className="text-sm" style={{ color: "var(--text-dim)" }}>{selectedVariant.label}</p>
+              )}
+              <p className="text-sm font-bold mt-1" style={{ color: "#FBBF24" }}>
+                {finalPrice.toLocaleString()} sum
+              </p>
+            </div>
+
+            {/* Back to shop button */}
+            <button
+              onClick={onSuccess}
+              className="w-full font-black text-[15px] text-white active:opacity-70"
+              style={{
+                padding: 16,
+                borderRadius: 16,
+                background: "linear-gradient(135deg,#EC4899,#A855F7)",
+                boxShadow: "0 4px 24px rgba(236,72,153,0.35)",
+              }}
+            >
+              {t.backToShop}
+            </button>
           </div>
         ) : (
           <>
