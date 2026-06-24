@@ -179,9 +179,9 @@ function BannerCarousel({ onTopup }: { onTopup: () => void }) {
   const { t } = useLang();
   const [active, setActive] = useState(0);
   const banners = [
-    { title: t.topUpBalance, sub: "Мгновенное пополнение через карту или банкомат", action: t.topUpNow, grad: BANNER_GRADS[0] },
-    { title: t.fastDelivery, sub: "Заказы обрабатываются в течение минут", action: t.browseGames, grad: BANNER_GRADS[1] },
-    { title: t.bestPrices, sub: "Официальные курсы без накрутки", action: t.shopNow, grad: BANNER_GRADS[2] },
+    { title: t.topUpBalance, sub: t.bannerSub1, action: t.topUpNow, grad: BANNER_GRADS[0] },
+    { title: t.fastDelivery, sub: t.bannerSub2, action: t.browseGames, grad: BANNER_GRADS[1] },
+    { title: t.bestPrices, sub: t.bannerSub3, action: t.shopNow, grad: BANNER_GRADS[2] },
   ];
   return (
     <div className="relative -mx-4">
@@ -226,6 +226,7 @@ function BannerCarousel({ onTopup }: { onTopup: () => void }) {
 // ─── Home sections ────────────────────────────────────────────────────────────
 
 function TopProductsSection({ onBuy, onDetail }: { onBuy: (p: Product) => void; onDetail: (p: Product) => void }) {
+  const { t } = useLang();
   const [cards, setCards] = useState<CardItem[]>([]);
   useEffect(() => { getTopProducts().then((ps: Product[]) => setCards(ps.flatMap(toCards))); }, []);
   if (cards.length === 0) return null;
@@ -233,7 +234,7 @@ function TopProductsSection({ onBuy, onDetail }: { onBuy: (p: Product) => void; 
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Flame className="w-4 h-4 text-orange-400" />
-        <p className="text-sm font-black" style={{ color: "var(--text)" }}>Топ продаж</p>
+        <p className="text-sm font-black" style={{ color: "var(--text)" }}>{t.topSales}</p>
       </div>
       <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4">
         {cards.slice(0, 8).map((item, i) => (
@@ -247,6 +248,7 @@ function TopProductsSection({ onBuy, onDetail }: { onBuy: (p: Product) => void; 
 }
 
 function OnSaleSection({ onBuy, onDetail }: { onBuy: (p: Product) => void; onDetail: (p: Product) => void }) {
+  const { t } = useLang();
   const [cards, setCards] = useState<CardItem[]>([]);
   useEffect(() => { getOnSaleProducts().then((ps: Product[]) => setCards(ps.flatMap(toCards))); }, []);
   if (cards.length === 0) return null;
@@ -254,7 +256,7 @@ function OnSaleSection({ onBuy, onDetail }: { onBuy: (p: Product) => void; onDet
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Tag className="w-4 h-4 text-red-400" />
-        <p className="text-sm font-black" style={{ color: "var(--text)" }}>Скидки</p>
+        <p className="text-sm font-black" style={{ color: "var(--text)" }}>{t.discounts}</p>
       </div>
       <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4">
         {cards.slice(0, 10).map((item, i) => (
@@ -402,6 +404,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
   onBuy: (p: Product) => void;
   onDetail: (p: Product) => void;
 }) {
+  const { t } = useLang();
   const [results, setResults] = useState<{ games: Game[]; categories: { id: string; game_id: string; name: string }[]; products: Product[] } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -426,7 +429,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
     return (
       <div className="flex flex-col items-center gap-3 py-14" style={{ color: "var(--text-muted)" }}>
         <Search className="w-8 h-8" />
-        <p className="text-sm">Ничего не найдено по «{query}»</p>
+        <p className="text-sm">{t.nothingFound} «{query}»</p>
       </div>
     );
   }
@@ -438,7 +441,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
       {results.games.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.1em] mb-3"
-            style={{ color: "var(--text-muted)" }}>Игры</p>
+            style={{ color: "var(--text-muted)" }}>{t.gamesTitle}</p>
           <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
             {results.games.map((g) => {
               const [c1, c2] = palette(g.id);
@@ -467,7 +470,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
       {results.categories.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.1em] mb-3"
-            style={{ color: "var(--text-muted)" }}>Категории</p>
+            style={{ color: "var(--text-muted)" }}>{t.categories}</p>
           <div className="flex flex-wrap gap-2">
             {results.categories.map((c) => (
               <span key={c.id} className="px-3 py-1.5 rounded-full text-xs font-bold"
@@ -482,7 +485,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
       {productCards.length > 0 && (
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.1em] mb-3"
-            style={{ color: "var(--text-muted)" }}>Товары</p>
+            style={{ color: "var(--text-muted)" }}>{t.productsSubtitle}</p>
           <div className="grid grid-cols-2 gap-3">
             {productCards.map((item, i) => (
               <GameDetailProductCard
@@ -505,6 +508,7 @@ const STAR_PRICE = 225;
 const STAR_MIN = 50;
 
 function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: () => void }) {
+  const { t } = useLang();
   const [username, setUsername] = useState("");
   const [count, setCount] = useState<number | "">("");
   const [loading, setLoading] = useState(false);
@@ -516,9 +520,9 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
   const notEnough = balance !== undefined && total > 0 && balance < total;
 
   const handleBuy = async () => {
-    if (!username.trim()) { setError("Введите Telegram логин"); return; }
-    if (!stars) { setError(`Минимум ${STAR_MIN} звёзд`); return; }
-    if (notEnough) { setError("Недостаточно баланса — пополни счёт"); return; }
+    if (!username.trim()) { setError(t.enterTgLogin); return; }
+    if (!stars) { setError(`${t.topupMinError.split(' ')[0]} ${STAR_MIN}`); return; }
+    if (notEnough) { setError(t.insufficientBalance); return; }
     setError("");
     setLoading(true);
     try {
@@ -527,7 +531,7 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
       onSuccess?.();
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg || "Ошибка при заказе");
+      setError(msg || t.orderError);
     } finally {
       setLoading(false);
     }
@@ -538,15 +542,15 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
       style={{ background: "linear-gradient(135deg,#1a1a2e,#16213e)", border: "1px solid rgba(251,191,36,0.20)" }}>
       <span className="text-2xl">✅</span>
       <div className="flex-1 min-w-0">
-        <p className="font-black text-white text-[13px]">Заказ принят!</p>
+        <p className="font-black text-white text-[13px]">{t.orderPlaced}</p>
         <p className="text-[11px] truncate" style={{ color: "rgba(255,255,255,0.40)" }}>
-          Звёзды поступят на @{username.replace(/^@/, "")}
+          ⭐ @{username.replace(/^@/, "")}
         </p>
       </div>
       <button className="px-3 py-1.5 rounded-xl text-[11px] font-bold text-amber-400 active:opacity-70 flex-shrink-0"
         style={{ background: "rgba(251,191,36,0.10)", border: "1px solid rgba(251,191,36,0.20)" }}
         onClick={() => { setDone(false); setUsername(""); setCount(""); }}>
-        Ещё
+        +
       </button>
     </div>
   );
@@ -560,7 +564,7 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
         <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-base"
           style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>⭐</div>
         <p className="font-black text-white text-[13px] flex-1">Telegram Stars</p>
-        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>1⭐ = {STAR_PRICE.toLocaleString()} сум</p>
+        <p className="text-[11px]" style={{ color: "rgba(255,255,255,0.35)" }}>1⭐ = {STAR_PRICE.toLocaleString()} {t.sumLabel}</p>
       </div>
 
       <div className="flex flex-col gap-2.5 p-3">
@@ -591,18 +595,18 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
               <input
                 type="number" min={STAR_MIN}
                 className="flex-1 bg-transparent outline-none text-[13px] font-black text-white placeholder:text-white/20"
-                placeholder={`мин. ${STAR_MIN}`}
+                placeholder={`min. ${STAR_MIN}`}
                 value={count === "" ? "" : count}
                 onChange={(e) => { const v = e.target.value; setCount(v === "" ? "" : Math.max(0, parseInt(v) || 0)); }}
               />
               {stars > 0 && (
                 <span className="text-[12px] font-black flex-shrink-0" style={{ color: "#FBBF24" }}>
-                  {total.toLocaleString()} сум
+                  {total.toLocaleString()} {t.sumLabel}
                 </span>
               )}
               {isBelowMin && (
                 <span className="text-[10px] font-bold flex-shrink-0" style={{ color: "rgba(239,68,68,0.8)" }}>
-                  мин. {STAR_MIN}
+                  min. {STAR_MIN}
                 </span>
               )}
             </div>
@@ -617,10 +621,10 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
             ? { background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.25)", cursor: "not-allowed" }
             : { background: "linear-gradient(135deg,#f59e0b,#d97706)", boxShadow: "0 3px 14px rgba(245,158,11,0.30)" }
           }>
-          {loading ? "Оформляем..." : `⭐ Купить${total > 0 ? " · " + total.toLocaleString() + " сум" : ""}`}
+          {loading ? t.placing : `⭐ ${t.buy}${total > 0 ? " · " + total.toLocaleString() + " " + t.sumLabel : ""}`}
         </button>
 
-        {notEnough && <p className="text-[11px] text-center -mt-1" style={{ color: "rgba(255,255,255,0.28)" }}>Нужно пополнить баланс</p>}
+        {notEnough && <p className="text-[11px] text-center -mt-1" style={{ color: "rgba(255,255,255,0.28)" }}>{t.insufficientBalance}</p>}
       </div>
     </div>
   );
@@ -739,7 +743,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
                 {games.length > 0 && (
                   <div className="flex flex-col gap-3">
                     <p className="text-[11px] font-black uppercase tracking-[0.1em]"
-                      style={{ color: "var(--text-muted)" }}>Все игры</p>
+                      style={{ color: "var(--text-muted)" }}>{t.allGames}</p>
                     <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
                       {games.map((g) => {
                         const [c1, c2] = palette(g.id);

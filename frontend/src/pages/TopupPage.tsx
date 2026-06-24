@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, Copy } from "lucide-react";
 import { getTopupInfo, submitTopup } from "../api";
+import { useLang } from "../i18n";
 
 type Method = "uzcard" | "visa" | "atm";
 type Step = "amount" | "method" | "requisites" | "receipt" | "done" | "expired";
@@ -31,12 +32,13 @@ const TIMER_DURATION = 10 * 60;
 const METHODS: { id: Method; label: string; icon: string }[] = [
   { id: "uzcard", label: "Uzcard",  icon: "🏦" },
   { id: "visa",   label: "Visa",    icon: "💠" },
-  { id: "atm",    label: "Банкомат", icon: "🏧" },
+  { id: "atm",    label: "ATM", icon: "🏧" },
 ];
 
 interface Props { onBack: () => void }
 
 export default function TopupPage({ onBack }: Props) {
+  const { t } = useLang();
   const [step, setStep]     = useState<Step>("amount");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<Method | null>(null);
@@ -87,7 +89,7 @@ export default function TopupPage({ onBack }: Props) {
 
   const handleAmountNext = () => {
     const n = parseInt(amount);
-    if (!n || n < 5000) { setError("Минимум 5 000 сум"); return; }
+    if (!n || n < 5000) { setError(t.topupMinError); return; }
     setError("");
     setStep("method");
   };
@@ -127,7 +129,7 @@ export default function TopupPage({ onBack }: Props) {
 
   const copy = (val: string) => {
     navigator.clipboard.writeText(val);
-    window.Telegram?.WebApp?.showAlert("Скопировано!");
+    window.Telegram?.WebApp?.showAlert(t.copied);
   };
 
   const startOver = () => {
@@ -148,12 +150,10 @@ export default function TopupPage({ onBack }: Props) {
     <div className="flex flex-col items-center gap-6 py-12 text-center">
       <div className="text-6xl">✅</div>
       <div>
-        <p className="text-xl font-black text-white">Заявка отправлена!</p>
-        <p className="text-sm mt-2" style={{ color: "var(--text-dim)" }}>
-          Мы проверим оплату и начислим баланс в течение нескольких минут.
-        </p>
+        <p className="text-xl font-black text-white">{t.topupSent}</p>
+        <p className="text-sm mt-2" style={{ color: "var(--text-dim)" }}>{t.topupSentBody}</p>
       </div>
-      <button className="s-btn max-w-xs" onClick={onBack}>На главную</button>
+      <button className="s-btn max-w-xs" onClick={onBack}>{t.toHome}</button>
     </div>
   );
 
@@ -161,12 +161,10 @@ export default function TopupPage({ onBack }: Props) {
     <div className="flex flex-col items-center gap-6 py-12 text-center">
       <div className="text-6xl">⏰</div>
       <div>
-        <p className="text-xl font-black text-red-400">Время вышло</p>
-        <p className="text-sm mt-2" style={{ color: "var(--text-dim)" }}>
-          Сессия оплаты истекла. Начните заново — сумма будет новой.
-        </p>
+        <p className="text-xl font-black text-red-400">{t.timeExpired}</p>
+        <p className="text-sm mt-2" style={{ color: "var(--text-dim)" }}>{t.timeExpiredBody}</p>
       </div>
-      <button className="s-btn max-w-xs" onClick={startOver}>Начать заново</button>
+      <button className="s-btn max-w-xs" onClick={startOver}>{t.startOver}</button>
     </div>
   );
 
@@ -177,9 +175,9 @@ export default function TopupPage({ onBack }: Props) {
         style={{ color: "var(--text-dim)" }}
         onClick={onBack}
       >
-        ← Назад
+        {t.back}
       </button>
-      <h2 className="text-xl font-black text-white">💰 Пополнение баланса</h2>
+      <h2 className="text-xl font-black text-white">💰 {t.topupTitle}</h2>
 
       {step === "amount" && (
         <div className="flex flex-col gap-4">
@@ -187,7 +185,7 @@ export default function TopupPage({ onBack }: Props) {
             className="flex flex-col gap-2 rounded-2xl p-5"
             style={{ background: "var(--bg-raised, #0D1020)", border: "1px solid var(--border, rgba(255,255,255,0.07))" }}
           >
-            <label className="s-label">Сумма пополнения (сум)</label>
+            <label className="s-label">{t.topupAmountLabel}</label>
             <input
               type="number"
               className="bg-transparent text-3xl font-black outline-none placeholder:text-white/20 w-full text-white"
@@ -197,7 +195,7 @@ export default function TopupPage({ onBack }: Props) {
               onKeyDown={(e) => e.key === "Enter" && handleAmountNext()}
             />
             <p className="text-xs mt-1" style={{ color: "rgba(168,85,247,0.55)" }}>
-              Минимум от 5 000 сум
+              {t.topupMinError}
             </p>
           </div>
 
@@ -209,11 +207,7 @@ export default function TopupPage({ onBack }: Props) {
             <div className="flex items-start gap-2">
               <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
               <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-dim)" }}>
-                Пополненные средства являются внутренним балансом магазина и{" "}
-                <span className="font-semibold" style={{ color: "#EC4899" }}>не подлежат возврату</span>.
-                Баланс нельзя вывести на карту или счёт — он используется
-                исключительно для покупок в Doonya Shop.
-                Перед пополнением убедитесь, что вы хотите приобрести товары в нашем магазине.
+                {t.legalDisclaimer}
               </p>
             </div>
 
@@ -235,7 +229,7 @@ export default function TopupPage({ onBack }: Props) {
                 )}
               </div>
               <span className="text-[12px] text-left leading-snug" style={{ color: "var(--text-dim)" }}>
-                Я понимаю, что средства не возвращаются и не выводятся
+                {t.iUnderstandNoRefund}
               </span>
             </button>
           </div>
@@ -247,14 +241,14 @@ export default function TopupPage({ onBack }: Props) {
             onClick={handleAmountNext}
             style={!agreed ? { opacity: 0.35, cursor: "not-allowed", boxShadow: "none", background: "var(--bg-surface)" } : undefined}
           >
-            Продолжить
+            {t.continueBtn}
           </button>
         </div>
       )}
 
       {step === "method" && (
         <div className="flex flex-col gap-3">
-          <p className="text-sm" style={{ color: "var(--text-dim)" }}>Выберите способ оплаты</p>
+          <p className="text-sm" style={{ color: "var(--text-dim)" }}>{t.choosePayMethod}</p>
           {loading ? (
             <div className="flex justify-center py-6">
               <div
@@ -294,7 +288,7 @@ export default function TopupPage({ onBack }: Props) {
           >
             <Clock className="w-4 h-4" style={{ color: timerColor }} />
             <span className="font-mono font-black text-xl" style={{ color: timerColor }}>{fmt(timeLeft)}</span>
-            <span className="text-sm" style={{ color: "var(--text-muted)" }}>осталось</span>
+            <span className="text-sm" style={{ color: "var(--text-muted)" }}>{t.timeLeftLabel}</span>
           </div>
 
           {info.cards ? (
@@ -307,7 +301,7 @@ export default function TopupPage({ onBack }: Props) {
                 >
                   <p className="s-label">{c.type}</p>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm" style={{ color: "var(--text-dim)" }}>Карта</span>
+                    <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.cardLabel}</span>
                     <button
                       className="font-mono font-bold active:opacity-70 flex items-center gap-1.5"
                       style={{ color: "#A78BFA" }}
@@ -318,7 +312,7 @@ export default function TopupPage({ onBack }: Props) {
                     </button>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm" style={{ color: "var(--text-dim)" }}>Получатель</span>
+                    <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.recipientLabel}</span>
                     <span className="font-medium text-white">{c.holder}</span>
                   </div>
                 </div>
@@ -327,13 +321,13 @@ export default function TopupPage({ onBack }: Props) {
                 className="flex justify-between items-center rounded-2xl p-4"
                 style={{ background: "var(--bg-raised, #0D1020)", border: "1px solid var(--border, rgba(255,255,255,0.07))" }}
               >
-                <span className="text-sm" style={{ color: "var(--text-dim)" }}>Сумма к переводу</span>
+                <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.amountToTransfer}</span>
                 <button
                   className="text-xl font-black active:opacity-70 flex items-center gap-1.5"
                   style={{ color: "#EC4899" }}
                   onClick={() => copy(String(info.amount))}
                 >
-                  {info.amount.toLocaleString()} сум
+                  {info.amount.toLocaleString()} {t.sumLabel}
                   <Copy className="w-3.5 h-3.5 opacity-50" />
                 </button>
               </div>
@@ -345,7 +339,7 @@ export default function TopupPage({ onBack }: Props) {
             >
               {info.requisites && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm" style={{ color: "var(--text-dim)" }}>Реквизиты</span>
+                  <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.requisites}</span>
                   <button
                     className="font-mono font-bold active:opacity-70 flex items-center gap-1.5"
                     style={{ color: "#A78BFA" }}
@@ -358,7 +352,7 @@ export default function TopupPage({ onBack }: Props) {
               )}
               {info.holder && (
                 <div className="flex justify-between">
-                  <span className="text-sm" style={{ color: "var(--text-dim)" }}>Получатель</span>
+                  <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.recipientLabel}</span>
                   <span className="font-medium text-white">{info.holder}</span>
                 </div>
               )}
@@ -366,13 +360,13 @@ export default function TopupPage({ onBack }: Props) {
                 className="flex justify-between items-center pt-3 mt-1"
                 style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
               >
-                <span className="text-sm" style={{ color: "var(--text-dim)" }}>Сумма к переводу</span>
+                <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.amountToTransfer}</span>
                 <button
                   className="text-xl font-black active:opacity-70 flex items-center gap-1.5"
                   style={{ color: "#EC4899" }}
                   onClick={() => copy(String(info.amount))}
                 >
-                  {info.amount.toLocaleString()} сум
+                  {info.amount.toLocaleString()} {t.sumLabel}
                   <Copy className="w-3.5 h-3.5 opacity-50" />
                 </button>
               </div>
@@ -382,21 +376,21 @@ export default function TopupPage({ onBack }: Props) {
           <p className="text-xs text-center" style={{ color: "var(--text-muted)" }}>{info.note}</p>
 
           <button className="s-btn" onClick={() => setStep("receipt")}>
-            Я перевёл — прикрепить чек
+            {t.iTransferred}
           </button>
           <button
             onClick={startOver}
             className="w-full py-3 rounded-xl text-sm font-bold text-red-400 active:opacity-70"
             style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.20)" }}
           >
-            Отменить пополнение
+            {t.cancelTopup}
           </button>
         </div>
       )}
 
       {step === "receipt" && (
         <div className="flex flex-col gap-4">
-          <p className="text-sm" style={{ color: "var(--text-dim)" }}>Прикрепите скриншот или фото чека об оплате</p>
+          <p className="text-sm" style={{ color: "var(--text-dim)" }}>{t.attachReceiptHint}</p>
           <label
             className="flex flex-col items-center gap-3 py-8 cursor-pointer active:opacity-70 rounded-2xl"
             style={{
@@ -407,7 +401,7 @@ export default function TopupPage({ onBack }: Props) {
           >
             <span className="text-4xl">{file ? "📎" : "📷"}</span>
             <span className="text-sm" style={{ color: file ? "#EC4899" : "#A78BFA" }}>
-              {file ? file.name : "Нажмите чтобы выбрать файл"}
+              {file ? file.name : t.selectFile}
             </span>
             <input
               type="file"
@@ -422,14 +416,14 @@ export default function TopupPage({ onBack }: Props) {
             onClick={handleSubmit}
             style={!file || loading ? { opacity: 0.35, boxShadow: "none", background: "var(--bg-surface)" } : undefined}
           >
-            {loading ? "Отправка..." : "Отправить на проверку"}
+            {loading ? t.sending : t.submitForReview}
           </button>
           <button
             onClick={startOver}
             className="w-full py-3 rounded-xl text-sm font-bold text-red-400 active:opacity-70"
             style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.20)" }}
           >
-            Отменить пополнение
+            {t.cancelTopup}
           </button>
         </div>
       )}

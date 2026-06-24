@@ -1,6 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import { X, CheckCircle, XCircle, Clock, ShoppingBag, Bell } from "lucide-react";
 import { getNotifyWsUrl } from "../api";
+import { useLang } from "../i18n";
+
+function getLang() { return (localStorage.getItem("lang") || "ru") as "ru" | "uz"; }
+const NOTIF_STRINGS = {
+  ru: {
+    orderReady: "Заказ выполнен ✅", orderReadyBody: "Ваш заказ готов! Оцените покупку.",
+    topupOk: "Баланс пополнен 💰", topupOkBody: "Пополнение успешно подтверждено.",
+    topupFail: "Пополнение отклонено ❌", topupFailBody: "Ваше пополнение не было подтверждено. Обратитесь в поддержку.",
+    expired: "Время истекло ⏱", expiredBody: "Срок ожидания пополнения истёк. Чек не был загружен вовремя.",
+    orderReadyNamed: (n: string) => `Ваш заказ «${n}» готов! Оцените покупку.`,
+    topupOkNamed: (a: number) => `На ваш счёт зачислено ${a.toLocaleString()} сум.`,
+  },
+  uz: {
+    orderReady: "Buyurtma bajarildi ✅", orderReadyBody: "Buyurtmangiz tayyor! Iltimos, baholang.",
+    topupOk: "Balans to'ldirildi 💰", topupOkBody: "To'ldirishingiz tasdiqlandi.",
+    topupFail: "To'ldirish rad etildi ❌", topupFailBody: "To'ldirishingiz tasdiqlanmadi. Yordam bilan bog'laning.",
+    expired: "Vaqt tugadi ⏱", expiredBody: "To'ldirish muddati tugadi. Chek o'z vaqtida yuklanmadi.",
+    orderReadyNamed: (n: string) => `Buyurtmangiz «${n}» tayyor! Iltimos, baholang.`,
+    topupOkNamed: (a: number) => `Hisobingizga ${a.toLocaleString()} so'm tushdi.`,
+  },
+};
 
 export type NotifType = "order_ready" | "topup_confirmed" | "topup_rejected" | "topup_expired";
 
@@ -46,21 +67,20 @@ export function makeNotification(
 ): AppNotification {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const ts = Date.now();
+  const s = NOTIF_STRINGS[getLang()];
   if (type === "order_ready") {
-    return { id, type, ts, read: false, title: "Заказ выполнен ✅",
-      body: extra?.product_name ? `Ваш заказ «${extra.product_name}» готов! Оцените покупку.` : "Ваш заказ готов! Оцените покупку.",
+    return { id, type, ts, read: false, title: s.orderReady,
+      body: extra?.product_name ? s.orderReadyNamed(extra.product_name) : s.orderReadyBody,
       order_id: extra?.order_id };
   }
   if (type === "topup_confirmed") {
-    return { id, type, ts, read: false, title: "Баланс пополнен 💰",
-      body: extra?.amount ? `На ваш счёт зачислено ${extra.amount.toLocaleString()} сум.` : "Пополнение успешно подтверждено." };
+    return { id, type, ts, read: false, title: s.topupOk,
+      body: extra?.amount ? s.topupOkNamed(extra.amount) : s.topupOkBody };
   }
   if (type === "topup_rejected") {
-    return { id, type, ts, read: false, title: "Пополнение отклонено ❌",
-      body: "Ваше пополнение не было подтверждено. Обратитесь в поддержку." };
+    return { id, type, ts, read: false, title: s.topupFail, body: s.topupFailBody };
   }
-  return { id, type, ts, read: false, title: "Время истекло ⏱",
-    body: "Срок ожидания пополнения истёк. Чек не был загружен вовремя." };
+  return { id, type, ts, read: false, title: s.expired, body: s.expiredBody };
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -147,12 +167,13 @@ function notifAccent(type: NotifType) {
   return                                 { bg: "rgba(245,158,11,0.10)",  border: "rgba(245,158,11,0.18)" };
 }
 
-function fmtTs(ts: number) {
+function fmtTs(ts: number, t: ReturnType<typeof useLang>["t"]) {
   const diff = Date.now() - ts;
-  if (diff < 60_000)     return "только что";
-  if (diff < 3_600_000)  return `${Math.floor(diff / 60_000)} мин назад`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} ч назад`;
-  return new Date(ts).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  if (diff < 60_000)     return t.justNow;
+  if (diff < 3_600_000)  return `${Math.floor(diff / 60_000)} ${t.minAgo}`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} ${t.hrAgo}`;
+  const locale = getLang() === "uz" ? "uz-UZ" : "ru-RU";
+  return new Date(ts).toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 interface Props {
@@ -163,7 +184,7 @@ interface Props {
 }
 
 export default function NotificationSheet({ open, onClose, notifs, onReviewOrder }: Props) {
-  // Animate closing: keep mounted for exit animation
+  const { t } = useLang();
   const [render, setRender] = useState(open);
   const [visible, setVisible] = useState(false);
 
@@ -220,7 +241,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
           style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="flex items-center gap-2.5">
             <Bell className="w-4 h-4" style={{ color: "var(--text-muted)" }} />
-            <p className="text-[15px] font-black" style={{ color: "var(--text)" }}>Уведомления</p>
+            <p className="text-[15px] font-black" style={{ color: "var(--text)" }}>{t.notifications}</p>
             {unread > 0 && (
               <div className="rounded-full px-2 py-0.5"
                 style={{ background: "linear-gradient(135deg,#EC4899,#A855F7)" }}>
@@ -241,7 +262,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
             <div className="flex flex-col items-center gap-3 py-16 s-fade-in"
               style={{ color: "var(--text-muted)" }}>
               <Bell className="w-10 h-10" />
-              <p className="text-sm">Уведомлений пока нет</p>
+              <p className="text-sm">{t.noNotifications}</p>
             </div>
           ) : (
             <div className="flex flex-col">
@@ -268,7 +289,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
                       <div className="flex items-start justify-between gap-2">
                         <p className="text-[13px] font-black leading-tight" style={{ color: "var(--text)" }}>{n.title}</p>
                         <span className="text-[10px] flex-shrink-0 mt-0.5" style={{ color: "var(--text-muted)" }}>
-                          {fmtTs(n.ts)}
+                          {fmtTs(n.ts, t)}
                         </span>
                       </div>
                       <p className="text-[12px] mt-1 leading-snug" style={{ color: "var(--text-dim)" }}>{n.body}</p>
@@ -278,7 +299,7 @@ export default function NotificationSheet({ open, onClose, notifs, onReviewOrder
                           className="mt-2.5 px-3 py-1.5 rounded-lg text-[11px] font-bold active:opacity-70 transition-opacity"
                           style={{ background: "rgba(236,72,153,0.10)", border: "1px solid rgba(236,72,153,0.22)", color: "#EC4899" }}
                         >
-                          ⭐ Оставить отзыв →
+                          {t.leaveReviewBtn}
                         </button>
                       )}
                     </div>

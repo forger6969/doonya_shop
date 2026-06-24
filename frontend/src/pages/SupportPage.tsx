@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Send, MessageCircle, Loader2 } from "lucide-react";
 import { getSupportWsUrl, getSupportHistory } from "../api";
+import { useLang } from "../i18n";
 
 interface Msg {
   id: string;
@@ -10,6 +11,7 @@ interface Msg {
 }
 
 export default function SupportPage() {
+  const { t } = useLang();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [connected, setConnected] = useState(false);
@@ -85,14 +87,14 @@ export default function SupportPage() {
           <MessageCircle className="w-4 h-4" style={{ color: "#EC4899" }} />
         </div>
         <div className="flex-1">
-          <p className="text-sm font-black text-white">Поддержка</p>
+          <p className="text-sm font-black text-white">{t.support}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <div
               className="w-1.5 h-1.5 rounded-full transition-colors"
               style={{ background: connected ? "#10B981" : "rgba(255,255,255,0.20)" }}
             />
             <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
-              {connected ? "Онлайн" : "Подключение..."}
+              {connected ? t.online : t.connectingStatus}
             </p>
           </div>
         </div>
@@ -103,9 +105,7 @@ export default function SupportPage() {
         {messages.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-14" style={{ color: "var(--text-muted)" }}>
             <MessageCircle className="w-10 h-10" />
-            <p className="text-sm text-center leading-relaxed">
-              Напишите нам — обычно отвечаем в течение нескольких минут
-            </p>
+            <p className="text-sm text-center leading-relaxed">{t.supportHint}</p>
           </div>
         )}
         {messages.map((msg) => {
@@ -130,7 +130,7 @@ export default function SupportPage() {
               >
                 {!isUser && (
                   <p className="text-[10px] font-bold mb-1 uppercase tracking-wider" style={{ color: "#EC4899" }}>
-                    Поддержка
+                    {t.support}
                   </p>
                 )}
                 <p className="text-white/90 break-words">{msg.text}</p>
@@ -156,7 +156,7 @@ export default function SupportPage() {
           value={text}
           onChange={(e) => setText(e.target.value.slice(0, 1000))}
           onKeyDown={handleKey}
-          placeholder="Напишите сообщение..."
+          placeholder={t.writeMsgPlaceholder}
           rows={1}
           className="flex-1 rounded-2xl px-3.5 py-2.5 text-sm text-white outline-none resize-none transition-colors"
           style={{

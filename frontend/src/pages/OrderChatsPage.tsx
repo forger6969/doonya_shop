@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
 import { MessageCircle, ShoppingBag, ChevronRight, RefreshCw } from "lucide-react";
 import { getMyOrderChats, type AdminOrderChat } from "../api";
+import { useLang } from "../i18n";
 
 interface Props {
   onOpenChat: (orderId: string, productName?: string) => void;
 }
 
-function fmtTime(ts: string) {
+function fmtTime(ts: string, justNow: string, minAgo: string) {
   if (!ts) return "";
   try {
     const d = new Date(ts);
-    const now = new Date();
-    const diff = (now.getTime() - d.getTime()) / 1000;
-    if (diff < 60) return "только что";
-    if (diff < 3600) return `${Math.floor(diff / 60)} мин`;
-    if (diff < 86400) return d.toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" });
-    return d.toLocaleDateString("ru", { day: "numeric", month: "short" });
+    const diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return justNow;
+    if (diff < 3600) return `${Math.floor(diff / 60)} ${minAgo}`;
+    if (diff < 86400) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleDateString([], { day: "numeric", month: "short" });
   } catch {
     return "";
   }
@@ -34,6 +34,7 @@ function SkeletonCard() {
 }
 
 export default function OrderChatsPage({ onOpenChat }: Props) {
+  const { t } = useLang();
   const [chats, setChats] = useState<AdminOrderChat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -54,10 +55,8 @@ export default function OrderChatsPage({ onOpenChat }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-1">
         <div>
-          <h2 className="text-[18px] font-black" style={{ color: "var(--text)" }}>Чаты</h2>
-          <p className="text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>
-            Переписка с поддержкой по заказам
-          </p>
+          <h2 className="text-[18px] font-black" style={{ color: "var(--text)" }}>{t.chats}</h2>
+          <p className="text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>{t.chatsSub}</p>
         </div>
         {!loading && (
           <button onClick={load} className="w-8 h-8 rounded-full flex items-center justify-center active:opacity-60"
@@ -78,10 +77,10 @@ export default function OrderChatsPage({ onOpenChat }: Props) {
       {!loading && error && (
         <div className="flex flex-col items-center gap-3 py-16 s-fade-in">
           <MessageCircle className="w-10 h-10" style={{ color: "var(--text-muted)", opacity: 0.4 }} />
-          <p className="text-sm" style={{ color: "var(--text-muted)" }}>Не удалось загрузить чаты</p>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t.chatsLoadError}</p>
           <button onClick={load} className="text-sm font-bold px-4 py-2 rounded-xl active:opacity-70"
             style={{ background: "rgba(236,72,153,0.12)", color: "#EC4899" }}>
-            Повторить
+            {t.retry}
           </button>
         </div>
       )}
@@ -94,10 +93,8 @@ export default function OrderChatsPage({ onOpenChat }: Props) {
             <MessageCircle className="w-8 h-8" style={{ color: "rgba(236,72,153,0.50)" }} />
           </div>
           <div className="text-center space-y-1">
-            <p className="font-bold text-[15px]" style={{ color: "var(--text)" }}>Нет чатов</p>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Чаты появятся после оформления заказа
-            </p>
+            <p className="font-bold text-[15px]" style={{ color: "var(--text)" }}>{t.noChats}</p>
+            <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t.chatsWillAppear}</p>
           </div>
         </div>
       )}
@@ -127,10 +124,10 @@ export default function OrderChatsPage({ onOpenChat }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-black text-[14px] truncate" style={{ color: "var(--text)" }}>
-                      {chat.product_name || "Заказ"}
+                      {chat.product_name || t.order}
                     </p>
                     <span className="text-[11px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>
-                      {fmtTime(chat.last_ts)}
+                      {fmtTime(chat.last_ts, t.justNow, t.minAgo)}
                     </span>
                   </div>
 
@@ -142,7 +139,7 @@ export default function OrderChatsPage({ onOpenChat }: Props) {
 
                   <div className="flex items-center justify-between gap-2 mt-1">
                     <p className="text-[12px] truncate" style={{ color: "var(--text-dim)" }}>
-                      {chat.last_message || "Нет сообщений"}
+                      {chat.last_message || t.noMessages}
                     </p>
                     {unread > 0 && (
                       <div className="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1"

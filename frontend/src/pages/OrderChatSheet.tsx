@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Send, MessageCircle } from "lucide-react";
 import { getOrderChatWsUrl } from "../api";
+import { useLang } from "../i18n";
 
 interface ChatMsg { id: string; from: string; text: string; ts: string }
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function OrderChatSheet({ orderId, productName, onClose }: Props) {
+  const { t } = useLang();
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [text, setText] = useState("");
@@ -126,10 +128,10 @@ export default function OrderChatSheet({ orderId, productName, onClose }: Props)
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-black" style={{ color: "var(--text)" }}>
-              {productName || "Заказ"}
+              {productName || t.order}
             </p>
             <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>
-              {connected ? "• подключено" : "• подключение..."}
+              {connected ? t.connectedStatus : t.connectingStatus}
             </p>
           </div>
           <button
@@ -147,8 +149,7 @@ export default function OrderChatSheet({ orderId, productName, onClose }: Props)
             <div className="flex flex-col items-center gap-3 py-16" style={{ color: "var(--text-muted)" }}>
               <MessageCircle className="w-10 h-10" style={{ opacity: 0.3 }} />
               <p className="text-sm text-center">
-                Здесь можно написать нам по заказу.<br />
-                Обычно отвечаем быстро.
+                {t.chatEmptyLine1}<br />{t.chatEmptyLine2}
               </p>
             </div>
           )}
@@ -165,7 +166,7 @@ export default function OrderChatSheet({ orderId, productName, onClose }: Props)
                 >
                   {!isUser && (
                     <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: "#EC4899" }}>
-                      Поддержка
+                      {t.support}
                     </p>
                   )}
                   <p className="break-words" style={{ color: "var(--text)" }}>{msg.text}</p>
@@ -187,7 +188,7 @@ export default function OrderChatSheet({ orderId, productName, onClose }: Props)
             value={text}
             onChange={(e) => setText(e.target.value.slice(0, 1000))}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="Написать сообщение..."
+            placeholder={t.writeMsgPlaceholder}
             rows={1}
             className="flex-1 s-input resize-none outline-none"
             style={{ maxHeight: 120, minHeight: 44 }}
