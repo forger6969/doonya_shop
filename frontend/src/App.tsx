@@ -99,6 +99,7 @@ export default function App() {
 
   const [orderChat, setOrderChat] = useState<{ orderId: string; productName?: string } | null>(null);
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(() => readActiveOrder());
+  const [showOrderStatus, setShowOrderStatus] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
   const { notifs, unreadCount, markAllRead, addTopupExpired } = useNotifications(
@@ -296,9 +297,7 @@ export default function App() {
       {/* Active order banner */}
       {activeOrder && (
         <button
-          onClick={() => {
-            setOrderChat({ orderId: activeOrder.orderId, productName: activeOrder.productName });
-          }}
+          onClick={() => setShowOrderStatus(true)}
           className="mx-4 mt-3 flex items-center gap-3 px-4 py-3 rounded-2xl active:opacity-75"
           style={{
             background: "rgba(168,85,247,0.08)",
@@ -319,7 +318,7 @@ export default function App() {
             </p>
             <p className="font-black text-white text-sm mt-0.5 truncate">{activeOrder.productName}</p>
           </div>
-          <span className="text-[11px] font-bold flex-shrink-0" style={{ color: "rgba(168,85,247,0.6)" }}>Открыть чат ›</span>
+          <span className="text-[11px] font-bold flex-shrink-0" style={{ color: "rgba(168,85,247,0.6)" }}>Подробнее ›</span>
         </button>
       )}
 
@@ -433,15 +432,90 @@ export default function App() {
         <OrderChatSheet
           orderId={orderChat.orderId}
           productName={orderChat.productName}
-          onClose={() => {
-            setOrderChat(null);
-            // clear active order banner once user has opened the chat
-            if (activeOrder && orderChat.orderId === activeOrder.orderId) {
-              clearActiveOrder();
-              setActiveOrder(null);
-            }
-          }}
+          onClose={() => setOrderChat(null)}
         />
+      )}
+
+      {/* Active order status modal */}
+      {showOrderStatus && activeOrder && (
+        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowOrderStatus(false)}>
+          <div className="absolute inset-0 bg-black/70" />
+          <div
+            className="relative w-full rounded-t-3xl flex flex-col gap-4 p-5"
+            style={{
+              background: "#100D1E",
+              borderTop: "1px solid rgba(168,85,247,0.20)",
+              borderRadius: "24px 24px 0 0",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-9 h-1 rounded-full bg-white/10 mx-auto -mt-1" />
+
+            {/* Status header */}
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 flex-shrink-0">
+                <div className="absolute inset-0 rounded-full animate-ping opacity-30"
+                  style={{ background: "rgba(168,85,247,0.40)" }} />
+                <div className="absolute inset-0 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(168,85,247,0.18)", border: "1px solid rgba(168,85,247,0.30)" }}>
+                  <span className="text-2xl">📦</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#C084FC" }}>Активный заказ</p>
+                <p className="font-black text-white text-lg leading-tight">{activeOrder.productName}</p>
+              </div>
+            </div>
+
+            {/* Status card */}
+            <div className="rounded-2xl p-4 flex items-center gap-3"
+              style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.18)" }}>
+              <div className="w-8 h-8 rounded-full flex-shrink-0 animate-spin"
+                style={{ border: "2px solid rgba(168,85,247,0.2)", borderTopColor: "#A855F7" }} />
+              <div>
+                <p className="text-sm font-bold text-white">В обработке</p>
+                <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  Заказ принят, ожидайте выполнения
+                </p>
+              </div>
+            </div>
+
+            {/* Order ID */}
+            <p className="text-[11px] text-center font-mono" style={{ color: "rgba(255,255,255,0.20)" }}>
+              ID: {activeOrder.orderId}
+            </p>
+
+            {/* Go to chat button */}
+            <button
+              onClick={() => {
+                setShowOrderStatus(false);
+                setOrderChat({ orderId: activeOrder.orderId, productName: activeOrder.productName });
+              }}
+              className="w-full font-black text-[15px] text-white active:opacity-70"
+              style={{
+                padding: 16,
+                borderRadius: 16,
+                background: "linear-gradient(135deg,#EC4899,#A855F7)",
+                boxShadow: "0 4px 24px rgba(236,72,153,0.35)",
+              }}
+            >
+              💬 Перейти в чат заказа
+            </button>
+
+            {/* Mark as done */}
+            <button
+              onClick={() => {
+                clearActiveOrder();
+                setActiveOrder(null);
+                setShowOrderStatus(false);
+              }}
+              className="w-full py-2.5 text-[13px] font-semibold active:opacity-50"
+              style={{ color: "rgba(240,242,250,0.25)" }}
+            >
+              Заказ получен — закрыть
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Notification sheet */}
