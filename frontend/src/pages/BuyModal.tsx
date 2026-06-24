@@ -74,7 +74,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end" onClick={done ? () => onSuccess(orderId) : onClose}>
       <div className="absolute inset-0 bg-black/70" />
       <div
         className="relative w-full rounded-t-3xl flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto"
