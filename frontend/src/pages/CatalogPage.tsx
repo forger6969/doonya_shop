@@ -146,11 +146,11 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
       {/* Product photo */}
       <div className="w-full flex-shrink-0 overflow-hidden"
         style={{
-          aspectRatio: "16/7",
+          aspectRatio: "4/3",
           background: item.photo_id ? "#0a0a14" : `linear-gradient(145deg,${g1},${g2})`,
         }}>
         {item.photo_id
-          ? <img src={item.photo_id} className="w-full h-full object-contain" alt={item.name} />
+          ? <img src={item.photo_id} className="w-full h-full object-cover object-center" alt={item.name} />
           : <div className="w-full h-full flex items-center justify-center">
               <span className="text-xl font-black text-white/80">{initials(item.name)}</span>
             </div>}
