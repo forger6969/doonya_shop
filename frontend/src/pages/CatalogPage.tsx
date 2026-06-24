@@ -33,7 +33,6 @@ const PALETTES = [
   ["#86efac","#22c55e"],["#f97316","#ea580c"],["#fb923c","#f97316"],
   ["#22c55e","#0ea5e9"],["#0ea5e9","#22c55e"],["#3b82f6","#22c55e"],["#22c55e","#6366f1"],
 ];
-const BANNER_GRADS = [["#4c1d95","#1e1b4b"],["#0c4a6e","#064e3b"],["#7c2d12","#1c1917"]];
 
 function palette(id: string) {
   const hash = [...id].reduce((a, c) => a + c.charCodeAt(0), 0);

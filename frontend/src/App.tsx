@@ -70,7 +70,7 @@ function readPendingSession(): { expiresAt: number } | null {
 export default function App() {
   const { t } = useLang();
   const NAV: { id: Tab; Icon: React.ElementType; label: string }[] = [
-    { id: "catalog", Icon: ({ className, style }: { className?: string; style?: React.CSSProperties }) => <span style={{ ...style, fontSize: 18, lineHeight: 1 }}>🎮</span>, label: t.shop },
+    { id: "catalog", Icon: ({ style }: { className?: string; style?: React.CSSProperties }) => <span style={{ ...style, fontSize: 18, lineHeight: 1 }}>🎮</span>, label: t.shop },
     { id: "chats", Icon: MessageCircle, label: t.chats },
     { id: "profile", Icon: User, label: t.profile },
   ];
