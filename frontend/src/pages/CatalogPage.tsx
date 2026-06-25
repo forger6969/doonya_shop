@@ -200,7 +200,7 @@ function GameFilterChips({ games, selected, onSelect }: {
 }) {
   const { t } = useLang();
   return (
-    <div className="sticky top-0 z-20 -mx-4 px-4 py-2.5"
+    <div className="sticky top-0 z-20 py-2.5"
       style={{ background: "var(--header-bg)", backdropFilter: "blur(16px)", borderBottom: "1px solid var(--border)" }}>
       <div className="flex gap-2 overflow-x-auto no-scrollbar">
         <button onClick={() => onSelect(null)}
@@ -713,7 +713,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
 
   return (
     <>
-      <div className="flex flex-col gap-4 pb-6" style={{ overflowX: 'clip' }}>
+      <div className="flex flex-col gap-4 pb-6">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#22c55e" }} />
