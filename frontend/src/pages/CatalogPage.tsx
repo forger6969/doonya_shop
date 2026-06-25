@@ -101,7 +101,7 @@ function ListingCard({ item, onBuy, onDetail }: {
       <div className="w-full flex-shrink-0 overflow-hidden relative"
         style={{ aspectRatio: "1/1", background: item.photo_id ? "#111" : `linear-gradient(145deg,${g1},${g2})` }}>
         {item.photo_id
-          ? <img src={item.photo_id} className="w-full h-full object-contain" alt={item.name} />
+          ? <img src={item.photo_id} className="w-full h-full object-cover" alt={item.name} />
           : <div className="w-full h-full flex items-center justify-center">
               <span className="text-2xl font-black text-white/80">{initials(item.name)}</span>
             </div>}
@@ -163,7 +163,7 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
       <div className="w-full flex-shrink-0 overflow-hidden"
         style={{ aspectRatio: "1/1", background: item.photo_id ? "#0a0a14" : `linear-gradient(145deg,${g1},${g2})` }}>
         {item.photo_id
-          ? <img src={item.photo_id} className="w-full h-full object-contain" alt={item.name} />
+          ? <img src={item.photo_id} className="w-full h-full object-cover" alt={item.name} />
           : <div className="w-full h-full flex items-center justify-center">
               <span className="text-xl font-black text-white/80">{initials(item.name)}</span>
             </div>}
