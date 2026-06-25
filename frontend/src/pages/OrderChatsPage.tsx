@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { MessageCircle, ShoppingBag, ChevronRight, RefreshCw } from "lucide-react";
+import { MessageCircle, ShoppingBag, ChevronRight, RefreshCw, Headphones } from "lucide-react";
 import { getMyOrderChats, type AdminOrderChat } from "../api";
 import { useLang } from "../i18n";
 
 interface Props {
   onOpenChat: (orderId: string, productName?: string) => void;
+  onOpenSupport?: () => void;
 }
 
 function fmtTime(ts: string, justNow: string, minAgo: string) {
@@ -33,7 +34,7 @@ function SkeletonCard() {
   );
 }
 
-export default function OrderChatsPage({ onOpenChat }: Props) {
+export default function OrderChatsPage({ onOpenChat, onOpenSupport }: Props) {
   const { t } = useLang();
   const [chats, setChats] = useState<AdminOrderChat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +66,25 @@ export default function OrderChatsPage({ onOpenChat }: Props) {
           </button>
         )}
       </div>
+
+      {/* Support entry */}
+      {onOpenSupport && (
+        <button
+          onClick={onOpenSupport}
+          className="w-full flex items-center gap-3 p-4 rounded-2xl text-left active:opacity-75 transition-opacity"
+          style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.18)" }}
+        >
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: "rgba(34,197,94,0.12)" }}>
+            <Headphones className="w-5 h-5" style={{ color: "#22c55e" }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-black text-[14px]" style={{ color: "var(--text)" }}>{t.support}</p>
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--text-muted)" }}>{t.supportHint}</p>
+          </div>
+          <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+        </button>
+      )}
 
       {/* Skeleton */}
       {loading && (

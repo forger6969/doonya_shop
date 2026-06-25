@@ -11,6 +11,7 @@ import OrderChatSheet from "./pages/OrderChatSheet";
 // Non-critical — lazy loaded
 const SupportAgentPage  = lazy(() => import("./pages/SupportAgentPage"));
 const OrderChatsPage    = lazy(() => import("./pages/OrderChatsPage"));
+const SupportChatSheet  = lazy(() => import("./pages/SupportChatSheet"));
 const TopupPage         = lazy(() => import("./pages/TopupPage"));
 const AdminPage         = lazy(() => import("./pages/AdminPage"));
 const ReviewSheet       = lazy(() => import("./pages/ReviewSheet"));
@@ -100,6 +101,7 @@ export default function App() {
   });
 
   const [orderChat, setOrderChat] = useState<{ orderId: string; productName?: string } | null>(null);
+  const [showSupportChat, setShowSupportChat] = useState(false);
   const [activeOrder, setActiveOrder] = useState<ActiveOrder | null>(() => readActiveOrder());
   const [showOrderStatus, setShowOrderStatus] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
@@ -308,7 +310,10 @@ export default function App() {
         )}
         {tab === "chats" && (
           <Suspense fallback={null}>
-            <OrderChatsPage onOpenChat={(orderId, productName) => setOrderChat({ orderId, productName })} />
+            <OrderChatsPage
+              onOpenChat={(orderId, productName) => setOrderChat({ orderId, productName })}
+              onOpenSupport={() => setShowSupportChat(true)}
+            />
           </Suspense>
         )}
         {tab === "profile" && (
@@ -401,6 +406,13 @@ export default function App() {
             orderId={reviewOrderId}
             onClose={() => setReviewOrderId(null)}
           />
+        </Suspense>
+      )}
+
+      {/* Support chat sheet */}
+      {showSupportChat && (
+        <Suspense fallback={null}>
+          <SupportChatSheet onClose={() => setShowSupportChat(false)} />
         </Suspense>
       )}
 
