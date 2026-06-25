@@ -101,7 +101,7 @@ function ListingCard({ item, onBuy, onDetail }: {
       <div className="w-full flex-shrink-0 overflow-hidden relative"
         style={{ aspectRatio: "1/1", background: item.photo_id ? "#111" : `linear-gradient(145deg,${g1},${g2})` }}>
         {item.photo_id
-          ? <img src={item.photo_id} className="w-full h-full object-cover" alt={item.name} />
+          ? <img src={item.photo_id} className="w-full h-full object-contain" alt={item.name} />
           : <div className="w-full h-full flex items-center justify-center">
               <span className="text-2xl font-black text-white/80">{initials(item.name)}</span>
             </div>}
@@ -163,7 +163,7 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
       <div className="w-full flex-shrink-0 overflow-hidden"
         style={{ aspectRatio: "1/1", background: item.photo_id ? "#0a0a14" : `linear-gradient(145deg,${g1},${g2})` }}>
         {item.photo_id
-          ? <img src={item.photo_id} className="w-full h-full object-cover object-center" alt={item.name} />
+          ? <img src={item.photo_id} className="w-full h-full object-contain" alt={item.name} />
           : <div className="w-full h-full flex items-center justify-center">
               <span className="text-xl font-black text-white/80">{initials(item.name)}</span>
             </div>}
@@ -628,7 +628,7 @@ function HotFeed({ onBuy, onDetail }: { onBuy: (p: Product) => void; onDetail: (
       </div>
       <div className="grid grid-cols-2 gap-3">
         {cards.slice(0, 6).map((item, i) => (
-          <ListingCard key={`hot-${item.id}-${i}`} item={item}
+          <GameDetailProductCard key={`hot-${item.id}-${i}`} item={item}
             onBuy={() => onBuy({ ...item.raw, variant_label: item.variant_label })}
             onDetail={() => onDetail({ ...item.raw, variant_label: item.variant_label })} />
         ))}
@@ -650,7 +650,7 @@ function SaleFeed({ onBuy, onDetail }: { onBuy: (p: Product) => void; onDetail: 
       </div>
       <div className="grid grid-cols-2 gap-3">
         {cards.slice(0, 8).map((item, i) => (
-          <ListingCard key={`sale-${item.id}-${i}`} item={item}
+          <GameDetailProductCard key={`sale-${item.id}-${i}`} item={item}
             onBuy={() => onBuy({ ...item.raw, variant_label: item.variant_label })}
             onDetail={() => onDetail({ ...item.raw, variant_label: item.variant_label })} />
         ))}
@@ -713,7 +713,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
 
   return (
     <>
-      <div className="flex flex-col gap-4 pb-6">
+      <div className="flex flex-col gap-4 pb-6" style={{ overflowX: 'clip' }}>
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#22c55e" }} />
