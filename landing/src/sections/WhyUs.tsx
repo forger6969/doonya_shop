@@ -1,6 +1,5 @@
-import { useRef } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { motion, useInView } from 'framer-motion'
-import CountUp from 'react-countup'
 
 const FEATURES = [
   { icon: '⚡', title: 'Tez yetkazish', desc: 'O\'rtacha 3–5 daqiqa. Kunning istalgan vaqtida.' },
@@ -18,6 +17,26 @@ const STATS = [
   { end: 100, suffix: '%', label: 'Muvaffaqiyat darajasi' },
 ]
 
+function AnimatedCounter({ end, suffix, active }: { end: number; suffix: string; active: boolean }) {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    if (!active) return
+    const duration = 1800
+    const steps = 60
+    const step = end / steps
+    let current = 0
+    const timer = setInterval(() => {
+      current = Math.min(current + step, end)
+      setCount(Math.round(current))
+      if (current >= end) clearInterval(timer)
+    }, duration / steps)
+    return () => clearInterval(timer)
+  }, [active, end])
+
+  return <>{count}{suffix}</>
+}
+
 export default function WhyUs() {
   const ref = useRef<HTMLDivElement>(null)
   const statsRef = useRef<HTMLDivElement>(null)
@@ -26,7 +45,6 @@ export default function WhyUs() {
 
   return (
     <section id="why" className="relative py-28 px-6 md:px-20 overflow-hidden">
-      {/* bg glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-green-500/4 blur-[120px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto">
@@ -47,9 +65,7 @@ export default function WhyUs() {
               className="text-center py-4"
             >
               <div className="font-bebas text-4xl md:text-5xl text-green-400 tracking-wider">
-                {statsInView ? (
-                  <CountUp end={s.end} duration={2} delay={i * 0.1} suffix={s.suffix} />
-                ) : '0'}
+                <AnimatedCounter end={s.end} suffix={s.suffix} active={statsInView} />
               </div>
               <div className="text-slate-500 text-sm mt-1">{s.label}</div>
             </motion.div>
@@ -78,10 +94,10 @@ export default function WhyUs() {
               initial={{ opacity: 0, y: 30 }}
               animate={inView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.08 }}
-              whileHover={{ y: -4, borderColor: 'rgba(34,197,94,0.3)' }}
-              className="flex gap-4 p-6 bg-[#0d0d1a] border border-white/5 rounded-xl group transition-all duration-300"
+              whileHover={{ y: -4 }}
+              className="flex gap-4 p-6 bg-[#0d0d1a] border border-white/5 rounded-xl group transition-all duration-300 hover:border-green-500/30"
             >
-              <div className="text-3xl flex-shrink-0 group-hover:scale-110 transition-transform duration-300 float-slow">
+              <div className="text-3xl flex-shrink-0 group-hover:scale-110 transition-transform duration-300">
                 {f.icon}
               </div>
               <div>
