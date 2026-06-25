@@ -53,3 +53,11 @@ services:
     envVars:
       - key: VITE_API_URL
         sync: false
+
+  # Landing page (anime-style) — Free static site
+  - type: web
+    name: doonya-landing
+    runtime: static
+    buildCommand: cd landing && npm install && npm run build
+    staticPublishPath: landing/dist
+    plan: free
