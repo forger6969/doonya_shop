@@ -1,6 +1,7 @@
+import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, FSInputFile
 from backend.config import BOT_TOKEN, MINI_APP_URL, ADMIN_ID, ADMIN_IDS, SUPPORT_AGENT_IDS
 from backend.models import confirm_topup, reject_topup, complete_order, get_product, add_chat_message, get_chat
 from backend.database import get_db
@@ -9,18 +10,29 @@ from backend.notify import notify_user_topup_confirmed, notify_user_topup_reject
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+BANNER_PATH = os.path.join(os.path.dirname(__file__), "welcome_banner.png")
+
 
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
     kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="🎮 Открыть магазин", web_app=WebAppInfo(url=MINI_APP_URL))
+        InlineKeyboardButton(text="🎮 Magazinni ochish", web_app=WebAppInfo(url=MINI_APP_URL))
     ]])
-    await message.answer(
-        "👋 Добро пожаловать в <b>Doonya Shop</b>!\n\n"
-        "Здесь вы можете купить внутриигровую валюту, донаты и товары для ваших игр.",
-        reply_markup=kb,
-        parse_mode="HTML",
+    caption = (
+        "👋 <b>Doonya Shop</b>ga xush kelibsiz!\n\n"
+        "Bizning bot orqali o'yinlar🎮 uchun tez va ishonchli tarzda "
+        "donat qilishingiz mumkin.\n\n"
+        "Davom etish uchun quyidagi tugmadan foydalaning 👇"
     )
+    if os.path.exists(BANNER_PATH):
+        await message.answer_photo(
+            photo=FSInputFile(BANNER_PATH),
+            caption=caption,
+            reply_markup=kb,
+            parse_mode="HTML",
+        )
+    else:
+        await message.answer(caption, reply_markup=kb, parse_mode="HTML")
 
 
 # ── Callback handlers (inline buttons) ───────────────────────────────────────
