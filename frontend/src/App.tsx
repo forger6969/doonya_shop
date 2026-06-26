@@ -164,7 +164,7 @@ export default function App() {
     return (
       <div className="flex items-center justify-center min-h-dvh">
         <div className="w-8 h-8 rounded-full animate-spin"
-          style={{ border: "2px solid rgba(34,197,94,0.15)", borderTopColor: "#22c55e" }} />
+          style={{ border: "2px solid rgba(236,72,153,0.15)", borderTopColor: "#EC4899" }} />
       </div>
     );
   }
@@ -220,9 +220,9 @@ export default function App() {
             <button
               onClick={() => setShowTopup(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl active:opacity-70"
-              style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.20)" }}
+              style={{ background: "rgba(236,72,153,0.12)", border: "1px solid rgba(236,72,153,0.20)" }}
             >
-              <span className="text-[13px] font-black" style={{ color: "#22c55e" }}>
+              <span className="text-[13px] font-black" style={{ color: "#EC4899" }}>
                 💰 {user.balance.toLocaleString()}
               </span>
             </button>
@@ -279,25 +279,25 @@ export default function App() {
           onClick={() => setShowOrderStatus(true)}
           className="mx-4 mt-3 flex items-center gap-3 px-4 py-3 rounded-2xl active:opacity-75"
           style={{
-            background: "rgba(34,197,94,0.06)",
-            border: "1px solid rgba(34,197,94,0.20)",
+            background: "rgba(236,72,153,0.06)",
+            border: "1px solid rgba(236,72,153,0.20)",
           }}
         >
           <div className="relative flex-shrink-0 w-9 h-9">
             <div className="absolute inset-0 rounded-full animate-ping opacity-40"
-              style={{ background: "rgba(34,197,94,0.25)" }} />
+              style={{ background: "rgba(236,72,153,0.25)" }} />
             <div className="absolute inset-0 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(34,197,94,0.15)" }}>
+              style={{ background: "rgba(236,72,153,0.15)" }}>
               <span className="text-base">📦</span>
             </div>
           </div>
           <div className="flex-1 text-left min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#22c55e" }}>
+            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#EC4899" }}>
               {t.activeOrder}
             </p>
             <p className="font-black text-white text-sm mt-0.5 truncate">{activeOrder.productName}</p>
           </div>
-          <span className="text-[11px] font-bold flex-shrink-0" style={{ color: "rgba(34,197,94,0.6)" }}>
+          <span className="text-[11px] font-bold flex-shrink-0" style={{ color: "rgba(236,72,153,0.6)" }}>
             ›
           </span>
         </button>
@@ -338,18 +338,18 @@ export default function App() {
                 key={id}
                 onClick={() => { setTab(id); if (id === "chats") setChatUnread(0); }}
                 className="flex-1 flex flex-col items-center gap-0.5 pt-2 pb-3 relative"
-                style={{ borderTop: `2px solid ${active ? "#22c55e" : "transparent"}` }}
+                style={{ borderTop: `2px solid ${active ? "#EC4899" : "transparent"}` }}
               >
                 <div className="relative flex items-center justify-center h-6">
-                  <Icon className="w-5 h-5" style={{ color: active ? "#22c55e" : "var(--text-muted)" }} />
+                  <Icon className="w-5 h-5" style={{ color: active ? "#EC4899" : "var(--text-muted)" }} />
                   {badge > 0 && (
                     <div className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
-                      style={{ background: "#22c55e" }}>
+                      style={{ background: "#EC4899" }}>
                       <span className="text-[8px] font-black text-white leading-none">{badge > 9 ? "9+" : badge}</span>
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-semibold" style={{ color: active ? "#22c55e" : "var(--text-muted)" }}>
+                <span className="text-[10px] font-semibold" style={{ color: active ? "#EC4899" : "var(--text-muted)" }}>
                   {label}
                 </span>
               </button>
@@ -366,7 +366,7 @@ export default function App() {
               <Bell className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
               {unreadCount > 0 && (
                 <div className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
-                  style={{ background: "#22c55e" }}>
+                  style={{ background: "#EC4899" }}>
                   <span className="text-[8px] font-black text-white leading-none">{unreadCount > 9 ? "9+" : unreadCount}</span>
                 </div>
               )}
@@ -443,14 +443,14 @@ export default function App() {
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12 flex-shrink-0">
                 <div className="absolute inset-0 rounded-full animate-ping opacity-30"
-                  style={{ background: "rgba(34,197,94,0.35)" }} />
+                  style={{ background: "rgba(236,72,153,0.35)" }} />
                 <div className="absolute inset-0 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.28)" }}>
+                  style={{ background: "rgba(236,72,153,0.15)", border: "1px solid rgba(236,72,153,0.28)" }}>
                   <span className="text-2xl">📦</span>
                 </div>
               </div>
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#22c55e" }}>
+                <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#EC4899" }}>
                   {t.activeOrder}
                 </p>
                 <p className="font-black text-white text-lg leading-tight">{activeOrder.productName}</p>
@@ -458,9 +458,9 @@ export default function App() {
             </div>
 
             <div className="rounded-2xl p-4 flex items-center gap-3"
-              style={{ background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.18)" }}>
+              style={{ background: "rgba(236,72,153,0.07)", border: "1px solid rgba(236,72,153,0.18)" }}>
               <div className="w-8 h-8 rounded-full flex-shrink-0 animate-spin"
-                style={{ border: "2px solid rgba(34,197,94,0.18)", borderTopColor: "#22c55e" }} />
+                style={{ border: "2px solid rgba(236,72,153,0.18)", borderTopColor: "#EC4899" }} />
               <div>
                 <p className="text-sm font-bold text-white">{t.inProgress}</p>
                 <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.40)" }}>
@@ -482,8 +482,8 @@ export default function App() {
               style={{
                 padding: 16,
                 borderRadius: 14,
-                background: "#22c55e",
-                boxShadow: "0 4px 20px rgba(34,197,94,0.28)",
+                background: "#EC4899",
+                boxShadow: "0 4px 20px rgba(236,72,153,0.28)",
               }}
             >
               {t.goToOrderChat}

@@ -30,9 +30,9 @@ interface Props { onBuy: (product: Product) => void; onTopup: () => void }
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const PALETTES = [
-  ["#22c55e","#16a34a"],["#16a34a","#14532d"],["#4ade80","#22c55e"],
-  ["#86efac","#22c55e"],["#f97316","#ea580c"],["#fb923c","#f97316"],
-  ["#22c55e","#0ea5e9"],["#0ea5e9","#22c55e"],["#3b82f6","#22c55e"],["#22c55e","#6366f1"],
+  ["#EC4899","#A855F7"],["#A855F7","#6366F1"],["#F472B6","#EC4899"],
+  ["#C084FC","#818CF8"],["#FB7185","#EC4899"],["#E879F9","#A855F7"],
+  ["#F9A8D4","#C084FC"],["#EC4899","#8B5CF6"],["#A78BFA","#EC4899"],["#F0ABFC","#A855F7"],
 ];
 
 function palette(id: string) {
@@ -127,15 +127,15 @@ function ListingCard({ item, onBuy, onDetail }: {
             {item.discounted_price && item.discount_percent ? (
               <>
                 <span className="text-[9px] leading-none line-through" style={{ color: "var(--text-muted)" }}>{item.price.toLocaleString()}</span>
-                <span className="text-[14px] font-black leading-tight" style={{ color: "#22c55e" }}>{item.discounted_price.toLocaleString()}</span>
+                <span className="text-[14px] font-black leading-tight" style={{ color: "#EC4899" }}>{item.discounted_price.toLocaleString()}</span>
               </>
             ) : (
-              <span className="text-[14px] font-black leading-tight" style={{ color: "#22c55e" }}>{item.price.toLocaleString()}</span>
+              <span className="text-[14px] font-black leading-tight" style={{ color: "#EC4899" }}>{item.price.toLocaleString()}</span>
             )}
           </div>
           <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
             className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-white active:opacity-70 flex-shrink-0"
-            style={{ background: "#22c55e" }}>
+            style={{ background: "#EC4899" }}>
             {t.buy}
           </button>
         </div>
@@ -178,14 +178,14 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
         {item.discounted_price && item.discount_percent ? (
           <div className="flex flex-col gap-0">
             <span className="text-[9px] text-white/30 line-through leading-none">{item.price.toLocaleString()}</span>
-            <span className="text-[10px] font-black leading-none" style={{ color: "#22c55e" }}>{item.discounted_price.toLocaleString()}</span>
+            <span className="text-[10px] font-black leading-none" style={{ color: "#EC4899" }}>{item.discounted_price.toLocaleString()}</span>
           </div>
         ) : (
-          <span className="text-[10px] font-black" style={{ color: "#22c55e" }}>{item.price.toLocaleString()}</span>
+          <span className="text-[10px] font-black" style={{ color: "#EC4899" }}>{item.price.toLocaleString()}</span>
         )}
         <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
           className="flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10px] font-bold text-white active:opacity-70 flex-shrink-0"
-          style={{ background: "#22c55e" }}>
+          style={{ background: "#EC4899" }}>
           <ShoppingCart className="w-2.5 h-2.5" /> {t.buy}
         </button>
       </div>
@@ -206,7 +206,7 @@ function GameFilterChips({ games, selected, onSelect }: {
         <button onClick={() => onSelect(null)}
           className="flex-shrink-0 px-4 py-1.5 rounded-full text-[13px] font-bold transition-all active:scale-95"
           style={selected === null
-            ? { background: "#22c55e", color: "#fff", boxShadow: "0 2px 10px rgba(34,197,94,0.30)" }
+            ? { background: "#EC4899", color: "#fff", boxShadow: "0 2px 10px rgba(236,72,153,0.30)" }
             : { background: "var(--bg-surface)", color: "var(--text-dim)", border: "1px solid var(--border-card)" }}>
           {t.allGames}
         </button>
@@ -217,7 +217,7 @@ function GameFilterChips({ games, selected, onSelect }: {
             <button key={g.id} onClick={() => onSelect(g)}
               className="flex-shrink-0 flex items-center gap-1.5 pl-1 pr-3.5 py-1.5 rounded-full text-[13px] font-bold transition-all active:scale-95"
               style={isActive
-                ? { background: "#22c55e", color: "#fff", boxShadow: "0 2px 10px rgba(34,197,94,0.30)" }
+                ? { background: "#EC4899", color: "#fff", boxShadow: "0 2px 10px rgba(236,72,153,0.30)" }
                 : { background: "var(--bg-surface)", color: "var(--text-dim)", border: "1px solid var(--border-card)" }}>
               <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center"
                 style={g.photo_id ? undefined : { background: `linear-gradient(145deg,${c1},${c2})` }}>
@@ -240,17 +240,17 @@ function PromoStrip({ onTopup }: { onTopup: () => void }) {
   const { t } = useLang();
   return (
     <button onClick={onTopup} className="flex items-center justify-between p-3.5 rounded-2xl w-full active:opacity-80"
-      style={{ background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.16)" }}>
+      style={{ background: "rgba(236,72,153,0.07)", border: "1px solid rgba(236,72,153,0.16)" }}>
       <div className="flex items-center gap-2.5">
         <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base flex-shrink-0"
-          style={{ background: "rgba(34,197,94,0.15)" }}>💰</div>
+          style={{ background: "rgba(236,72,153,0.15)" }}>💰</div>
         <div className="text-left">
           <p className="text-sm font-black" style={{ color: "var(--text)" }}>{t.topUpBalance}</p>
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t.bannerSub1}</p>
         </div>
       </div>
       <span className="text-xs font-bold px-3 py-1.5 rounded-lg text-white flex-shrink-0"
-        style={{ background: "#22c55e" }}>{t.topUpNow} →</span>
+        style={{ background: "#EC4899" }}>{t.topUpNow} →</span>
     </button>
   );
 }
@@ -336,7 +336,7 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
               <button key={cat.id} onClick={() => setActiveTab(cat.id)}
                 className="flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all active:scale-95"
                 style={activeTab === cat.id
-                  ? { background: "#22c55e", color: "#fff", boxShadow: "0 4px 16px rgba(34,197,94,0.30)" }
+                  ? { background: "#EC4899", color: "#fff", boxShadow: "0 4px 16px rgba(236,72,153,0.30)" }
                   : { background: "var(--bg-raised)", color: "var(--text-dim)", border: "1px solid var(--border-card)" }}>
                 {cat.name}
               </button>
@@ -349,7 +349,7 @@ function GameDetailPage({ game, onBack, onBuy, onDetail }: {
       <div className="flex-1 p-4">
         {loading ? (
           <div className="flex justify-center py-10">
-            <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#22c55e", borderTopColor: "transparent" }} />
+            <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#EC4899", borderTopColor: "transparent" }} />
           </div>
         ) : totalCards === 0 ? (
           <div className="flex flex-col items-center gap-3 py-14" style={{ color: "var(--text-muted)" }}>
@@ -405,7 +405,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
 
   if (loading) {
     return <div className="flex justify-center py-10">
-      <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#22c55e", borderTopColor: "transparent" }} />
+      <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#EC4899", borderTopColor: "transparent" }} />
     </div>;
   }
   if (!results) return null;
@@ -460,7 +460,7 @@ function SearchResults({ query, onGameSelect, onBuy, onDetail }: {
           <div className="flex flex-wrap gap-2">
             {results.categories.map((c) => (
               <span key={c.id} className="px-3 py-1.5 rounded-full text-xs font-bold"
-                style={{ background: "rgba(34,197,94,0.07)", border: "1px solid rgba(34,197,94,0.18)", color: "#22c55e" }}>
+                style={{ background: "rgba(236,72,153,0.07)", border: "1px solid rgba(236,72,153,0.18)", color: "#EC4899" }}>
                 {c.name}
               </span>
             ))}
@@ -583,7 +583,7 @@ function StarsSection({ balance, onSuccess }: { balance?: number; onSuccess?: ()
                 onChange={(e) => { const v = e.target.value; setCount(v === "" ? "" : Math.max(0, parseInt(v) || 0)); }}
               />
               {stars > 0 && (
-                <span className="text-[12px] font-black flex-shrink-0" style={{ color: "#22c55e" }}>
+                <span className="text-[12px] font-black flex-shrink-0" style={{ color: "#EC4899" }}>
                   {total.toLocaleString()} {t.sumLabel}
                 </span>
               )}
@@ -662,7 +662,7 @@ function SaleFeed({ onBuy, onDetail }: { onBuy: (p: Product) => void; onDetail: 
 // ─── Admin banners ────────────────────────────────────────────────────────────
 
 const GRADIENT_MAP: Record<string, string> = {
-  pink:   "#22c55e",
+  pink:   "linear-gradient(135deg,#EC4899,#A855F7)",
   gold:   "linear-gradient(135deg,#F59E0B,#EF4444)",
   blue:   "linear-gradient(135deg,#3B82F6,#06B6D4)",
   green:  "linear-gradient(135deg,#10B981,#3B82F6)",
@@ -716,11 +716,11 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
       <div className="flex flex-col gap-4 pb-6">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#22c55e" }} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#EC4899" }} />
           <input value={query} onChange={(e) => setQuery(e.target.value)}
             placeholder={t.searchGames}
             className="w-full rounded-2xl pl-10 pr-9 py-3 text-sm outline-none transition-colors s-input"
-            onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(34,197,94,0.40)"; }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "rgba(236,72,153,0.40)"; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = ""; }}
           />
           {query && (
@@ -749,15 +749,15 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
             {banners.length > 0 && (
               <div className="flex flex-col gap-2">
                 {banners.map((b) => (
-                  <div key={b.id} className="rounded-2xl p-4 flex items-center gap-3"
+                  <div key={b.id} className="rounded-2xl overflow-hidden p-4 flex items-start gap-3"
                     style={{
                       background: GRADIENT_MAP[b.gradient] ?? GRADIENT_MAP.pink,
-                      boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+                      boxShadow: "0 4px 24px rgba(236,72,153,0.22)",
                     }}>
-                    <span className="text-3xl flex-shrink-0">{b.emoji}</span>
+                    <span className="text-3xl flex-shrink-0 leading-none mt-0.5">{b.emoji}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-black text-white text-sm">{b.title}</p>
-                      {b.subtitle && <p className="text-white/75 text-[12px] mt-0.5">{b.subtitle}</p>}
+                      <p className="font-black text-white text-sm leading-snug">{b.title}</p>
+                      {b.subtitle && <p className="text-white/70 text-[12px] mt-0.5 leading-snug">{b.subtitle}</p>}
                     </div>
                   </div>
                 ))}
@@ -770,7 +770,7 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
             {loading ? (
               <div className="flex justify-center py-10">
                 <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin"
-                  style={{ borderColor: "#22c55e", borderTopColor: "transparent" }} />
+                  style={{ borderColor: "#EC4899", borderTopColor: "transparent" }} />
               </div>
             ) : (
               <div className="flex flex-col gap-6">

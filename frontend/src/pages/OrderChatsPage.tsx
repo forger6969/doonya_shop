@@ -72,11 +72,11 @@ export default function OrderChatsPage({ onOpenChat, onOpenSupport }: Props) {
         <button
           onClick={onOpenSupport}
           className="w-full flex items-center gap-3 p-4 rounded-2xl text-left active:opacity-75 transition-opacity"
-          style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.18)" }}
+          style={{ background: "rgba(236,72,153,0.06)", border: "1px solid rgba(236,72,153,0.18)" }}
         >
           <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(34,197,94,0.12)" }}>
-            <Headphones className="w-5 h-5" style={{ color: "#22c55e" }} />
+            style={{ background: "rgba(236,72,153,0.12)" }}>
+            <Headphones className="w-5 h-5" style={{ color: "#EC4899" }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-black text-[14px]" style={{ color: "var(--text)" }}>{t.support}</p>
@@ -99,7 +99,7 @@ export default function OrderChatsPage({ onOpenChat, onOpenSupport }: Props) {
           <MessageCircle className="w-10 h-10" style={{ color: "var(--text-muted)", opacity: 0.4 }} />
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t.chatsLoadError}</p>
           <button onClick={load} className="text-sm font-bold px-4 py-2 rounded-xl active:opacity-70"
-            style={{ background: "rgba(34,197,94,0.10)", color: "#22c55e" }}>
+            style={{ background: "rgba(236,72,153,0.10)", color: "#EC4899" }}>
             {t.retry}
           </button>
         </div>
@@ -109,8 +109,8 @@ export default function OrderChatsPage({ onOpenChat, onOpenSupport }: Props) {
       {!loading && !error && chats.length === 0 && (
         <div className="flex flex-col items-center gap-4 py-20 s-fade-in">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
-            style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.12)" }}>
-            <MessageCircle className="w-8 h-8" style={{ color: "rgba(34,197,94,0.50)" }} />
+            style={{ background: "rgba(236,72,153,0.08)", border: "1px solid rgba(236,72,153,0.12)" }}>
+            <MessageCircle className="w-8 h-8" style={{ color: "rgba(236,72,153,0.50)" }} />
           </div>
           <div className="text-center space-y-1">
             <p className="font-bold text-[15px]" style={{ color: "var(--text)" }}>{t.noChats}</p>
@@ -130,14 +130,14 @@ export default function OrderChatsPage({ onOpenChat, onOpenSupport }: Props) {
                 onClick={() => onOpenChat(chat.order_id, chat.product_name)}
                 className="w-full flex items-center gap-3 p-4 rounded-2xl text-left active:opacity-75 transition-opacity"
                 style={{
-                  background: unread > 0 ? "rgba(34,197,94,0.06)" : "var(--bg-surface)",
-                  border: `1px solid ${unread > 0 ? "rgba(34,197,94,0.18)" : "var(--border)"}`,
+                  background: unread > 0 ? "rgba(236,72,153,0.06)" : "var(--bg-surface)",
+                  border: `1px solid ${unread > 0 ? "rgba(236,72,153,0.18)" : "var(--border)"}`,
                 }}
               >
                 {/* Icon */}
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(34,197,94,0.10)" }}>
-                  <ShoppingBag className="w-5 h-5" style={{ color: "#22c55e" }} />
+                  style={{ background: "rgba(236,72,153,0.10)" }}>
+                  <ShoppingBag className="w-5 h-5" style={{ color: "#EC4899" }} />
                 </div>
 
                 {/* Info */}
@@ -163,7 +163,7 @@ export default function OrderChatsPage({ onOpenChat, onOpenSupport }: Props) {
                     </p>
                     {unread > 0 && (
                       <div className="flex-shrink-0 min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1"
-                        style={{ background: "#22c55e" }}>
+                        style={{ background: "#EC4899" }}>
                         <span className="text-[10px] font-black text-white leading-none">
                           {unread > 9 ? "9+" : unread}
                         </span>

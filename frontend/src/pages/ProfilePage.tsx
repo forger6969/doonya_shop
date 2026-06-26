@@ -63,7 +63,7 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
       <div className="flex items-center justify-center h-40">
         <div
           className="w-7 h-7 rounded-full animate-spin"
-          style={{ border: "2px solid rgba(34,197,94,0.15)", borderTopColor: "#22c55e" }}
+          style={{ border: "2px solid rgba(236,72,153,0.15)", borderTopColor: "#EC4899" }}
         />
       </div>
     );
@@ -90,7 +90,7 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
             className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-black overflow-hidden relative"
             style={{
               background: "#1e1e1e",
-              border: "2px solid rgba(34,197,94,0.35)",
+              border: "2px solid rgba(236,72,153,0.35)",
             }}
           >
             {user.avatar_url
@@ -107,7 +107,7 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
             onClick={() => avatarRef.current?.click()}
             className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center active:opacity-70"
             style={{
-              background: "#22c55e",
+              background: "#EC4899",
               border: "2px solid var(--bg, #0d0d0d)",
             }}
           >
@@ -126,22 +126,22 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
         className="rounded-2xl p-5 flex flex-col gap-4"
         style={{
           background: "var(--bg-raised)",
-          border: "1px solid rgba(34,197,94,0.15)",
+          border: "1px solid rgba(236,72,153,0.15)",
         }}
       >
         <div>
           <p className="s-label mb-1">{t.balance}</p>
-          <p className="text-3xl font-black" style={{ color: "#22c55e" }}>
+          <p className="text-3xl font-black" style={{ color: "#EC4899" }}>
             {user.balance.toLocaleString()}{" "}
-            <span className="text-lg font-bold" style={{ color: "rgba(34,197,94,0.45)" }}>sum</span>
+            <span className="text-lg font-bold" style={{ color: "rgba(236,72,153,0.45)" }}>sum</span>
           </p>
         </div>
         <button
           onClick={onTopup}
           className="w-full py-3.5 rounded-2xl font-black text-sm text-white active:opacity-70"
           style={{
-            background: "#22c55e",
-            boxShadow: "0 4px 20px rgba(34,197,94,0.28)",
+            background: "#EC4899",
+            boxShadow: "0 4px 20px rgba(236,72,153,0.28)",
           }}
         >
           + {t.topUpBalance}
@@ -161,9 +161,9 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
               onClick={() => setTab(tb)}
               className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
               style={active ? {
-                background: "rgba(34,197,94,0.12)",
+                background: "rgba(236,72,153,0.12)",
                 borderRadius: 10,
-                color: "#22c55e",
+                color: "#EC4899",
               } : {
                 color: "rgba(240,242,250,0.35)",
               }}
@@ -210,14 +210,14 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
                         onClick={() => onOpenOrderChat(o.id, chat?.product_name)}
                         className="relative w-8 h-8 rounded-xl flex items-center justify-center active:opacity-70 flex-shrink-0"
                         style={{
-                          background: unread > 0 ? "rgba(34,197,94,0.12)" : "var(--bg-surface)",
-                          border: `1px solid ${unread > 0 ? "rgba(34,197,94,0.28)" : "var(--border)"}`,
+                          background: unread > 0 ? "rgba(236,72,153,0.12)" : "var(--bg-surface)",
+                          border: `1px solid ${unread > 0 ? "rgba(236,72,153,0.28)" : "var(--border)"}`,
                         }}
                       >
-                        <MessageCircle className="w-3.5 h-3.5" style={{ color: unread > 0 ? "#22c55e" : "var(--text-muted)" }} />
+                        <MessageCircle className="w-3.5 h-3.5" style={{ color: unread > 0 ? "#EC4899" : "var(--text-muted)" }} />
                         {unread > 0 && (
                           <div className="absolute -top-1 -right-1 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
-                            style={{ background: "#22c55e" }}>
+                            style={{ background: "#EC4899" }}>
                             <span className="text-[8px] font-black text-white leading-none">{unread > 9 ? "9+" : unread}</span>
                           </div>
                         )}
@@ -280,9 +280,9 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
                     onClick={() => setLang(l)}
                     className="flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-colors"
                     style={active ? {
-                      background: "rgba(34,197,94,0.12)",
+                      background: "rgba(236,72,153,0.12)",
                       borderRadius: 10,
-                      color: "#22c55e",
+                      color: "#EC4899",
                     } : {
                       color: "rgba(240,242,250,0.30)",
                     }}
@@ -309,7 +309,7 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
                 onClick={handleSaveEmail}
                 disabled={!email.trim() || emailSaving}
                 className="px-4 py-2.5 rounded-xl text-xs font-black disabled:opacity-30 active:opacity-70 transition-opacity flex-shrink-0"
-                style={{ background: emailSaved ? "#10B981" : "#22c55e", color: "#fff" }}
+                style={{ background: emailSaved ? "#10B981" : "#EC4899", color: "#fff" }}
               >
                 {emailSaved ? t.saved : t.save}
               </button>
@@ -332,9 +332,9 @@ export default function ProfilePage({ onTopup, onOpenOrderChat }: Props) {
           >
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(34,197,94,0.10)" }}
+              style={{ background: "rgba(236,72,153,0.10)" }}
             >
-              <User className="w-5 h-5" style={{ color: "#22c55e" }} />
+              <User className="w-5 h-5" style={{ color: "#EC4899" }} />
             </div>
             <div className="min-w-0">
               <p className="s-label mb-0.5">{t.telegramAccount}</p>

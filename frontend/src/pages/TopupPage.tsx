@@ -194,7 +194,7 @@ export default function TopupPage({ onBack }: Props) {
               onChange={(e) => setAmount(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAmountNext()}
             />
-            <p className="text-xs mt-1" style={{ color: "rgba(34,197,94,0.55)" }}>
+            <p className="text-xs mt-1" style={{ color: "rgba(236,72,153,0.55)" }}>
               {t.topupMinError}
             </p>
           </div>
@@ -202,7 +202,7 @@ export default function TopupPage({ onBack }: Props) {
           {/* Legal disclaimer */}
           <div
             className="rounded-2xl p-4 flex flex-col gap-3"
-            style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)" }}
+            style={{ background: "rgba(236,72,153,0.05)", border: "1px solid rgba(236,72,153,0.15)" }}
           >
             <div className="flex items-start gap-2">
               <span className="text-base flex-shrink-0 mt-0.5">⚠️</span>
@@ -218,8 +218,8 @@ export default function TopupPage({ onBack }: Props) {
               <div
                 className="w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-colors"
                 style={{
-                  background: agreed ? "#22c55e" : "transparent",
-                  border: agreed ? "1.5px solid #22c55e" : "1.5px solid rgba(34,197,94,0.25)",
+                  background: agreed ? "#EC4899" : "transparent",
+                  border: agreed ? "1.5px solid #EC4899" : "1.5px solid rgba(236,72,153,0.25)",
                 }}
               >
                 {agreed && (
@@ -253,7 +253,7 @@ export default function TopupPage({ onBack }: Props) {
             <div className="flex justify-center py-6">
               <div
                 className="w-8 h-8 rounded-full animate-spin"
-                style={{ border: "2px solid rgba(34,197,94,0.15)", borderTopColor: "#22c55e" }}
+                style={{ border: "2px solid rgba(236,72,153,0.15)", borderTopColor: "#EC4899" }}
               />
             </div>
           ) : (
@@ -304,7 +304,7 @@ export default function TopupPage({ onBack }: Props) {
                     <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.cardLabel}</span>
                     <button
                       className="font-mono font-bold active:opacity-70 flex items-center gap-1.5"
-                      style={{ color: "#22c55e" }}
+                      style={{ color: "#EC4899" }}
                       onClick={() => copy(c.requisites)}
                     >
                       {c.requisites}
@@ -324,7 +324,7 @@ export default function TopupPage({ onBack }: Props) {
                 <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.amountToTransfer}</span>
                 <button
                   className="text-xl font-black active:opacity-70 flex items-center gap-1.5"
-                  style={{ color: "#22c55e" }}
+                  style={{ color: "#EC4899" }}
                   onClick={() => copy(String(info.amount))}
                 >
                   {info.amount.toLocaleString()} {t.sumLabel}
@@ -342,7 +342,7 @@ export default function TopupPage({ onBack }: Props) {
                   <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.requisites}</span>
                   <button
                     className="font-mono font-bold active:opacity-70 flex items-center gap-1.5"
-                    style={{ color: "#22c55e" }}
+                    style={{ color: "#EC4899" }}
                     onClick={() => copy(info.requisites!)}
                   >
                     {info.requisites}
@@ -363,7 +363,7 @@ export default function TopupPage({ onBack }: Props) {
                 <span className="text-sm" style={{ color: "var(--text-dim)" }}>{t.amountToTransfer}</span>
                 <button
                   className="text-xl font-black active:opacity-70 flex items-center gap-1.5"
-                  style={{ color: "#22c55e" }}
+                  style={{ color: "#EC4899" }}
                   onClick={() => copy(String(info.amount))}
                 >
                   {info.amount.toLocaleString()} {t.sumLabel}
@@ -394,13 +394,13 @@ export default function TopupPage({ onBack }: Props) {
           <label
             className="flex flex-col items-center gap-3 py-8 cursor-pointer active:opacity-70 rounded-2xl"
             style={{
-              background: file ? "rgba(34,197,94,0.05)" : "rgba(34,197,94,0.05)",
-              border: `1.5px dashed ${file ? "rgba(34,197,94,0.45)" : "rgba(34,197,94,0.20)"}`,
+              background: file ? "rgba(236,72,153,0.05)" : "rgba(236,72,153,0.05)",
+              border: `1.5px dashed ${file ? "rgba(236,72,153,0.45)" : "rgba(236,72,153,0.20)"}`,
               borderRadius: 16,
             }}
           >
             <span className="text-4xl">{file ? "📎" : "📷"}</span>
-            <span className="text-sm" style={{ color: file ? "#22c55e" : "#22c55e" }}>
+            <span className="text-sm" style={{ color: file ? "#EC4899" : "#EC4899" }}>
               {file ? file.name : t.selectFile}
             </span>
             <input

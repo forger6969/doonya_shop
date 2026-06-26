@@ -115,8 +115,8 @@ export default function SupportChatSheet({ onClose }: Props) {
         <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
           style={{ borderBottom: "1px solid var(--border)" }}>
           <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(34,197,94,0.12)", border: "1px solid rgba(34,197,94,0.18)" }}>
-            <Headphones className="w-4 h-4" style={{ color: "#22c55e" }} />
+            style={{ background: "rgba(236,72,153,0.12)", border: "1px solid rgba(236,72,153,0.18)" }}>
+            <Headphones className="w-4 h-4" style={{ color: "#EC4899" }} />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-black" style={{ color: "var(--text)" }}>{t.support}</p>
@@ -147,12 +147,12 @@ export default function SupportChatSheet({ onClose }: Props) {
                 <div
                   className="max-w-[80%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed"
                   style={isUser
-                    ? { background: "#22c55e", borderBottomRightRadius: 4 }
+                    ? { background: "#EC4899", borderBottomRightRadius: 4 }
                     : { background: "var(--bg-surface)", border: "1px solid var(--border)", borderBottomLeftRadius: 4 }
                   }
                 >
                   {!isUser && (
-                    <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: "#22c55e" }}>
+                    <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: "#EC4899" }}>
                       {t.support}
                     </p>
                   )}
@@ -188,7 +188,7 @@ export default function SupportChatSheet({ onClose }: Props) {
             onClick={send}
             disabled={!text.trim() || !connected}
             className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:opacity-70 disabled:opacity-30"
-            style={{ background: "#22c55e" }}
+            style={{ background: "#EC4899" }}
           >
             <Send className="w-4 h-4 text-white" />
           </button>
