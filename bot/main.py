@@ -16,13 +16,12 @@ BANNER_PATH = os.path.join(os.path.dirname(__file__), "welcome_banner.png")
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
     kb = InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="🎮 Magazinni ochish", web_app=WebAppInfo(url=MINI_APP_URL))
+        InlineKeyboardButton(text="🎮 Открыть магазин", web_app=WebAppInfo(url=MINI_APP_URL))
     ]])
     caption = (
-        "👋 <b>Doonya Shop</b>ga xush kelibsiz!\n\n"
-        "Bizning bot orqali o'yinlar🎮 uchun tez va ishonchli tarzda "
-        "donat qilishingiz mumkin.\n\n"
-        "Davom etish uchun quyidagi tugmadan foydalaning 👇"
+        "👋 Добро пожаловать в <b>Doonya Shop</b>!\n\n"
+        "Здесь вы можете купить внутриигровую валюту, донаты "
+        "и товары для ваших игр."
     )
     if os.path.exists(BANNER_PATH):
         await message.answer_photo(
