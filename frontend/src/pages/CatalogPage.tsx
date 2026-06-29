@@ -126,11 +126,13 @@ function ListingCard({ item, onBuy, onDetail }: {
     <div className="rounded-2xl overflow-hidden flex flex-col active:opacity-80 cursor-pointer"
       style={{ background: "var(--bg-raised)", border: "1px solid var(--border-card)" }}
       onClick={onDetail}>
-      {/* Square photo */}
+      {/* Photo — natural ratio, no crop */}
       <div className="w-full flex-shrink-0 overflow-hidden relative"
-        style={{ aspectRatio: "1/1", background: item.photo_id ? "#111" : `linear-gradient(145deg,${g1},${g2})` }}>
+        style={item.photo_id
+          ? { background: "#111" }
+          : { aspectRatio: "1/1", background: `linear-gradient(145deg,${g1},${g2})` }}>
         {item.photo_id
-          ? <img src={item.photo_id} className="w-full h-full object-cover" alt={item.name} />
+          ? <img src={item.photo_id} className="w-full h-auto block" alt={item.name} />
           : <div className="w-full h-full flex items-center justify-center">
               <span className="text-2xl font-black text-white/80">{initials(item.name)}</span>
             </div>}
@@ -191,9 +193,11 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
         </div>
       ) : null}
       <div className="w-full flex-shrink-0 overflow-hidden"
-        style={{ aspectRatio: "1/1", background: item.photo_id ? "#0a0a14" : `linear-gradient(145deg,${g1},${g2})` }}>
+        style={item.photo_id
+          ? { background: "#0a0a14" }
+          : { aspectRatio: "1/1", background: `linear-gradient(145deg,${g1},${g2})` }}>
         {item.photo_id
-          ? <img src={item.photo_id} className="w-full h-full object-cover" alt={item.name} />
+          ? <img src={item.photo_id} className="w-full h-auto block" alt={item.name} />
           : <div className="w-full h-full flex items-center justify-center">
               <span className="text-xl font-black text-white/80">{initials(item.name)}</span>
             </div>}
