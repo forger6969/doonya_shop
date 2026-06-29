@@ -690,6 +690,43 @@ function SaleFeed({ onBuy, onDetail }: { onBuy: (p: Product) => void; onDetail: 
   );
 }
 
+// ─── GamesGrid — apps/games icon grid (под товарами) ─────────────────────────
+
+function GamesGrid({ games, onSelect }: { games: Game[]; onSelect: (g: Game) => void }) {
+  const { t } = useLang();
+  if (games.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-[11px] font-black uppercase tracking-[0.1em]" style={{ color: "var(--text-muted)" }}>{t.allGames}</p>
+      <div className="grid grid-cols-4 gap-3">
+        {games.map((g) => {
+          const [c1, c2] = palette(g.id);
+          return (
+            <button key={g.id} onClick={() => onSelect(g)}
+              className="flex flex-col items-center gap-1.5 active:opacity-70">
+              <div className="w-full rounded-2xl overflow-hidden"
+                style={{
+                  aspectRatio: "1/1",
+                  ...(g.photo_id
+                    ? { border: "1px solid var(--border)" }
+                    : { background: `linear-gradient(145deg,${c1},${c2})` }),
+                }}>
+                {g.photo_id
+                  ? <img src={g.photo_id} className="w-full h-full object-cover" alt={g.name} />
+                  : <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-xl font-black text-white">{initials(g.name)}</span>
+                    </div>}
+              </div>
+              <p className="text-[10px] font-semibold text-center leading-tight w-full truncate"
+                style={{ color: "var(--text-dim)" }}>{g.name}</p>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Admin banners ────────────────────────────────────────────────────────────
 
 const GRADIENT_MAP: Record<string, string> = {
@@ -813,6 +850,9 @@ export default function CatalogPage({ onBuy, onTopup }: Props) {
 
                 {/* 🏷️ Sale feed */}
                 <SaleFeed onBuy={onBuy} onDetail={(p) => setDetailProduct(p)} />
+
+                {/* 🎮 Игры (приложения) — под товарами */}
+                <GamesGrid games={games} onSelect={(g) => setSelectedGame(g)} />
               </div>
             )}
           </>
