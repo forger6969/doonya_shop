@@ -5,6 +5,7 @@ from backend.models import (
     get_games, get_game, get_categories, get_products, get_product, get_product_reviews,
     is_discount_active, calc_discounted_price,
     get_active_discounts, get_top_catalog_products,
+    get_all_product_stats, get_all_product_ratings,
 )
 from backend.cache import cache_get, cache_set
 from bson import ObjectId
@@ -35,7 +36,30 @@ def _fmt_product(p: dict, category_name: str = "") -> dict:
         "photo_id": p.get("photo_id", ""),
         "variants": p.get("variants", []),
         "purchase_fields": p.get("purchase_fields", []),
+        "avg_rating": None,
+        "reviews_count": 0,
+        "sales_count": p.get("_sales_count", 0),
     }
+
+
+async def _enrich_social(results: list[dict]) -> list[dict]:
+    """Attach real ratings + sales counts to a list of formatted products (batched)."""
+    ids = [r["id"] for r in results]
+    if not ids:
+        return results
+    stats, ratings = await asyncio.gather(
+        get_all_product_stats(ids),
+        get_all_product_ratings(ids),
+    )
+    for r in results:
+        st = stats.get(r["id"])
+        rt = ratings.get(r["id"])
+        if st:
+            r["sales_count"] = st.get("count", r["sales_count"])
+        if rt:
+            r["avg_rating"] = rt.get("avg")
+            r["reviews_count"] = rt.get("count", 0)
+    return results
 
 
 @router.get("/games")
@@ -79,6 +103,7 @@ async def list_products(game_id: str):
     cats, products = await _gather_cats_products(game_id)
     cat_map = {str(c["_id"]): c["name"] for c in cats}
     result = [_fmt_product(p, cat_map.get(p.get("category_id", ""), "")) for p in products]
+    await _enrich_social(result)
     cache_set(key, result, PRODUCTS_TTL)
     return result
 
@@ -119,6 +144,7 @@ async def top_products():
         return cached
     products = await get_top_catalog_products(6)
     result = [_fmt_product(p) for p in products]
+    await _enrich_social(result)
     cache_set("catalog:top", result, PRODUCTS_TTL)
     return result
 
@@ -130,6 +156,7 @@ async def on_sale_products():
         return cached
     products = await get_active_discounts(20)
     result = [_fmt_product(p) for p in products]
+    await _enrich_social(result)
     cache_set("catalog:on_sale", result, PRODUCTS_TTL)
     return result
 
@@ -149,6 +176,7 @@ async def search(q: str = ""):
     games = [{"id": str(g["_id"]), "name": g["name"], "photo_id": g.get("photo_id", "") or g.get("icon_url", "")} for g in raw_games]
     categories = [{"id": str(c["_id"]), "game_id": c["game_id"], "name": c["name"]} for c in raw_cats]
     products = [_fmt_product(p) for p in raw_products]
+    await _enrich_social(products)
 
     return {"games": games, "categories": categories, "products": products}
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, X, ArrowLeft, ShoppingCart, Flame, Tag } from "lucide-react";
+import { Search, X, ArrowLeft, ShoppingCart, Flame, Tag, Star } from "lucide-react";
 import { getGames, getCategories, getProducts, getTopProducts, getOnSaleProducts, searchCatalog, buyStars, getActiveBanners, type Banner } from "../api";
 import { useLang } from "../i18n";
 import ProductDetailSheet from "./ProductDetailSheet";
@@ -14,6 +14,7 @@ interface Product {
   photo_id?: string; category_id?: string; category_name?: string;
   variants?: Variant[]; purchase_fields?: PurchaseField[];
   variant_label?: string; gameName?: string;
+  avg_rating?: number | null; reviews_count?: number; sales_count?: number;
 }
 
 interface CardItem {
@@ -22,6 +23,7 @@ interface CardItem {
   photo_id?: string; purchase_fields?: PurchaseField[];
   variant_label?: string; category_id?: string;
   gameName?: string;
+  avg_rating?: number | null; reviews_count?: number; sales_count?: number;
   raw: Product;
 }
 
@@ -53,6 +55,7 @@ function toCards(product: Product, gameName?: string): CardItem[] {
       photo_id: product.photo_id, purchase_fields: product.purchase_fields,
       variant_label: v.label, category_id: product.category_id,
       gameName: gameName ?? product.gameName,
+      avg_rating: product.avg_rating, reviews_count: product.reviews_count, sales_count: product.sales_count,
       raw: product,
     }));
   }
@@ -62,6 +65,7 @@ function toCards(product: Product, gameName?: string): CardItem[] {
     photo_id: product.photo_id, purchase_fields: product.purchase_fields,
     category_id: product.category_id,
     gameName: gameName ?? product.gameName,
+    avg_rating: product.avg_rating, reviews_count: product.reviews_count, sales_count: product.sales_count,
     raw: product,
   }];
 }
@@ -82,6 +86,31 @@ function GameIcon({ game, size }: { game: Game; size: "sm" | "md" | "lg" }) {
     <div className={`${cls} flex items-center justify-center font-black flex-shrink-0`}
       style={{ background: `linear-gradient(145deg,${g1},${g2})`, boxShadow: `0 4px 16px ${g1}40` }}>
       <span className="text-white">{initials(game.name)}</span>
+    </div>
+  );
+}
+
+// ─── MetaRow — playerok-style rating + sales line ─────────────────────────────
+
+function MetaRow({ item }: { item: CardItem }) {
+  const reviews = item.reviews_count ?? 0;
+  const sales = item.sales_count ?? 0;
+  const hasRating = item.avg_rating != null && reviews > 0;
+  if (!hasRating && sales <= 0) return null;
+  return (
+    <div className="flex items-center gap-2 leading-none">
+      {hasRating && (
+        <span className="flex items-center gap-0.5 text-[10px] font-black" style={{ color: "#FBBF24" }}>
+          <Star className="w-2.5 h-2.5 fill-current" />
+          {item.avg_rating}
+          <span className="font-semibold" style={{ color: "var(--text-muted)" }}>({reviews})</span>
+        </span>
+      )}
+      {sales > 0 && (
+        <span className="flex items-center gap-0.5 text-[10px] font-semibold" style={{ color: "var(--text-dim)" }}>
+          🔥 {sales}
+        </span>
+      )}
     </div>
   );
 }
@@ -122,6 +151,7 @@ function ListingCard({ item, onBuy, onDetail }: {
       {/* Info */}
       <div className="p-2.5 flex flex-col gap-2 flex-1">
         <p className="text-[12px] font-bold leading-tight line-clamp-2" style={{ color: "var(--text)" }}>{item.name}</p>
+        <MetaRow item={item} />
         <div className="flex items-end justify-between gap-1 mt-auto">
           <div className="flex flex-col gap-0">
             {item.discounted_price && item.discount_percent ? (
@@ -173,6 +203,7 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
         {item.raw.description && !item.variant_label && (
           <p className="text-[10px] mt-0.5 line-clamp-1" style={{ color: "var(--text-dim)" }}>{item.raw.description}</p>
         )}
+        <div className="mt-1"><MetaRow item={item} /></div>
       </div>
       <div className="px-2 pb-2 flex items-center justify-between gap-1.5">
         {item.discounted_price && item.discount_percent ? (

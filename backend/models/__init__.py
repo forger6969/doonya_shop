@@ -246,6 +246,25 @@ async def get_product_reviews(product_id: str) -> list:
     return await db().reviews.find({"product_id": product_id}).sort("created_at", -1).limit(5).to_list(None)
 
 
+async def get_all_product_ratings(product_ids: list[str]) -> dict[str, dict]:
+    """Batch review ratings — single aggregate instead of N queries."""
+    if not product_ids:
+        return {}
+    pipeline = [
+        {"$match": {"product_id": {"$in": product_ids}}},
+        {"$group": {"_id": "$product_id", "avg": {"$avg": "$rating"}, "count": {"$sum": 1}}},
+    ]
+    rows = await db().reviews.aggregate(pipeline).to_list(None)
+    result: dict[str, dict] = {}
+    for row in rows:
+        avg = row.get("avg")
+        result[row["_id"]] = {
+            "avg": round(avg, 1) if avg else None,
+            "count": row["count"],
+        }
+    return result
+
+
 # ── Promos ───────────────────────────────────────────────────────────────────
 async def create_promo(code: str, discount_pct: int, min_order_amount: int, max_uses: int) -> str:
     existing = await db().promos.find_one({"code": code.upper()})

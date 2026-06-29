@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, lazy, Suspense } from "react";
-import { MessageCircle, User, Bell, Moon, Sun } from "lucide-react";
+import { Gamepad2, MessageCircle, User, Bell, Moon, Sun } from "lucide-react";
 import { getMe, getMyOrderChats } from "./api";
 import { useLang } from "./i18n";
 // Critical path — loaded immediately
@@ -71,7 +71,7 @@ function readPendingSession(): { expiresAt: number } | null {
 export default function App() {
   const { t } = useLang();
   const NAV: { id: Tab; Icon: React.ElementType; label: string }[] = [
-    { id: "catalog", Icon: ({ style }: { className?: string; style?: React.CSSProperties }) => <span style={{ ...style, fontSize: 18, lineHeight: 1 }}>🎮</span>, label: t.shop },
+    { id: "catalog", Icon: Gamepad2, label: t.shop },
     { id: "chats", Icon: MessageCircle, label: t.chats },
     { id: "profile", Icon: User, label: t.profile },
   ];
@@ -341,7 +341,7 @@ export default function App() {
                 style={{ borderTop: `2px solid ${active ? "#EC4899" : "transparent"}` }}
               >
                 <div className="relative flex items-center justify-center h-6">
-                  <Icon className="w-5 h-5" style={{ color: active ? "#EC4899" : "var(--text-muted)" }} />
+                  <Icon className="w-[22px] h-[22px]" strokeWidth={2.2} style={{ color: active ? "#EC4899" : "var(--text-dim)" }} />
                   {badge > 0 && (
                     <div className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
                       style={{ background: "#EC4899" }}>
@@ -349,7 +349,7 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-semibold" style={{ color: active ? "#EC4899" : "var(--text-muted)" }}>
+                <span className="text-[10px] font-semibold" style={{ color: active ? "#EC4899" : "var(--text-dim)" }}>
                   {label}
                 </span>
               </button>
@@ -363,7 +363,7 @@ export default function App() {
             style={{ borderTop: "2px solid transparent" }}
           >
             <div className="relative flex items-center justify-center h-6">
-              <Bell className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
+              <Bell className="w-[22px] h-[22px]" strokeWidth={2.2} style={{ color: "var(--text-dim)" }} />
               {unreadCount > 0 && (
                 <div className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
                   style={{ background: "#EC4899" }}>
@@ -371,7 +371,7 @@ export default function App() {
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-semibold" style={{ color: "var(--text-muted)" }}>{t.notifications}</span>
+            <span className="text-[10px] font-semibold" style={{ color: "var(--text-dim)" }}>{t.notifications}</span>
           </button>
         </div>
       </nav>
