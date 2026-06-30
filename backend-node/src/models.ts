@@ -103,10 +103,10 @@ const orderSchema = new Schema(
   { ...opts, collection: 'orders' },
 );
 
-// ── 7. Reviews Schema (С правильной связью populate) ────────────────────────
+// ── 7. Reviews Schema (с корректной связью populate) ─────────────────────
 const reviewSchema = new Schema(
   {
-    db_user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true }, // ObjectId для связи с коллекцией Users
+    db_user_id: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     user_id: { type: Number, required: true }, // Telegram ID
     order_id: { type: String, required: true, unique: true },
     product_id: { type: String, required: true, index: true },

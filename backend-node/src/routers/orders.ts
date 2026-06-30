@@ -172,13 +172,18 @@ router.post('/review', requireUser, asyncHandler(async (req, res) => {
   const existing = await Reviews.findOne({ order_id: body.order_id, user_id: req.tgUser.id }).lean<Doc>();
   if (existing) throw new HttpError(409, 'Review already submitted');
 
-  const user = await Users.findOne({ user_id: order.user_id })
+  const user = await Users.findOne({ user_id: order.user_id });
+  if (!user) throw new HttpError(404, 'User not found in database');
 
-  if (!user) {
-    throw new HttpError(404, 'User not found in database');
-  }
-
-  await createReview(String(user._id), req.tgUser.id, String(body.order_id), order.product_id as string, rating, body.text ?? '', body.photo_url ?? '');
+  await createReview(
+    String(user._id),
+    req.tgUser.id,
+    String(body.order_id),
+    order.product_id as string,
+    rating,
+    body.text ?? '',
+    body.photo_url ?? '',
+  );
   res.json({ ok: true });
 }));
 

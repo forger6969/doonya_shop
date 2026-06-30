@@ -213,6 +213,23 @@ export async function getUserOrders(userId: number): Promise<Doc[]> {
 }
 
 // ── Reviews ──────────────────────────────────────────────────────────────────
+type ProductReviewResponse = {
+  _id: string;
+  user_id: number;
+  order_id: string;
+  product_id: string;
+  rating: number;
+  text: string;
+  photo_url: string;
+  created_at: Date;
+  user: {
+    _id: string;
+    user_id: number;
+    username: string;
+    first_name: string;
+  };
+};
+
 export async function createReview(
   db_user_id: string, userId: number, orderId: string, productId: string, rating: number, text: string, photoUrl = '',
 ): Promise<string> {
@@ -223,22 +240,32 @@ export async function createReview(
   return String(doc._id);
 }
 
-export async function getProductReviews(productId: string): Promise<Doc[]> {
+export async function getProductReviews(productId: string): Promise<ProductReviewResponse[]> {
   const reviews = await Reviews.find({ product_id: productId })
     .sort({ created_at: -1 })
     .limit(5)
-    .populate('db_user_id') // <-- Магия Mongoose подтянет пользователя
+    .populate({ path: 'db_user_id', select: '_id user_id username first_name' })
     .lean<Doc[]>();
 
-  // Защита фронтенда от undefined: превращаем все ObjectId в обычные строки
-  return reviews.map((r: any) => {
-    if (r._id) r._id = String(r._id);
-    if (r.db_user_id && typeof r.db_user_id === 'object') {
-      if (r.db_user_id._id) r.db_user_id._id = String(r.db_user_id._id);
-    } else if (r.db_user_id) {
-      r.db_user_id = String(r.db_user_id);
-    }
-    return r;
+  return reviews.map((r) => {
+    const populatedUser = (r.db_user_id as Doc | null | undefined) ?? null;
+
+    return {
+      _id: String(r._id),
+      user_id: Number(r.user_id ?? 0),
+      order_id: String(r.order_id ?? ''),
+      product_id: String(r.product_id ?? ''),
+      rating: Number(r.rating ?? 0),
+      text: typeof r.text === 'string' ? r.text : '',
+      photo_url: typeof r.photo_url === 'string' ? r.photo_url : '',
+      created_at: r.created_at instanceof Date ? r.created_at : new Date(r.created_at as string),
+      user: {
+        _id: populatedUser ? String(populatedUser._id) : '',
+        user_id: populatedUser && typeof populatedUser.user_id === 'number' ? populatedUser.user_id : 0,
+        username: populatedUser && typeof populatedUser.username === 'string' ? populatedUser.username : '',
+        first_name: populatedUser && typeof populatedUser.first_name === 'string' ? populatedUser.first_name : '',
+      },
+    };
   });
 }
 
