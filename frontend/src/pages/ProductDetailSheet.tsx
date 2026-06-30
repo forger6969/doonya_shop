@@ -120,6 +120,10 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
     });
   }, [product.id]);
 
+  useEffect(() => {
+    console.log(reviews);
+  }, [reviews])
+
   const handleClose = () => {
     setVisible(false);
     setTimeout(onClose, 300);
