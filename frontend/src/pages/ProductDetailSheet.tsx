@@ -17,14 +17,21 @@ interface Detail {
   variants: Variant[];
   purchase_fields: PurchaseField[];
 }
+interface ReviewUser {
+  _id: string;
+  user_id: number;
+  username: string;
+  first_name: string;
+  balance?: number;
+}
+
 interface Review {
-  rating: number; text: string; photo_url: string; created_at: string, db_user_id: {
-    _id: string,
-    user_id: number,
-    username: string,
-    first_name: string,
-    balance: number
-  }
+  rating: number;
+  text: string;
+  photo_url: string;
+  created_at: string;
+  user?: ReviewUser;
+  db_user_id?: ReviewUser | null;
 }
 
 interface Props {
@@ -318,17 +325,15 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                         </span>
                       </div>
 
-                      <p>test</p>
-
-                      {r.db_user_id && <p>
-                        @{r.db_user_id.username}
-                      </p>}
+                      {(() => {
+                        const author = r.user ?? r.db_user_id;
+                        return author ? <p>@{author.username}</p> : null;
+                      })()}
 
                       {r.text && (
                         <p className="text-sm leading-relaxed" style={{ color: "var(--text-dim)" }}>{r.text}</p>
                       )}
 
-                      <button onClick={() => alert(`${r.db_user_id},${r.text}, ${r.rating}`)}>debug</button>
                       {r.photo_url && (
                         <div className="mt-1 rounded-xl overflow-hidden h-40"
                           style={{ background: "var(--border)" }}>

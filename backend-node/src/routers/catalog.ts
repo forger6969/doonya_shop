@@ -103,12 +103,21 @@ router.get('/products/:productId', asyncHandler(async (req, res) => {
 
 router.get('/products/:productId/reviews', asyncHandler(async (req, res) => {
   const reviews = await getProductReviews(req.params.productId);
-  res.json(reviews.map((r) => ({
-    rating: r.rating,
-    text: r.text ?? '',
-    photo_url: r.photo_url ?? '',
-    created_at: (r.created_at as Date).toISOString(),
-  })));
+  res.json(reviews.map((r) => {
+    const createdAt = r.created_at instanceof Date ? r.created_at : new Date(r.created_at as string);
+    return {
+      _id: r._id,
+      user_id: r.user_id,
+      order_id: r.order_id,
+      product_id: r.product_id,
+      rating: r.rating,
+      text: r.text ?? '',
+      photo_url: r.photo_url ?? '',
+      created_at: createdAt.toISOString(),
+      user: r.user,
+      db_user_id: r.user ? { ...r.user } : null,
+    };
+  }));
 }));
 
 router.get('/top', asyncHandler(async (_req, res) => {
