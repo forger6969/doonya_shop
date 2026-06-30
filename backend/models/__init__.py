@@ -229,9 +229,9 @@ async def get_user_orders(user_id: int) -> list:
 
 
 # ── Reviews ──────────────────────────────────────────────────────────────────
-async def create_review(db_user_id:str , user_id: int, order_id: str, product_id: str, rating: int, text: str, photo_url: str = "") -> str:
+async def create_review(db_user_id:str | ObjectId , user_id: int, order_id: str, product_id: str, rating: int, text: str, photo_url: str = "") -> str:
     result = await db().reviews.insert_one({
-        "db_user_id":db_user_id,
+       "db_user_id": ObjectId(db_user_id) if isinstance(db_user_id, str) else db_user_id, 
         "user_id": user_id,
         "order_id": order_id,
         "product_id": product_id,
@@ -244,8 +244,30 @@ async def create_review(db_user_id:str , user_id: int, order_id: str, product_id
 
 
 async def get_product_reviews(product_id: str) -> list:
-    return await db().reviews.find({"product_id": product_id}).sort("created_at", -1).limit(5).to_list(None)
-
+    pipeline = [
+        # 1. Находим отзывы для конкретного товара
+        {"$match": {"product_id": product_id}},
+        
+        # 2. Сортируем (сначала новые) и берем последние 5
+        {"$sort": {"created_at": -1}},
+        {"$limit": 5},
+        
+        # 3. Делаем аналог populate: подтягиваем данные пользователя
+        {
+            "$lookup": {
+                "from": "users",          # Имя коллекции, откуда берутся данные
+                "localField": "db_user_id",# Поле в коллекции REVIEWS (должно быть ObjectId)
+                "foreignField": "_id",     # Поле в коллекции USERS
+                "as": "user"               # Название нового поля, куда запишется объект
+            }
+        },
+        
+        # 4. Так как $lookup всегда возвращает массив [ {...} ], 
+        # разворачиваем его, чтобы в поле "user" лежал сразу один объект, а не массив.
+        {"$unwind": {"path": "$user", "preserveNullAndEmptyArrays": True}}
+    ]
+    
+    return await db().reviews.aggregate(pipeline).to_list(None)
 
 async def get_all_product_ratings(product_ids: list[str]) -> dict[str, dict]:
     """Batch review ratings — single aggregate instead of N queries."""
