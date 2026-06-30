@@ -1,0 +1,522 @@
+import crypto from 'crypto';
+import {
+  mongoose, Doc,
+  Users, Games, Categories, Products, Topups, Orders, Reviews, Promos,
+  Notifications, SupportChats, OrderChats,
+} from './models';
+
+const { ObjectId } = mongoose.Types;
+
+function oid(id: string): InstanceType<typeof ObjectId> | null {
+  try {
+    return new ObjectId(id);
+  } catch {
+    return null;
+  }
+}
+
+// ── Users ───────────────────────────────────────────────────────────────────
+export async function getOrCreateUser(userId: number, username: string, firstName: string): Promise<Doc> {
+  let user = await Users.findOne({ user_id: userId }).lean<Doc>();
+  if (!user) {
+    const doc = { user_id: userId, username, first_name: firstName, balance: 0, created_at: new Date() };
+    await Users.create(doc);
+    user = doc as Doc;
+  }
+  return user;
+}
+
+export async function getUser(userId: number): Promise<Doc | null> {
+  return Users.findOne({ user_id: userId }).lean<Doc>();
+}
+
+export async function updateBalance(userId: number, amount: number): Promise<void> {
+  await Users.updateOne({ user_id: userId }, { $inc: { balance: amount } });
+}
+
+export async function getAllUserIds(): Promise<number[]> {
+  const users = await Users.find({}, { user_id: 1 }).lean<Doc[]>();
+  return users.map((u) => u.user_id as number).filter((id) => id != null);
+}
+
+export async function listAllUsers(limit = 200, search = ''): Promise<Doc[]> {
+  const query: Doc = {};
+  if (search) {
+    const safe = search.slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    query.$or = [
+      { first_name: { $regex: safe, $options: 'i' } },
+      { username: { $regex: safe, $options: 'i' } },
+    ];
+  }
+  const users = await Users.find(query, { user_id: 1, username: 1, first_name: 1, balance: 1, created_at: 1 })
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .lean<Doc[]>();
+  return users.map((u) => ({
+    user_id: u.user_id,
+    username: u.username ?? '',
+    first_name: u.first_name ?? '',
+    balance: u.balance ?? 0,
+  }));
+}
+
+// ── Games ────────────────────────────────────────────────────────────────────
+export async function getGames(): Promise<Doc[]> {
+  return Games.find({ is_active: true }).sort({ order: 1 }).lean<Doc[]>();
+}
+
+export async function getGame(gameId: string): Promise<Doc | null> {
+  const id = oid(gameId);
+  if (!id) return null;
+  return Games.findOne({ _id: id, is_active: true }).lean<Doc>();
+}
+
+export async function createGame(name: string, description = '', photoId = ''): Promise<string> {
+  const count = await Games.countDocuments({});
+  const doc = await Games.create({
+    name, description, photo_id: photoId, icon_url: photoId,
+    is_active: true, order: count, created_at: new Date(),
+  });
+  return String(doc._id);
+}
+
+export async function updateGame(gameId: string, fields: Doc): Promise<void> {
+  const id = oid(gameId);
+  if (id) await Games.updateOne({ _id: id }, { $set: fields });
+}
+
+export async function deleteGame(gameId: string): Promise<void> {
+  const id = oid(gameId);
+  if (id) await Games.updateOne({ _id: id }, { $set: { is_active: false } });
+}
+
+// ── Categories ────────────────────────────────────────────────────────────────
+export async function getCategories(gameId: string): Promise<Doc[]> {
+  return Categories.find({ game_id: gameId, is_active: true }).sort({ order: 1 }).lean<Doc[]>();
+}
+
+export async function getCategory(catId: string): Promise<Doc | null> {
+  const id = oid(catId);
+  if (!id) return null;
+  return Categories.findOne({ _id: id, is_active: true }).lean<Doc>();
+}
+
+export async function createCategory(gameId: string, name: string): Promise<string> {
+  const count = await Categories.countDocuments({ game_id: gameId });
+  const doc = await Categories.create({
+    game_id: gameId, name, is_active: true, order: count, created_at: new Date(),
+  });
+  return String(doc._id);
+}
+
+export async function updateCategory(catId: string, fields: Doc): Promise<void> {
+  const id = oid(catId);
+  if (id) await Categories.updateOne({ _id: id }, { $set: fields });
+}
+
+export async function deleteCategory(catId: string): Promise<void> {
+  const id = oid(catId);
+  if (id) await Categories.updateOne({ _id: id }, { $set: { is_active: false } });
+}
+
+// ── Products ─────────────────────────────────────────────────────────────────
+export async function getProducts(gameId: string, categoryId = ''): Promise<Doc[]> {
+  const query: Doc = { game_id: gameId, is_active: true };
+  if (categoryId) query.category_id = categoryId;
+  return Products.find(query).sort({ order: 1 }).lean<Doc[]>();
+}
+
+export async function getProduct(productId: string): Promise<Doc | null> {
+  const id = oid(productId);
+  if (!id) return null;
+  return Products.findOne({ _id: id, is_active: true }).lean<Doc>();
+}
+
+export async function createProduct(
+  gameId: string, name: string, description: string, price: number, photoId = '', categoryId = '',
+): Promise<string> {
+  const count = await Products.countDocuments({ game_id: gameId });
+  const doc = await Products.create({
+    game_id: gameId, category_id: categoryId, name, description, price,
+    photo_id: photoId, icon_url: photoId, is_active: true, order: count, created_at: new Date(),
+  });
+  return String(doc._id);
+}
+
+export async function updateProduct(productId: string, fields: Doc): Promise<void> {
+  const id = oid(productId);
+  if (id) await Products.updateOne({ _id: id }, { $set: fields });
+}
+
+export async function deleteProduct(productId: string): Promise<void> {
+  const id = oid(productId);
+  if (id) await Products.updateOne({ _id: id }, { $set: { is_active: false } });
+}
+
+// ── Top-ups ──────────────────────────────────────────────────────────────────
+export async function createTopup(
+  userId: number, amount: number, uniqueAmount: number, method: string, receiptFileId: string,
+): Promise<string> {
+  const doc = await Topups.create({
+    user_id: userId, amount, unique_amount: uniqueAmount, method,
+    receipt_file_id: receiptFileId, status: 'pending', created_at: new Date(),
+  });
+  return String(doc._id);
+}
+
+export async function confirmTopup(topupId: string): Promise<Doc | null> {
+  const id = oid(topupId);
+  if (!id) return null;
+  const topup = await Topups.findOne({ _id: id }).lean<Doc>();
+  if (topup && topup.status === 'pending') {
+    await Topups.updateOne({ _id: id }, { $set: { status: 'confirmed', confirmed_at: new Date() } });
+    await updateBalance(topup.user_id as number, topup.amount as number);
+    return topup;
+  }
+  return null;
+}
+
+export async function rejectTopup(topupId: string): Promise<Doc | null> {
+  const id = oid(topupId);
+  if (!id) return null;
+  const topup = await Topups.findOne({ _id: id }).lean<Doc>();
+  if (topup && topup.status === 'pending') {
+    await Topups.updateOne({ _id: id }, { $set: { status: 'rejected', rejected_at: new Date() } });
+  }
+  return topup;
+}
+
+// ── Orders ───────────────────────────────────────────────────────────────────
+export async function createOrder(args: {
+  userId: number; productId: string; gameId: string; amount: number;
+  originalPrice?: number; promoCode?: string; variantLabel?: string; fieldAnswers?: Doc;
+}): Promise<string> {
+  const doc = await Orders.create({
+    user_id: args.userId, product_id: args.productId, game_id: args.gameId, amount: args.amount,
+    original_price: args.originalPrice || args.amount, promo_code: args.promoCode ?? '',
+    variant_label: args.variantLabel ?? '', field_answers: args.fieldAnswers ?? {},
+    status: 'pending', created_at: new Date(),
+  });
+  await updateBalance(args.userId, -args.amount);
+  return String(doc._id);
+}
+
+export async function completeOrder(orderId: string): Promise<Doc | null> {
+  const id = oid(orderId);
+  if (!id) return null;
+  await Orders.updateOne({ _id: id }, { $set: { status: 'completed', completed_at: new Date() } });
+  return Orders.findOne({ _id: id }).lean<Doc>();
+}
+
+export async function getUserOrders(userId: number): Promise<Doc[]> {
+  return Orders.find({ user_id: userId }).sort({ created_at: -1 }).limit(10).lean<Doc[]>();
+}
+
+// ── Reviews ──────────────────────────────────────────────────────────────────
+export async function createReview(
+  userId: number, orderId: string, productId: string, rating: number, text: string, photoUrl = '',
+): Promise<string> {
+  const doc = await Reviews.create({
+    user_id: userId, order_id: orderId, product_id: productId, rating, text, photo_url: photoUrl,
+    created_at: new Date(),
+  });
+  return String(doc._id);
+}
+
+export async function getProductReviews(productId: string): Promise<Doc[]> {
+  return Reviews.find({ product_id: productId }).sort({ created_at: -1 }).limit(5).lean<Doc[]>();
+}
+
+export async function getAllProductRatings(productIds: string[]): Promise<Record<string, { avg: number | null; count: number }>> {
+  if (!productIds.length) return {};
+  const rows = await Reviews.aggregate([
+    { $match: { product_id: { $in: productIds } } },
+    { $group: { _id: '$product_id', avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+  ]);
+  const result: Record<string, { avg: number | null; count: number }> = {};
+  for (const row of rows) {
+    result[row._id] = { avg: row.avg ? Math.round(row.avg * 10) / 10 : null, count: row.count };
+  }
+  return result;
+}
+
+// ── Promos ───────────────────────────────────────────────────────────────────
+export async function createPromo(code: string, discountPct: number, minOrderAmount: number, maxUses: number): Promise<string> {
+  const existing = await Promos.findOne({ code: code.toUpperCase() }).lean<Doc>();
+  if (existing) throw new Error('Promo code already exists');
+  const doc = await Promos.create({
+    code: code.toUpperCase(), discount_pct: discountPct, min_order_amount: minOrderAmount,
+    max_uses: maxUses, uses: 0, is_active: true, created_at: new Date(),
+  });
+  return String(doc._id);
+}
+
+export async function listPromos(): Promise<Doc[]> {
+  return Promos.find({}).sort({ created_at: -1 }).lean<Doc[]>();
+}
+
+export async function getPromoByCode(code: string): Promise<Doc | null> {
+  return Promos.findOne({ code: code.toUpperCase(), is_active: true }).lean<Doc>();
+}
+
+export async function deletePromo(promoId: string): Promise<void> {
+  const id = oid(promoId);
+  if (id) await Promos.deleteOne({ _id: id });
+}
+
+export async function togglePromo(promoId: string): Promise<Doc | null> {
+  const id = oid(promoId);
+  if (!id) return null;
+  const promo = await Promos.findOne({ _id: id }).lean<Doc>();
+  if (promo) await Promos.updateOne({ _id: id }, { $set: { is_active: !promo.is_active } });
+  return promo;
+}
+
+export async function usePromo(promoId: string): Promise<void> {
+  const id = oid(promoId);
+  if (id) await Promos.updateOne({ _id: id }, { $inc: { uses: 1 } });
+}
+
+export function applyPromo(price: number, promo: Doc): number {
+  const minOrder = (promo.min_order_amount as number) ?? 0;
+  const maxUses = (promo.max_uses as number) ?? 0;
+  const uses = (promo.uses as number) ?? 0;
+  if (minOrder > 0 && price < minOrder) return price;
+  if (maxUses > 0 && uses >= maxUses) return price;
+  const discount = Math.floor((price * (promo.discount_pct as number)) / 100);
+  return Math.max(0, price - discount);
+}
+
+// ── Analytics ────────────────────────────────────────────────────────────────
+export async function getSalesByDay(days = 7): Promise<Doc[]> {
+  const since = new Date(Date.now() - days * 86400_000);
+  return Orders.aggregate([
+    { $match: { created_at: { $gte: since }, status: { $ne: 'refunded' } } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$created_at' } },
+        revenue: { $sum: '$amount' }, count: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ]);
+}
+
+export async function getTopProducts(limit = 10): Promise<Doc[]> {
+  const rows = await Orders.aggregate([
+    { $match: { status: { $ne: 'refunded' } } },
+    { $group: { _id: '$product_id', revenue: { $sum: '$amount' }, count: { $sum: 1 } } },
+    { $sort: { revenue: -1 } },
+    { $limit: limit },
+  ]);
+  for (const row of rows) {
+    const id = oid(row._id);
+    const p = id ? await Products.findOne({ _id: id }).lean<Doc>() : null;
+    row.name = p ? p.name : 'Unknown';
+    row.game_id = p ? p.game_id ?? '' : '';
+  }
+  return rows;
+}
+
+export async function getTopUsers(limit = 20): Promise<Doc[]> {
+  const rows = await Orders.aggregate([
+    { $match: { status: { $ne: 'refunded' } } },
+    { $group: { _id: '$user_id', total_spent: { $sum: '$amount' }, order_count: { $sum: 1 } } },
+    { $sort: { total_spent: -1 } },
+    { $limit: limit },
+  ]);
+  for (const row of rows) {
+    const u = await Users.findOne({ user_id: row._id }).lean<Doc>();
+    row.first_name = u ? u.first_name : 'Unknown';
+    row.username = u ? u.username ?? '' : '';
+  }
+  return rows;
+}
+
+// ── Discounts ────────────────────────────────────────────────────────────────
+export function isDiscountActive(product: Doc): boolean {
+  if (!product.discount_enabled) return false;
+  const pct = (product.discount_percent as number) ?? 0;
+  if (!pct) return false;
+  const until = product.discount_until as Date | null | undefined;
+  if (until && new Date() > new Date(until)) return false;
+  return true;
+}
+
+export function calcDiscountedPrice(price: number, product: Doc): number | null {
+  if (!isDiscountActive(product)) return null;
+  const pct = (product.discount_percent as number) ?? 0;
+  return Math.max(1, Math.floor((price * (100 - pct)) / 100));
+}
+
+export async function setDiscount(
+  productId: string, discountPercent: number, discountEnabled: boolean, discountUntil: Date | null,
+): Promise<void> {
+  const id = oid(productId);
+  if (id) {
+    await Products.updateOne(
+      { _id: id },
+      { $set: { discount_percent: discountPercent, discount_enabled: discountEnabled, discount_until: discountUntil } },
+    );
+  }
+}
+
+export async function getActiveDiscounts(limit = 20): Promise<Doc[]> {
+  const now = new Date();
+  return Products.find({
+    is_active: true, discount_enabled: true, discount_percent: { $gt: 0 },
+    $or: [{ discount_until: null }, { discount_until: { $gt: now } }],
+  }).sort({ discount_percent: -1 }).limit(limit).lean<Doc[]>();
+}
+
+export async function getTopCatalogProducts(limit = 6): Promise<Doc[]> {
+  const rows = await Orders.aggregate([
+    { $match: { status: { $ne: 'refunded' } } },
+    { $group: { _id: '$product_id', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: limit },
+  ]);
+  const result: Doc[] = [];
+  for (const row of rows) {
+    const id = oid(row._id);
+    const p = id ? await Products.findOne({ _id: id, is_active: true }).lean<Doc>() : null;
+    if (p) {
+      p._sales_count = row.count;
+      result.push(p);
+    }
+  }
+  return result;
+}
+
+// ── Notifications ────────────────────────────────────────────────────────────
+export async function createNotification(userId: number, type: string, payload: Doc): Promise<Doc> {
+  const doc = { user_id: userId, type, payload, read: false, created_at: new Date() };
+  const created = await Notifications.create(doc);
+  return { ...doc, _id: created._id };
+}
+
+export async function getUnreadNotifications(userId: number): Promise<Doc[]> {
+  return Notifications.find({ user_id: userId, read: false }).sort({ created_at: -1 }).limit(50).lean<Doc[]>();
+}
+
+export async function markNotificationsRead(userId: number): Promise<void> {
+  await Notifications.updateMany({ user_id: userId, read: false }, { $set: { read: true } });
+}
+
+// ── Support Chat ──────────────────────────────────────────────────────────────
+export async function getOrCreateChat(userId: number, userName: string, firstName: string): Promise<Doc> {
+  let chat = await SupportChats.findOne({ user_id: userId }).lean<Doc>();
+  if (!chat) {
+    const doc = {
+      user_id: userId, user_name: userName, first_name: firstName, messages: [],
+      status: 'open', unread_by_agent: 0, last_ts: new Date(), created_at: new Date(),
+    };
+    await SupportChats.create(doc);
+    chat = doc as Doc;
+  }
+  return chat;
+}
+
+export async function addChatMessage(userId: number, from: string, text: string, agentId?: number): Promise<Doc> {
+  const msg = {
+    id: crypto.randomUUID(), from, text, ts: new Date().toISOString(), agent_id: agentId ?? null,
+  };
+  const now = new Date();
+  const update: Doc = {
+    $push: { messages: msg },
+    $set: { last_ts: now } as Doc,
+    $setOnInsert: { user_id: userId, user_name: '', first_name: '', status: 'open', created_at: now },
+  };
+  if (from === 'user') update.$inc = { unread_by_agent: 1 };
+  else (update.$set as Doc).unread_by_agent = 0;
+  await SupportChats.updateOne({ user_id: userId }, update, { upsert: true });
+  return msg;
+}
+
+export async function getChat(userId: number): Promise<Doc | null> {
+  return SupportChats.findOne({ user_id: userId }).lean<Doc>();
+}
+
+export async function listActiveChats(limit = 50): Promise<Doc[]> {
+  return SupportChats.find({}, { messages: 0 }).sort({ last_ts: -1 }).limit(limit).lean<Doc[]>();
+}
+
+export async function markChatRead(userId: number): Promise<void> {
+  await SupportChats.updateOne({ user_id: userId }, { $set: { unread_by_agent: 0 } });
+}
+
+// ── Order Chat ────────────────────────────────────────────────────────────────
+export async function getOrCreateOrderChat(args: {
+  orderId: string; userId: number; productId: string; gameId: string;
+  productName?: string; gameName?: string; username?: string; firstName?: string;
+}): Promise<Doc | null> {
+  const now = new Date();
+  await OrderChats.updateOne(
+    { order_id: args.orderId },
+    {
+      $setOnInsert: {
+        order_id: args.orderId, user_id: args.userId, username: args.username ?? '',
+        first_name: args.firstName ?? '', product_id: args.productId, game_id: args.gameId,
+        product_name: args.productName ?? '', game_name: args.gameName ?? '',
+        messages: [], unread_by_admin: 0, unread_by_user: 0, last_ts: now, created_at: now,
+      },
+    },
+    { upsert: true },
+  );
+  return OrderChats.findOne({ order_id: args.orderId }).lean<Doc>();
+}
+
+export async function getOrderChat(orderId: string): Promise<Doc | null> {
+  return OrderChats.findOne({ order_id: orderId }).lean<Doc>();
+}
+
+export async function addOrderChatMsg(orderId: string, from: string, text: string, agentId?: number): Promise<Doc> {
+  const msg: Doc = { id: crypto.randomUUID(), from, text, ts: new Date().toISOString() };
+  if (agentId) msg.agent_id = agentId;
+  const now = new Date();
+  const update: Doc = { $push: { messages: msg }, $set: { last_ts: now } };
+  if (from === 'user') update.$inc = { unread_by_admin: 1 };
+  else update.$inc = { unread_by_user: 1 };
+  await OrderChats.updateOne({ order_id: orderId }, update);
+  return msg;
+}
+
+export async function listOrderChats(gameId = '', productId = '', limit = 100): Promise<Doc[]> {
+  const query: Doc = {};
+  if (gameId) query.game_id = gameId;
+  if (productId) query.product_id = productId;
+  return OrderChats.find(query, { messages: 0 }).sort({ last_ts: -1 }).limit(limit).lean<Doc[]>();
+}
+
+export async function markOrderChatReadAdmin(orderId: string): Promise<void> {
+  await OrderChats.updateOne({ order_id: orderId }, { $set: { unread_by_admin: 0 } });
+}
+
+export async function markOrderChatReadUser(orderId: string): Promise<void> {
+  await OrderChats.updateOne({ order_id: orderId }, { $set: { unread_by_user: 0 } });
+}
+
+export async function getUserOrderChats(userId: number): Promise<Doc[]> {
+  return OrderChats.find({ user_id: userId }, { messages: 0 }).sort({ last_ts: -1 }).lean<Doc[]>();
+}
+
+// ── Product stats ─────────────────────────────────────────────────────────────
+export async function getProductStats(productId: string): Promise<{ revenue: number; count: number }> {
+  const rows = await Orders.aggregate([
+    { $match: { product_id: productId } },
+    { $group: { _id: null, revenue: { $sum: '$amount' }, count: { $sum: 1 } } },
+  ]);
+  return rows.length ? { revenue: rows[0].revenue, count: rows[0].count } : { revenue: 0, count: 0 };
+}
+
+export async function getAllProductStats(productIds: string[]): Promise<Record<string, { revenue: number; count: number }>> {
+  if (!productIds.length) return {};
+  const rows = await Orders.aggregate([
+    { $match: { product_id: { $in: productIds }, status: { $ne: 'refunded' } } },
+    { $group: { _id: '$product_id', revenue: { $sum: '$amount' }, count: { $sum: 1 } } },
+  ]);
+  const result: Record<string, { revenue: number; count: number }> = {};
+  for (const pid of productIds) result[pid] = { revenue: 0, count: 0 };
+  for (const row of rows) result[row._id] = { revenue: row.revenue, count: row.count };
+  return result;
+}

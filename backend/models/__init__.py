@@ -229,8 +229,9 @@ async def get_user_orders(user_id: int) -> list:
 
 
 # ── Reviews ──────────────────────────────────────────────────────────────────
-async def create_review(user_id: int, order_id: str, product_id: str, rating: int, text: str, photo_url: str = "") -> str:
+async def create_review(db_user_id:str , user_id: int, order_id: str, product_id: str, rating: int, text: str, photo_url: str = "") -> str:
     result = await db().reviews.insert_one({
+        "db_user_id":db_user_id,
         "user_id": user_id,
         "order_id": order_id,
         "product_id": product_id,

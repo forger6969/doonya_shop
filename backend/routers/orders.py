@@ -267,7 +267,10 @@ async def leave_review(req: ReviewRequest, tg_user: dict = Depends(get_current_u
     existing = await db.reviews.find_one({"order_id": req.order_id, "user_id": tg_user["id"]})
     if existing:
         raise HTTPException(status_code=409, detail="Review already submitted")
+
+    user = await db.users.find_one({"user_id": order["user_id"]})    
     await create_review(
+        db_user_id:user._id,
         user_id=tg_user["id"],
         order_id=req.order_id,
         product_id=order["product_id"],
