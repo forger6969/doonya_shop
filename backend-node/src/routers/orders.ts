@@ -5,10 +5,11 @@ import { requireUser } from '../auth';
 import { checkRateLimit } from '../rateLimit';
 import { uploadImage } from '../cloudinary';
 import { notifyAdminOrder } from '../notify';
-import { mongoose, Orders, Reviews, Games, Doc } from '../models';
+import { mongoose, Orders, Reviews, Games, Doc, Users } from '../models';
 import {
   getOrCreateUser, getProduct, createOrder, createReview,
   getPromoByCode, applyPromo, usePromo, getOrCreateOrderChat,
+  getUser,
 } from '../repo';
 
 const router = Router();
@@ -170,7 +171,14 @@ router.post('/review', requireUser, asyncHandler(async (req, res) => {
   if (order.user_id !== req.tgUser.id) throw new HttpError(403, 'Not your order');
   const existing = await Reviews.findOne({ order_id: body.order_id, user_id: req.tgUser.id }).lean<Doc>();
   if (existing) throw new HttpError(409, 'Review already submitted');
-  await createReview(req.tgUser.id, String(body.order_id), order.product_id as string, rating, body.text ?? '', body.photo_url ?? '');
+
+  const user = await Users.findOne({ user_id: order.user_id })
+
+  if (!user) {
+    throw new HttpError(404, 'User not found in database');
+  }
+
+  await createReview(String(user._id), req.tgUser.id, String(body.order_id), order.product_id as string, rating, body.text ?? '', body.photo_url ?? '');
   res.json({ ok: true });
 }));
 

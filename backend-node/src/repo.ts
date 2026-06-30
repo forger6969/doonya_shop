@@ -214,17 +214,32 @@ export async function getUserOrders(userId: number): Promise<Doc[]> {
 
 // ── Reviews ──────────────────────────────────────────────────────────────────
 export async function createReview(
-  userId: number, orderId: string, productId: string, rating: number, text: string, photoUrl = '',
+  db_user_id: string, userId: number, orderId: string, productId: string, rating: number, text: string, photoUrl = '',
 ): Promise<string> {
   const doc = await Reviews.create({
-    user_id: userId, order_id: orderId, product_id: productId, rating, text, photo_url: photoUrl,
+    db_user_id, user_id: userId, order_id: orderId, product_id: productId, rating, text, photo_url: photoUrl,
     created_at: new Date(),
   });
   return String(doc._id);
 }
 
 export async function getProductReviews(productId: string): Promise<Doc[]> {
-  return Reviews.find({ product_id: productId }).sort({ created_at: -1 }).limit(5).lean<Doc[]>();
+  const reviews = await Reviews.find({ product_id: productId })
+    .sort({ created_at: -1 })
+    .limit(5)
+    .populate('db_user_id') // <-- Магия Mongoose подтянет пользователя
+    .lean<Doc[]>();
+
+  // Защита фронтенда от undefined: превращаем все ObjectId в обычные строки
+  return reviews.map((r: any) => {
+    if (r._id) r._id = String(r._id);
+    if (r.db_user_id && typeof r.db_user_id === 'object') {
+      if (r.db_user_id._id) r.db_user_id._id = String(r.db_user_id._id);
+    } else if (r.db_user_id) {
+      r.db_user_id = String(r.db_user_id);
+    }
+    return r;
+  });
 }
 
 export async function getAllProductRatings(productIds: string[]): Promise<Record<string, { avg: number | null; count: number }>> {
