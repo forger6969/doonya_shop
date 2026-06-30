@@ -294,6 +294,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                   <p className="text-sm font-black" style={{ color: "var(--text)" }}>
                     {t.reviews} <span className="font-bold" style={{ color: "var(--text-muted)" }}>({reviews.length})</span>
                   </p>
+                  <p>test</p>
                   {reviews.map((r, i) => (
                     <div
                       key={i}
@@ -311,6 +312,8 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                         </span>
                       </div>
 
+                      <p>test</p>
+
                       {r.db_user_id && <p>
                         @{r.db_user_id.username}
                       </p>}
@@ -319,7 +322,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                         <p className="text-sm leading-relaxed" style={{ color: "var(--text-dim)" }}>{r.text}</p>
                       )}
 
-                      <button onClick={() => alert(r)}>debug</button>
+                      <button onClick={() => alert(`${r.db_user_id},${r.text}, ${r.rating}`)}>debug</button>
                       {r.photo_url && (
                         <div className="mt-1 rounded-xl overflow-hidden h-40"
                           style={{ background: "var(--border)" }}>
