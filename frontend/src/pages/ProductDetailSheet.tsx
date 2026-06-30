@@ -125,6 +125,7 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
     setTimeout(onClose, 300);
   };
 
+
   return (
     <div className="fixed inset-0 z-50 flex items-end">
       {/* Backdrop */}
@@ -317,6 +318,8 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                       {r.text && (
                         <p className="text-sm leading-relaxed" style={{ color: "var(--text-dim)" }}>{r.text}</p>
                       )}
+
+                      <button onClick={() => alert(r)}>debug</button>
                       {r.photo_url && (
                         <div className="mt-1 rounded-xl overflow-hidden h-40"
                           style={{ background: "var(--border)" }}>
