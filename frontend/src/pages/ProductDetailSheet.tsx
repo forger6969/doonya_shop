@@ -17,7 +17,15 @@ interface Detail {
   variants: Variant[];
   purchase_fields: PurchaseField[];
 }
-interface Review { rating: number; text: string; photo_url: string; created_at: string }
+interface Review {
+  rating: number; text: string; photo_url: string; created_at: string, db_user_id: {
+    _id: string,
+    user_id: number,
+    username: string,
+    first_name: string,
+    balance: number
+  }
+}
 
 interface Props {
   product: Product;
@@ -26,23 +34,23 @@ interface Props {
 }
 
 const PALETTES = [
-  ["#EC4899","#f97316"],["#f97316","#0ea5e9"],["#EC4899","#EC4899"],
-  ["#EC4899","#818CF8"],["#FB7185","#EC4899"],["#EC4899","#f97316"],
-  ["#EC4899","#EC4899"],["#EC4899","#EC4899"],["#EC4899","#EC4899"],["#EC4899","#f97316"],
+  ["#EC4899", "#f97316"], ["#f97316", "#0ea5e9"], ["#EC4899", "#EC4899"],
+  ["#EC4899", "#818CF8"], ["#FB7185", "#EC4899"], ["#EC4899", "#f97316"],
+  ["#EC4899", "#EC4899"], ["#EC4899", "#EC4899"], ["#EC4899", "#EC4899"], ["#EC4899", "#f97316"],
 ];
 function palette(id: string) {
   const hash = [...id].reduce((a, c) => a + c.charCodeAt(0), 0);
   return PALETTES[hash % PALETTES.length];
 }
 function initials(name: string) {
-  return name.split(/\s+/).slice(0,2).map(w => w[0] ?? "").join("").toUpperCase() || "?";
+  return name.split(/\s+/).slice(0, 2).map(w => w[0] ?? "").join("").toUpperCase() || "?";
 }
 
 function Stars({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
   const sz = size === "md" ? "w-5 h-5" : "w-3.5 h-3.5";
   return (
     <div className="flex gap-0.5">
-      {[1,2,3,4,5].map(i => (
+      {[1, 2, 3, 4, 5].map(i => (
         <Star
           key={i}
           className={`${sz} ${i <= Math.round(rating) ? "fill-pink-400 text-pink-400" : ""}`}
@@ -301,6 +309,11 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
                           {new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                         </span>
                       </div>
+
+                      {r.db_user_id && <p>
+                        @{r.db_user_id.username}
+                      </p>}
+
                       {r.text && (
                         <p className="text-sm leading-relaxed" style={{ color: "var(--text-dim)" }}>{r.text}</p>
                       )}
