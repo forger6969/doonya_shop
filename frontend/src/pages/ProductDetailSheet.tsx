@@ -123,6 +123,8 @@ export default function ProductDetailSheet({ product, onClose, onBuy }: Props) {
   useEffect(() => {
     console.log(reviews);
   }, [reviews])
+  console.log("otzivi",reviews);
+  
 
   const handleClose = () => {
     setVisible(false);
