@@ -4,7 +4,7 @@ import mongoose, { Schema } from 'mongoose';
 // purchase_fields, email, avatar_url, ...) are preserved exactly as the Python backend
 // wrote them. Collection names are pinned to match the live database.
 
-const opts = { strict: false as const, versionKey: false };
+const opts = { strict: false , versionKey: false } as const;
 
 const userSchema = new Schema(
   {
