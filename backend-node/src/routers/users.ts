@@ -22,6 +22,21 @@ router.post('/me', requireUser, asyncHandler(async (req, res) => {
   });
 }));
 
+router.post('/username', requireUser, asyncHandler(async (req, res) => {
+  const body = req.body as { username?: string };
+  const username = String(body.username ?? '').trim().toLowerCase();
+  if (!/^[a-z0-9_]{3,20}$/.test(username)) throw new HttpError(422, 'Invalid username');
+
+  const user = await Users.findOne({ user_id: req.tgUser.id }).lean<Doc>();
+  if (!user) throw new HttpError(404, 'User not found');
+  if (typeof user.username === 'string' && user.username.trim()) {
+    return res.json({ ok: true, username: user.username, locked: true });
+  }
+
+  await Users.updateOne({ user_id: req.tgUser.id }, { $set: { username } });
+  res.json({ ok: true, username, locked: true });
+}));
+
 router.post('/avatar', requireUser, upload.single('file'), asyncHandler(async (req, res) => {
   if (!req.file) throw new HttpError(400, 'No file');
   if (req.file.size > 5 * 1024 * 1024) throw new HttpError(413, 'Avatar file too large (max 5 MB)');

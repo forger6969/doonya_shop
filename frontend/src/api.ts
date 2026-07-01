@@ -21,6 +21,7 @@ export function invalidateCatalogCache() { _cache.clear(); }
 
 // ── User ────────────────────────────────────────────────────────────────────
 export const getMe = () => api.post("/users/me").then((r) => r.data);
+export const saveUsername = (username: string) => api.post("/users/username", { username }).then((r) => r.data as { ok: boolean; username: string; locked: boolean });
 export const buyStars = (telegram_username: string, stars_count: number) =>
   api.post("/orders/buy-stars", { telegram_username, stars_count }).then((r) => r.data);
 export const getOrders = () => api.get("/users/orders").then((r) => r.data);

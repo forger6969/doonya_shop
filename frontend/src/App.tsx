@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, lazy, Suspense } from "react";
 import { Gamepad2, MessageCircle, User, Bell, Moon, Sun } from "lucide-react";
-import { getMe, getMyOrderChats } from "./api";
+import { getMe, getMyOrderChats, saveUsername } from "./api";
 import { useLang } from "./i18n";
 // Critical path — loaded immediately
 import CatalogPage from "./pages/CatalogPage";
@@ -17,7 +17,7 @@ const AdminPage         = lazy(() => import("./pages/AdminPage"));
 const ReviewSheet       = lazy(() => import("./pages/ReviewSheet"));
 
 type Tab = "catalog" | "chats" | "profile";
-interface UserT { user_id: number; balance: number; first_name: string }
+interface UserT { user_id: number; balance: number; first_name: string; username?: string }
 interface Product {
   id: string; name: string; price: number; gameName?: string;
   variant_label?: string;
@@ -91,6 +91,9 @@ export default function App() {
   const [buyProduct, setBuyProduct] = useState<Product | null>(null);
   const [user, setUser] = useState<UserT | null>(null);
   const [loading, setLoading] = useState(true);
+  const [draftUsername, setDraftUsername] = useState("");
+  const [usernameError, setUsernameError] = useState("");
+  const [submittingUsername, setSubmittingUsername] = useState(false);
   const [pendingTimeLeft, setPendingTimeLeft] = useState(0);
   const pendingTimerRef = useRef<number>(0);
 
@@ -111,7 +114,13 @@ export default function App() {
   );
 
   useEffect(() => {
-    getMe().then(setUser).catch(() => {}).finally(() => setLoading(false));
+    getMe()
+      .then((data) => {
+        setUser(data);
+        if (data?.username) setDraftUsername(String(data.username));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -155,6 +164,25 @@ export default function App() {
   }, [showTopup]);
 
   const refreshUser = () => getMe().then(setUser).catch(() => {});
+  const needsUsernameSetup = Boolean(user && !String(user.username ?? "").trim());
+  const handleUsernameSave = async () => {
+    const normalized = draftUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (!/^[a-z0-9_]{3,20}$/.test(normalized)) {
+      setUsernameError("Ник должен быть от 3 до 20 символов: буквы, цифры и _");
+      return;
+    }
+    setUsernameError("");
+    setSubmittingUsername(true);
+    try {
+      const result = await saveUsername(normalized);
+      setUser((prev) => prev ? { ...prev, username: result.username ?? normalized } : prev);
+      setDraftUsername(result.username ?? normalized);
+    } catch {
+      setUsernameError("Не удалось сохранить ник");
+    } finally {
+      setSubmittingUsername(false);
+    }
+  };
   const isAdmin = user?.user_id != null && ADMIN_IDS.has(user.user_id);
   const isSupportAgent = user?.user_id != null && SUPPORT_AGENT_IDS.has(user.user_id);
 
@@ -188,6 +216,35 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg, #0d0d0d)" }}>
+      {needsUsernameSetup && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.78)", backdropFilter: "blur(6px)" }}>
+          <div className="w-full max-w-sm rounded-3xl p-5" style={{ background: "var(--bg-raised)", border: "1px solid var(--border-card)", boxShadow: "0 16px 60px rgba(0,0,0,0.45)" }}>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>Придумайте ник</p>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--text-dim)" }}>
+              Этот ник будет привязан к вашему аккаунту и потом не изменится.
+            </p>
+            <input
+              value={draftUsername}
+              onChange={(e) => {
+                setDraftUsername(e.target.value.replace(/\s+/g, ""));
+                setUsernameError("");
+              }}
+              placeholder="например: alex_01"
+              className="mt-4 w-full rounded-2xl px-3 py-3 text-sm outline-none"
+              style={{ background: "var(--bg-surface)", color: "var(--text)", border: "1px solid var(--border-card)" }}
+            />
+            {usernameError && <p className="mt-2 text-xs" style={{ color: "#fb7185" }}>{usernameError}</p>}
+            <button
+              onClick={handleUsernameSave}
+              disabled={submittingUsername || !draftUsername.trim()}
+              className="mt-4 w-full rounded-2xl px-4 py-3 text-sm font-black text-white disabled:opacity-50"
+              style={{ background: "#EC4899" }}
+            >
+              {submittingUsername ? "Сохраняем..." : "Сохранить ник"}
+            </button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <header
         className="flex items-center justify-between px-4 py-3 flex-shrink-0"
