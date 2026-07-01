@@ -12,6 +12,11 @@ const userSchema = new Schema(
     user_id: { type: Number, required: true, unique: true, index: true },
     username: { type: String, default: "" },
     first_name: { type: String, required: true },
+    // email / avatar_url are written by POST /email and POST /avatar. They MUST be
+    // declared here — with strict:true Mongoose silently drops updates to paths
+    // that are not part of the schema, so without these the values never persisted.
+    email: { type: String, default: "" },
+    avatar_url: { type: String, default: "" },
     balance: { type: Number, default: 0 },
     created_at: { type: Date, default: Date.now },
   },

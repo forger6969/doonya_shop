@@ -16,10 +16,14 @@ function oid(id: string): InstanceType<typeof ObjectId> | null {
 }
 
 // ── Users ───────────────────────────────────────────────────────────────────
-export async function getOrCreateUser(userId: number, username: string, firstName: string): Promise<Doc> {
+export async function getOrCreateUser(userId: number, _username: string, firstName: string): Promise<Doc> {
   let user = await Users.findOne({ user_id: userId }).lean<Doc>();
   if (!user) {
-    const doc = { user_id: userId, username, first_name: firstName, balance: 0, created_at: new Date() };
+    // Register with an empty username so the mini-app prompts EVERY new user to
+    // pick a permanent nick (locked once set via POST /username). We intentionally
+    // do NOT seed from the Telegram @username — the nick must be an explicit,
+    // user-chosen value, otherwise users who have a @username skip the prompt.
+    const doc = { user_id: userId, username: '', first_name: firstName, balance: 0, created_at: new Date() };
     await Users.create(doc);
     user = doc as Doc;
   }
