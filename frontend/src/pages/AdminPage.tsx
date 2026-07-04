@@ -1423,6 +1423,7 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
   const [connected, setConnected] = useState(false);
   const [filterGame, setFilterGame] = useState("");
   const [games, setGames] = useState<{ id: string; name: string }[]>([]);
+  const [confirming, setConfirming] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialHandledRef = useRef(false);
@@ -1539,6 +1540,16 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
   const filtered = filterGame ? chats.filter((c) => c.game_id === filterGame) : chats;
   const totalUnread = chats.reduce((s, c) => s + (c.unread_by_admin || 0), 0);
 
+  const confirmOrder = async () => {
+    if (!selected || confirming) return;
+    setConfirming(true);
+    try {
+      await adminCompleteOrder(selected.order_id);
+      setSelected(null);
+      adminGetOrderChats().then(setChats).catch(() => {});
+    } finally { setConfirming(false); }
+  };
+
   // ── Detail view ──────────────────────────────────────────────────────────────
   if (selected) {
     return (
@@ -1559,6 +1570,13 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
               {selected.product_name || "Заказ"}{selected.game_name ? ` · ${selected.game_name}` : ""}
             </p>
           </div>
+          <button
+            onClick={confirmOrder}
+            disabled={confirming}
+            className="px-3 h-8 rounded-full bg-emerald-500/15 text-emerald-400 text-[11px] font-bold flex items-center gap-1 active:opacity-70 disabled:opacity-40 flex-shrink-0"
+          >
+            <Check className="w-3.5 h-3.5" /> Подтвердить
+          </button>
           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${connected ? "bg-emerald-400" : "bg-white/20"}`} />
         </div>
 

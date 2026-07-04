@@ -481,6 +481,7 @@ export default function App() {
           orderId={orderChat.orderId}
           productName={orderChat.productName}
           onClose={() => setOrderChat(null)}
+          onCompleted={(oid) => { setOrderChat(null); if (!isAdmin) setReviewOrderId(oid); }}
         />
       )}
 

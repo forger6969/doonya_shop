@@ -6,10 +6,10 @@ import { ADMIN_IDS } from '../config';
 import { cacheInvalidate } from '../cache';
 import { uploadImage } from '../cloudinary';
 import { notifyUserTopupConfirmed, notifyUserTopupRejected, notifyUserOrderReady, broadcastDiscount } from '../notify';
-import { notifyManager } from '../realtime';
+import { notifyManager, orderChatManager } from '../realtime';
 import { mongoose, Topups, Orders, Games, Products, Users, Banners, Doc } from '../models';
 import {
-  confirmTopup, rejectTopup, completeOrder,
+  confirmTopup, rejectTopup, completeOrder, addOrderChatMsg,
   createGame, deleteGame, updateGame, getGames, getProducts,
   getCategories, createCategory, updateCategory, deleteCategory,
   createProduct, deleteProduct, updateProduct,
@@ -286,6 +286,13 @@ router.post('/order/:orderId/complete', ...admin, asyncHandler(async (req, res) 
   try { await notifyUserOrderReady(order.user_id as number, req.params.orderId, productName); } catch { /* ignore */ }
   try {
     await notifyManager.send(order.user_id as number, 'order_ready', { order_id: req.params.orderId, product_name: productName });
+  } catch { /* ignore */ }
+  // Live-close the order chat on the client: post a confirmation line, then signal
+  // order_completed so the buyer is prompted to leave a review.
+  try {
+    const doneMsg = await addOrderChatMsg(req.params.orderId, 'admin', 'Заказ подтверждён ✅');
+    orderChatManager.sendToUser(req.params.orderId, { type: 'message', order_id: req.params.orderId, ...doneMsg });
+    orderChatManager.sendToUser(req.params.orderId, { type: 'order_completed', order_id: req.params.orderId });
   } catch { /* ignore */ }
   res.json({ ok: true });
 }));

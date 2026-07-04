@@ -9,9 +9,10 @@ interface Props {
   orderId: string;
   productName?: string;
   onClose: () => void;
+  onCompleted?: (orderId: string) => void;
 }
 
-export default function OrderChatSheet({ orderId, productName, onClose }: Props) {
+export default function OrderChatSheet({ orderId, productName, onClose, onCompleted }: Props) {
   const { t } = useLang();
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -60,6 +61,9 @@ export default function OrderChatSheet({ orderId, productName, onClose }: Props)
             setMessages((prev) =>
               prev.find((m) => m.id === data.id) ? prev : [...prev, { id: data.id, from: data.from, text: data.text, ts: data.ts }]
             );
+          } else if (data.type === "order_completed") {
+            // Admin confirmed the order → close chat and prompt the buyer for a review.
+            onCompleted?.(orderId);
           }
         } catch { /* ignore */ }
       };
