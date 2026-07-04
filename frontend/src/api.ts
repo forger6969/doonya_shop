@@ -102,7 +102,7 @@ export const adminDeleteCategory = (id: string) => api.delete(`/admin/categories
 // Products
 export const adminGetProducts = (gameId: string, categoryId = "") =>
   api.get(`/admin/games/${gameId}/products`, { params: categoryId ? { category_id: categoryId } : {} }).then((r) => r.data);
-export const adminCreateProduct = (data: { game_id: string; category_id?: string; name: string; description: string; price: number; icon_url?: string }) =>
+export const adminCreateProduct = (data: { game_id: string; category_id?: string; name: string; description: string; price: number; icon_url?: string; redirect_to_chat?: boolean; chat_message?: string }) =>
   api.post("/admin/products", data).then((r) => r.data);
 export const adminPatchProduct = (id: string, data: object) => api.patch(`/admin/products/${id}`, data).then((r) => r.data);
 export const adminDeleteProduct = (id: string) => api.delete(`/admin/products/${id}`).then((r) => r.data);
