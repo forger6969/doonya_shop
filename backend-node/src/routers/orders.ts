@@ -8,7 +8,7 @@ import { notifyAdminOrder } from '../notify';
 import { mongoose, Orders, Reviews, Games, Doc, Users } from '../models';
 import {
   getOrCreateUser, getProduct, createOrder, createReview,
-  getPromoByCode, applyPromo, usePromo, getOrCreateOrderChat,
+  getPromoByCode, applyPromo, usePromo, getOrCreateOrderChat, addOrderChatMsg,
   getUser,
 } from '../repo';
 
@@ -58,7 +58,7 @@ router.post('/buy-stars', requireUser, asyncHandler(async (req, res) => {
     });
   } catch { /* ignore */ }
 
-  res.json({ ok: true, order_id: orderId, amount: totalPrice });
+  res.json({ ok: true, order_id: orderId, amount: totalPrice, open_chat: true });
 }));
 
 // ── Buy product ───────────────────────────────────────────────────────────────
@@ -114,20 +114,27 @@ router.post('/buy', requireUser, asyncHandler(async (req, res) => {
 
   if (promo) await usePromo(String(promo._id));
 
-  try {
-    let gameName = '';
-    if (product.game_id) {
-      try {
-        const game = await Games.findOne({ _id: new mongoose.Types.ObjectId(product.game_id as string) }).lean<Doc>();
-        gameName = game ? (game.name as string) : '';
-      } catch { /* invalid id */ }
-    }
-    await getOrCreateOrderChat({
-      orderId, userId: u.id, productId, gameId: (product.game_id as string) ?? '',
-      productName: (product.name as string) ?? '', gameName,
-      username: u.username ?? '', firstName: u.first_name ?? '',
-    });
-  } catch { /* ignore */ }
+  // Chat redirect is opt-in per product (redirect_to_chat). Only then do we open
+  // an order chat and drop the configured auto-message into it.
+  const openChat = Boolean(product.redirect_to_chat);
+  if (openChat) {
+    try {
+      let gameName = '';
+      if (product.game_id) {
+        try {
+          const game = await Games.findOne({ _id: new mongoose.Types.ObjectId(product.game_id as string) }).lean<Doc>();
+          gameName = game ? (game.name as string) : '';
+        } catch { /* invalid id */ }
+      }
+      await getOrCreateOrderChat({
+        orderId, userId: u.id, productId, gameId: (product.game_id as string) ?? '',
+        productName: (product.name as string) ?? '', gameName,
+        username: u.username ?? '', firstName: u.first_name ?? '',
+      });
+      const chatMsg = String(product.chat_message ?? '').trim();
+      if (chatMsg) await addOrderChatMsg(orderId, 'admin', chatMsg);
+    } catch { /* ignore */ }
+  }
 
   try {
     await notifyAdminOrder({
@@ -136,7 +143,7 @@ router.post('/buy', requireUser, asyncHandler(async (req, res) => {
     });
   } catch { /* ignore */ }
 
-  res.json({ ok: true, order_id: orderId, original_price: originalPrice, final_price: finalPrice, discount: originalPrice - finalPrice });
+  res.json({ ok: true, order_id: orderId, open_chat: openChat, original_price: originalPrice, final_price: finalPrice, discount: originalPrice - finalPrice });
 }));
 
 // ── Validate promo (query params, mirrors FastAPI plain-arg behaviour) ─────────

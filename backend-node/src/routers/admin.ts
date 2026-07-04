@@ -139,6 +139,8 @@ router.get('/games/:gameId/products', ...admin, asyncHandler(async (req, res) =>
       revenue: statsMap[id].revenue,
       variants: p.variants ?? [],
       purchase_fields: p.purchase_fields ?? [],
+      redirect_to_chat: p.redirect_to_chat ?? false,
+      chat_message: p.chat_message ?? '',
       discount_percent: p.discount_percent ?? 0,
       discount_enabled: p.discount_enabled ?? false,
       discount_until: until ? new Date(until).toISOString() : null,
@@ -147,8 +149,11 @@ router.get('/games/:gameId/products', ...admin, asyncHandler(async (req, res) =>
 }));
 
 router.post('/products', ...admin, asyncHandler(async (req, res) => {
-  const b = req.body as { game_id: string; category_id?: string; name: string; description?: string; price: number; icon_url?: string };
-  const pid = await createProduct(b.game_id, b.name, b.description ?? '', b.price, b.icon_url ?? '', b.category_id ?? '');
+  const b = req.body as { game_id: string; category_id?: string; name: string; description?: string; price: number; icon_url?: string; redirect_to_chat?: boolean; chat_message?: string };
+  const pid = await createProduct(
+    b.game_id, b.name, b.description ?? '', b.price, b.icon_url ?? '', b.category_id ?? '',
+    Boolean(b.redirect_to_chat), String(b.chat_message ?? ''),
+  );
   cacheInvalidate(`catalog:products:${b.game_id}`);
   cacheInvalidate('catalog:top');
   res.json({ ok: true, product_id: pid });
@@ -162,7 +167,7 @@ router.patch('/products/:productId', ...admin, asyncHandler(async (req, res) => 
     if (k === 'icon_url') {
       fields.icon_url = v;
       fields.photo_id = v;
-    } else if (['name', 'description', 'price', 'variants', 'purchase_fields'].includes(k)) {
+    } else if (['name', 'description', 'price', 'variants', 'purchase_fields', 'redirect_to_chat', 'chat_message'].includes(k)) {
       fields[k] = v;
     }
   }

@@ -11,7 +11,7 @@ interface Product {
   variants?: Variant[];
   purchase_fields?: PurchaseField[];
 }
-interface Props { product: Product; balance: number; onClose: () => void; onSuccess: (orderId?: string) => void }
+interface Props { product: Product; balance: number; onClose: () => void; onSuccess: (orderId?: string, openChat?: boolean) => void }
 
 export default function BuyModal({ product, balance, onClose, onSuccess }: Props) {
   const { t } = useLang();
@@ -35,6 +35,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
 
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [openChat, setOpenChat] = useState(false);
   const [orderId, setOrderId] = useState<string | undefined>();
 
   const basePrice = selectedVariant ? selectedVariant.price : product.price;
@@ -66,6 +67,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
     try {
       const res = await buyProduct(product.id, promoCode, selectedVariant?.label ?? "", fieldAnswers);
       setOrderId(res?.order_id);
+      setOpenChat(Boolean(res?.open_chat));
       setDone(true);
     } catch (e: any) {
       window.Telegram?.WebApp?.showAlert(e?.response?.data?.detail || "Purchase failed");
@@ -74,7 +76,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" onClick={done ? () => onSuccess(orderId) : onClose}>
+    <div className="fixed inset-0 z-50 flex items-end" onClick={done ? () => onSuccess(orderId, openChat) : onClose}>
       <div className="absolute inset-0 bg-black/70" />
       <div
         className="relative w-full rounded-t-3xl flex flex-col gap-4 p-5 max-h-[90dvh] overflow-y-auto"
@@ -132,9 +134,9 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
               </p>
             </div>
 
-            {/* Back to shop button */}
+            {/* Back to shop / go to chat button */}
             <button
-              onClick={() => onSuccess(orderId)}
+              onClick={() => onSuccess(orderId, openChat)}
               className="w-full font-black text-[15px] text-white active:opacity-70"
               style={{
                 padding: 16,
@@ -143,7 +145,7 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
                 boxShadow: "0 4px 24px rgba(236,72,153,0.28)",
               }}
             >
-              {t.backToShop}
+              {openChat ? "Перейти в чат" : t.backToShop}
             </button>
           </div>
         ) : (

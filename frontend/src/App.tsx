@@ -439,7 +439,7 @@ export default function App() {
           product={buyProduct}
           balance={user.balance}
           onClose={() => setBuyProduct(null)}
-          onSuccess={(orderId) => {
+          onSuccess={(orderId, openChat) => {
             if (orderId) {
               const order: ActiveOrder = {
                 orderId,
@@ -449,6 +449,8 @@ export default function App() {
               };
               saveActiveOrder(order);
               setActiveOrder(order);
+              // Product opted into chat delivery → open the order chat right away
+              if (openChat) setOrderChat({ orderId, productName: buyProduct.name });
             }
             setBuyProduct(null);
             refreshUser();

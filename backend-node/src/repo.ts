@@ -138,11 +138,13 @@ export async function getProduct(productId: string): Promise<Doc | null> {
 
 export async function createProduct(
   gameId: string, name: string, description: string, price: number, photoId = '', categoryId = '',
+  redirectToChat = false, chatMessage = '',
 ): Promise<string> {
   const count = await Products.countDocuments({ game_id: gameId });
   const doc = await Products.create({
     game_id: gameId, category_id: categoryId, name, description, price,
     photo_id: photoId, icon_url: photoId, is_active: true, order: count, created_at: new Date(),
+    redirect_to_chat: redirectToChat, chat_message: chatMessage,
   });
   return String(doc._id);
 }

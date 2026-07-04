@@ -27,7 +27,7 @@ interface Order { id: string; user_id: number; username: string; first_name: str
 interface Game { id: string; name: string; description: string; icon_url: string; banner_url?: string }
 interface Category { id: string; game_id: string; name: string }
 interface PurchaseField { label: string; required: boolean }
-interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
+interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; redirect_to_chat?: boolean; chat_message?: string; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
 type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "banners" | "chat" | "order_chats";
@@ -373,6 +373,8 @@ function AdminCardEditor({ product, gameId: _gameId, onSaved }: { product: Produ
     product.discount_until ? product.discount_until.slice(0, 16) : ""
   );
   const [broadcastDiscount, setBroadcastDiscount] = useState(false);
+  const [redirectToChat, setRedirectToChat] = useState(product.redirect_to_chat ?? false);
+  const [chatMessage, setChatMessage] = useState(product.chat_message ?? "");
   const [saving, setSaving] = useState(false);
 
   const addField = () => {
@@ -384,7 +386,7 @@ function AdminCardEditor({ product, gameId: _gameId, onSaved }: { product: Produ
   const save = async () => {
     if (!name.trim() || !price) return;
     setSaving(true);
-    await adminPatchProduct(product.id, { name: name.trim(), price: Number(price), purchase_fields: fields });
+    await adminPatchProduct(product.id, { name: name.trim(), price: Number(price), purchase_fields: fields, redirect_to_chat: redirectToChat, chat_message: chatMessage });
     await adminSetDiscount(product.id, {
       discount_percent: Number(discountPct) || 0,
       discount_enabled: discountEnabled,
@@ -403,6 +405,19 @@ function AdminCardEditor({ product, gameId: _gameId, onSaved }: { product: Produ
           placeholder={t.productNamePlaceholder} className="a-input flex-1 text-sm" />
         <input value={price} onChange={(e) => setPrice(e.target.value)}
           type="number" placeholder={t.pricePlaceholder} className="a-input w-28 text-sm" />
+      </div>
+
+      {/* Redirect to order chat after purchase */}
+      <div className="flex flex-col gap-2 rounded-xl p-3" style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.12)" }}>
+        <button onClick={() => setRedirectToChat(!redirectToChat)} className="flex items-center justify-between active:opacity-70">
+          <span className="text-[11px] font-bold text-blue-400/90">Перекидывать в чат после покупки</span>
+          {redirectToChat ? <ToggleRight className="w-5 h-5 text-blue-400" /> : <ToggleLeft className="w-5 h-5 text-zinc-600" />}
+        </button>
+        {redirectToChat && (
+          <textarea value={chatMessage} onChange={(e) => setChatMessage(e.target.value)} rows={2}
+            placeholder="Автосообщение в чат после покупки (напр. «Заказ принят. Проверьте почту, пришлите код»)"
+            className="a-input text-xs resize-none" />
+        )}
       </div>
 
       {/* Discount */}
@@ -511,6 +526,8 @@ function ProductList({ game, category, onBack }: { game: Game; category: Categor
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", price: "", icon_url: "" });
   const [formFields, setFormFields] = useState<PurchaseField[]>([]);
+  const [formRedirectChat, setFormRedirectChat] = useState(false);
+  const [formChatMsg, setFormChatMsg] = useState("");
   const [newField, setNewField] = useState({ label: "", required: false });
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -534,12 +551,14 @@ function ProductList({ game, category, onBack }: { game: Game; category: Categor
     const result = await adminCreateProduct({
       game_id: game.id, category_id: category.id,
       name: form.name.trim(), description: "", price: Number(form.price), icon_url: form.icon_url,
+      redirect_to_chat: formRedirectChat, chat_message: formChatMsg,
     });
     if (formFields.length > 0 && result?.product_id) {
       await adminPatchProduct(result.product_id, { purchase_fields: formFields });
     }
     setForm({ name: "", price: "", icon_url: "" });
     setFormFields([]); setNewField({ label: "", required: false });
+    setFormRedirectChat(false); setFormChatMsg("");
     setShowForm(false); setSaving(false); load();
   };
 
@@ -576,6 +595,18 @@ function ProductList({ game, category, onBack }: { game: Game; category: Categor
                 placeholder={t.basePricePlaceholder} type="number" className="a-input" />
             </div>
           </div>
+          <div className="flex flex-col gap-2 rounded-xl p-3" style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.12)" }}>
+            <button onClick={() => setFormRedirectChat(!formRedirectChat)} className="flex items-center justify-between active:opacity-70">
+              <span className="text-[11px] font-bold text-blue-400/90">Перекидывать в чат после покупки</span>
+              {formRedirectChat ? <ToggleRight className="w-5 h-5 text-blue-400" /> : <ToggleLeft className="w-5 h-5 text-zinc-600" />}
+            </button>
+            {formRedirectChat && (
+              <textarea value={formChatMsg} onChange={(e) => setFormChatMsg(e.target.value)} rows={2}
+                placeholder="Автосообщение в чат после покупки (напр. «Заказ принят. Проверьте почту, пришлите код»)"
+                className="a-input text-xs resize-none" />
+            )}
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500/70">{t.purchaseFieldsCheckout}</p>
             {formFields.map((f, i) => (

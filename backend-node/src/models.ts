@@ -70,6 +70,10 @@ const productSchema = new Schema(
     // Дополнительные динамические структуры
     variants: { type: [Schema.Types.Mixed], default: [] },       // Массив вариантов товара
     purchase_fields: { type: [Schema.Types.Mixed], default: [] }, // Кастомные поля для покупки
+
+    // Перекидывание в чат заказа после покупки (напр. для гемов/премиума — обмен кодом с почты)
+    redirect_to_chat: { type: Boolean, default: false },
+    chat_message: { type: String, default: "" }, // Автосообщение в чат сразу после покупки
   },
   { ...opts, collection: 'products' },
 );
