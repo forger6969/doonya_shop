@@ -17,7 +17,7 @@ const AdminPage         = lazy(() => import("./pages/AdminPage"));
 const ReviewSheet       = lazy(() => import("./pages/ReviewSheet"));
 
 type Tab = "catalog" | "chats" | "profile";
-interface UserT { user_id: number; balance: number; first_name: string; username?: string }
+interface UserT { user_id: number; balance: number; first_name: string; username?: string; avatar_url?: string }
 interface Product {
   id: string; name: string; price: number; gameName?: string;
   variant_label?: string;
@@ -361,7 +361,7 @@ export default function App() {
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pb-24">
+      <div className="flex-1 overflow-y-auto px-4 pb-28">
         {tab === "catalog" && (
           <CatalogPage onBuy={setBuyProduct} onTopup={() => setShowTopup(true)} />
         )}
@@ -381,24 +381,38 @@ export default function App() {
         )}
       </div>
 
-      {/* Bottom nav */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 pb-safe"
-        style={{ background: "var(--nav-bg)", backdropFilter: "blur(20px)", borderTop: "1px solid var(--border)" }}
-      >
-        <div className="flex">
+      {/* Bottom nav — floating pill */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 flex justify-center px-3 pb-safe pointer-events-none">
+        <div
+          className="pointer-events-auto w-full max-w-md mb-2.5 flex items-center px-1.5 py-1.5 rounded-[26px]"
+          style={{
+            background: "var(--nav-bg)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 10px 34px rgba(0,0,0,0.45)",
+          }}
+        >
           {NAV.map(({ id, Icon, label }) => {
             const active = tab === id;
             const badge = id === "chats" && chatUnread > 0 ? chatUnread : 0;
+            const isProfile = id === "profile";
             return (
               <button
                 key={id}
                 onClick={() => { setTab(id); if (id === "chats") setChatUnread(0); }}
-                className="flex-1 flex flex-col items-center gap-0.5 pt-2 pb-3 relative"
-                style={{ borderTop: `2px solid ${active ? "#EC4899" : "transparent"}` }}
+                className="flex-1 flex flex-col items-center gap-1 py-1.5"
               >
                 <div className="relative flex items-center justify-center h-6">
-                  <Icon className="w-[22px] h-[22px]" strokeWidth={2.2} style={{ color: active ? "#EC4899" : "var(--text-dim)" }} />
+                  {isProfile && user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt=""
+                      className="w-6 h-6 rounded-full object-cover"
+                      style={{ boxShadow: active ? "0 0 0 2px #fff" : "0 0 0 1px var(--border)" }}
+                    />
+                  ) : (
+                    <Icon className="w-[22px] h-[22px]" strokeWidth={2.2} style={{ color: active ? "#fff" : "var(--text-dim)" }} />
+                  )}
                   {badge > 0 && (
                     <div className="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] rounded-full flex items-center justify-center px-0.5"
                       style={{ background: "#EC4899" }}>
@@ -406,9 +420,13 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-semibold" style={{ color: active ? "#EC4899" : "var(--text-dim)" }}>
-                  {label}
-                </span>
+                {active ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold leading-none" style={{ background: "#fff", color: "#111" }}>
+                    {label}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-semibold leading-none" style={{ color: "var(--text-dim)" }}>{label}</span>
+                )}
               </button>
             );
           })}
@@ -416,8 +434,7 @@ export default function App() {
           {/* Notifications bell */}
           <button
             onClick={() => { setShowNotifications(true); markAllRead(); }}
-            className="flex-1 flex flex-col items-center gap-0.5 pt-2 pb-3 relative"
-            style={{ borderTop: "2px solid transparent" }}
+            className="flex-1 flex flex-col items-center gap-1 py-1.5"
           >
             <div className="relative flex items-center justify-center h-6">
               <Bell className="w-[22px] h-[22px]" strokeWidth={2.2} style={{ color: "var(--text-dim)" }} />
@@ -428,7 +445,7 @@ export default function App() {
                 </div>
               )}
             </div>
-            <span className="text-[10px] font-semibold" style={{ color: "var(--text-dim)" }}>{t.notifications}</span>
+            <span className="text-[10px] font-semibold leading-none" style={{ color: "var(--text-dim)" }}>{t.notifications}</span>
           </button>
         </div>
       </nav>
