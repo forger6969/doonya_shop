@@ -12,6 +12,7 @@ interface Product {
   id: string; name: string; description?: string; price: number;
   discounted_price?: number; discount_percent?: number;
   photo_id?: string; category_id?: string; category_name?: string;
+  badge_emoji?: string;
   variants?: Variant[]; purchase_fields?: PurchaseField[];
   variant_label?: string; gameName?: string;
   avg_rating?: number | null; reviews_count?: number; sales_count?: number;
@@ -22,6 +23,7 @@ interface CardItem {
   discounted_price?: number; discount_percent?: number;
   photo_id?: string; purchase_fields?: PurchaseField[];
   variant_label?: string; category_id?: string;
+  badge_emoji?: string;
   gameName?: string;
   avg_rating?: number | null; reviews_count?: number; sales_count?: number;
   raw: Product;
@@ -54,6 +56,7 @@ function toCards(product: Product, gameName?: string): CardItem[] {
       discount_percent: product.discount_percent,
       photo_id: product.photo_id, purchase_fields: product.purchase_fields,
       variant_label: v.label, category_id: product.category_id,
+      badge_emoji: product.badge_emoji,
       gameName: gameName ?? product.gameName,
       avg_rating: product.avg_rating, reviews_count: product.reviews_count, sales_count: product.sales_count,
       raw: product,
@@ -64,6 +67,7 @@ function toCards(product: Product, gameName?: string): CardItem[] {
     discounted_price: product.discounted_price, discount_percent: product.discount_percent,
     photo_id: product.photo_id, purchase_fields: product.purchase_fields,
     category_id: product.category_id,
+    badge_emoji: product.badge_emoji,
     gameName: gameName ?? product.gameName,
     avg_rating: product.avg_rating, reviews_count: product.reviews_count, sales_count: product.sales_count,
     raw: product,
@@ -152,7 +156,7 @@ function ListingCard({ item, onBuy, onDetail }: {
       </div>
       {/* Info */}
       <div className="p-2.5 flex flex-col gap-2 flex-1">
-        <p className="text-[12px] font-bold leading-tight line-clamp-2" style={{ color: "var(--text)" }}>{item.name}</p>
+        <p className="text-[12px] font-bold leading-tight line-clamp-2" style={{ color: "var(--text)" }}>{item.badge_emoji ? `${item.badge_emoji} ` : ""}{item.name}</p>
         <MetaRow item={item} />
         <div className="flex items-end justify-between gap-1 mt-auto">
           <div className="flex flex-col gap-0">
@@ -203,7 +207,7 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
             </div>}
       </div>
       <div className="p-2 pb-1 flex-1">
-        <p className="text-[12px] font-bold leading-snug pr-5" style={{ color: "var(--text)" }}>{item.name}</p>
+        <p className="text-[12px] font-bold leading-snug pr-5" style={{ color: "var(--text)" }}>{item.badge_emoji ? `${item.badge_emoji} ` : ""}{item.name}</p>
         {item.raw.description && !item.variant_label && (
           <p className="text-[10px] mt-0.5 line-clamp-1" style={{ color: "var(--text-dim)" }}>{item.raw.description}</p>
         )}

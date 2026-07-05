@@ -162,6 +162,24 @@ export async function notifyOrderChatUser(chat: Record<string, unknown>, text: s
   }
 }
 
+// Notify a user that a support agent replied (used by support WS). Without this
+// the reply only reached users who had the app open (WebSocket); users with the
+// app closed got nothing — the "уведомление при ответе в чат не работает" bug.
+export async function notifyUserSupportReply(userId: number, text: string): Promise<void> {
+  try {
+    const caption = `💬 <b>Ответ поддержки</b>\n\n${text}`;
+    let reply_markup;
+    if (config.miniAppUrl && config.miniAppUrl.startsWith('https://')) {
+      reply_markup = {
+        inline_keyboard: [[{ text: '📱 Открыть чат', web_app: { url: `${config.miniAppUrl}?section=support` } }]],
+      };
+    }
+    await bot.telegram.sendMessage(userId, caption, { parse_mode: 'HTML', reply_markup });
+  } catch (e) {
+    console.warn(`notifyUserSupportReply failed for user ${userId}:`, e);
+  }
+}
+
 // Notify support agents that a user wrote (used when no agent WS is online).
 export async function notifyAgentsBot(tgUser: { first_name?: string; username?: string }, text: string, agentIds: number[]): Promise<void> {
   const name = tgUser.first_name ?? '';

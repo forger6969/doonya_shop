@@ -7,7 +7,7 @@ import {
   getOrCreateChat, addChatMessage, getChat, listActiveChats, markChatRead, listAllUsers,
 } from '../repo';
 import { supportManager, sendJson } from '../realtime';
-import { notifyAgentsBot } from '../notify';
+import { notifyAgentsBot, notifyUserSupportReply } from '../notify';
 import { Doc } from '../models';
 
 const router = Router();
@@ -59,6 +59,8 @@ export async function handleSupportConnection(ws: WebSocket, tgUser: TgUser): Pr
         const msg = await addChatMessage(toUserId, 'agent', text, userId);
         supportManager.sendToUser(toUserId, { type: 'message', ...msg });
         supportManager.broadcastToAgents({ type: 'message', user_id: toUserId, ...msg });
+        // Ping the user in the bot too, so they see the reply even with the app closed.
+        await notifyUserSupportReply(toUserId, text);
       } else {
         const msg = await addChatMessage(userId, 'user', text);
         sendJson(ws, { type: 'message', ...msg });

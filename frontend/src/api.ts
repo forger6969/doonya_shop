@@ -50,6 +50,9 @@ export const getOnSaleProducts = () => api.get("/catalog/on-sale").then((r) => r
 export const searchCatalog = (q: string) => api.get("/catalog/search", { params: { q } }).then((r) => r.data);
 
 // ── Topup ────────────────────────────────────────────────────────────────────
+export interface PayMethodOption { id: string; label: string; icon: string }
+export const getPaymentMethodsList = () =>
+  api.get("/topup/methods/list").then((r) => r.data as PayMethodOption[]);
 export const getTopupInfo = (amount: number, method: string) =>
   api.get("/topup/methods", { params: { amount, method } }).then((r) => r.data);
 export const submitTopup = (formData: FormData) =>
@@ -102,7 +105,7 @@ export const adminDeleteCategory = (id: string) => api.delete(`/admin/categories
 // Products
 export const adminGetProducts = (gameId: string, categoryId = "") =>
   api.get(`/admin/games/${gameId}/products`, { params: categoryId ? { category_id: categoryId } : {} }).then((r) => r.data);
-export const adminCreateProduct = (data: { game_id: string; category_id?: string; name: string; description: string; price: number; icon_url?: string; redirect_to_chat?: boolean; chat_message?: string }) =>
+export const adminCreateProduct = (data: { game_id: string; category_id?: string; name: string; description: string; price: number; icon_url?: string; redirect_to_chat?: boolean; chat_message?: string; badge_emoji?: string }) =>
   api.post("/admin/products", data).then((r) => r.data);
 export const adminPatchProduct = (id: string, data: object) => api.patch(`/admin/products/${id}`, data).then((r) => r.data);
 export const adminDeleteProduct = (id: string) => api.delete(`/admin/products/${id}`).then((r) => r.data);
@@ -134,6 +137,16 @@ export const adminCreateBanner = (data: { title: string; subtitle: string; gradi
   api.post("/admin/banners", data).then((r) => r.data);
 export const adminDeleteBanner = (id: string) => api.delete(`/admin/banners/${id}`).then((r) => r.data);
 export const adminToggleBanner = (id: string) => api.patch(`/admin/banners/${id}/toggle`).then((r) => r.data);
+
+// Payment methods (admin-managed)
+export interface PaymentMethod { id: string; label: string; icon: string; requisites: string; holder: string; note: string; is_active: boolean; order: number }
+export const adminGetPaymentMethods = () => api.get("/admin/payment-methods").then((r) => r.data as PaymentMethod[]);
+export const adminCreatePaymentMethod = (data: { label: string; icon?: string; requisites: string; holder?: string; note?: string }) =>
+  api.post("/admin/payment-methods", data).then((r) => r.data);
+export const adminUpdatePaymentMethod = (id: string, data: Partial<{ label: string; icon: string; requisites: string; holder: string; note: string; order: number; is_active: boolean }>) =>
+  api.patch(`/admin/payment-methods/${id}`, data).then((r) => r.data);
+export const adminTogglePaymentMethod = (id: string) => api.patch(`/admin/payment-methods/${id}/toggle`).then((r) => r.data);
+export const adminDeletePaymentMethod = (id: string) => api.delete(`/admin/payment-methods/${id}`).then((r) => r.data);
 
 // Discount
 export const adminSetDiscount = (

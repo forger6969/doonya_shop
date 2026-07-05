@@ -15,6 +15,8 @@ import {
   adminSalesStats, adminProductStats, adminUserStats,
   adminGetPromos, adminCreatePromo, adminDeletePromo, adminTogglePromo,
   adminGetBanners, adminCreateBanner, adminDeleteBanner, adminToggleBanner, type Banner,
+  adminGetPaymentMethods, adminCreatePaymentMethod, adminUpdatePaymentMethod,
+  adminTogglePaymentMethod, adminDeletePaymentMethod, type PaymentMethod,
   getSupportWsUrl, agentGetAllUsers,
   getOrderChatWsUrl, adminGetOrderChats, type AdminOrderChat,
 } from "../api";
@@ -27,10 +29,10 @@ interface Order { id: string; user_id: number; username: string; first_name: str
 interface Game { id: string; name: string; description: string; icon_url: string; banner_url?: string }
 interface Category { id: string; game_id: string; name: string }
 interface PurchaseField { label: string; required: boolean }
-interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; redirect_to_chat?: boolean; chat_message?: string; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
+interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; redirect_to_chat?: boolean; chat_message?: string; badge_emoji?: string; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
-type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "banners" | "chat" | "order_chats";
+type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "banners" | "payment_methods" | "chat" | "order_chats";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 const fmt = (n: number) => n.toLocaleString("ru-RU") + " sum";
@@ -528,6 +530,7 @@ function ProductList({ game, category, onBack }: { game: Game; category: Categor
   const [formFields, setFormFields] = useState<PurchaseField[]>([]);
   const [formRedirectChat, setFormRedirectChat] = useState(false);
   const [formChatMsg, setFormChatMsg] = useState("");
+  const [formBadge, setFormBadge] = useState("");
   const [newField, setNewField] = useState({ label: "", required: false });
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -551,14 +554,14 @@ function ProductList({ game, category, onBack }: { game: Game; category: Categor
     const result = await adminCreateProduct({
       game_id: game.id, category_id: category.id,
       name: form.name.trim(), description: "", price: Number(form.price), icon_url: form.icon_url,
-      redirect_to_chat: formRedirectChat, chat_message: formChatMsg,
+      redirect_to_chat: formRedirectChat, chat_message: formChatMsg, badge_emoji: formBadge.trim(),
     });
     if (formFields.length > 0 && result?.product_id) {
       await adminPatchProduct(result.product_id, { purchase_fields: formFields });
     }
     setForm({ name: "", price: "", icon_url: "" });
     setFormFields([]); setNewField({ label: "", required: false });
-    setFormRedirectChat(false); setFormChatMsg("");
+    setFormRedirectChat(false); setFormChatMsg(""); setFormBadge("");
     setShowForm(false); setSaving(false); load();
   };
 
@@ -594,6 +597,11 @@ function ProductList({ game, category, onBack }: { game: Game; category: Categor
               <input value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })}
                 placeholder={t.basePricePlaceholder} type="number" className="a-input" />
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input value={formBadge} onChange={(e) => setFormBadge(e.target.value)}
+              placeholder="🎁" maxLength={4} className="a-input w-16 text-center text-xl" />
+            <span className="text-[11px] text-zinc-500">Эмодзи-значок рядом с товаром (необязательно)</span>
           </div>
           <div className="flex flex-col gap-2 rounded-xl p-3" style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.12)" }}>
             <button onClick={() => setFormRedirectChat(!formRedirectChat)} className="flex items-center justify-between active:opacity-70">
@@ -1852,12 +1860,127 @@ function Banners() {
   );
 }
 
+// ─── Payment methods ──────────────────────────────────────────────────────────
+function PaymentMethodsSection() {
+  const empty = { label: "", icon: "💳", requisites: "", holder: "", note: "" };
+  const [methods, setMethods] = useState<PaymentMethod[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(empty);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const load = async () => { setLoading(true); setMethods(await adminGetPaymentMethods()); setLoading(false); };
+  useEffect(() => { load(); }, []);
+
+  const openCreate = () => { setEditingId(null); setForm(empty); setErr(""); setShowForm(true); };
+  const openEdit = (m: PaymentMethod) => {
+    setEditingId(m.id);
+    setForm({ label: m.label, icon: m.icon || "💳", requisites: m.requisites, holder: m.holder, note: m.note });
+    setErr(""); setShowForm(true);
+  };
+
+  const save = async () => {
+    if (!form.label.trim() || !form.requisites.trim()) return;
+    setSaving(true); setErr("");
+    try {
+      if (editingId) await adminUpdatePaymentMethod(editingId, form);
+      else await adminCreatePaymentMethod(form);
+      setForm(empty); setEditingId(null); setShowForm(false);
+      load();
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || "Error");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="flex flex-col flex-1">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">Оплата</p>
+          <h2 className="text-xl font-black text-white mt-0.5">Способы оплаты</h2>
+        </div>
+        <button onClick={showForm ? () => setShowForm(false) : openCreate}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold ${showForm ? "bg-white/10 text-white" : "a-card text-zinc-400"}`}>
+          <Plus className="w-3.5 h-3.5" /> {showForm ? "Отмена" : "Добавить"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="mx-4 mb-3 a-card p-4 flex flex-col gap-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{editingId ? "Редактировать способ" : "Новый способ"}</p>
+          <div className="flex gap-2 items-center">
+            <input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })}
+              placeholder="💳" maxLength={4} className="a-input w-16 text-center text-xl" />
+            <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })}
+              placeholder="Название (Humo, Uzcard) *" className="a-input flex-1" />
+          </div>
+          <input value={form.requisites} onChange={(e) => setForm({ ...form, requisites: e.target.value })}
+            placeholder="Номер карты / реквизиты *" className="a-input" />
+          <input value={form.holder} onChange={(e) => setForm({ ...form, holder: e.target.value })}
+            placeholder="Владелец карты (необязательно)" className="a-input" />
+          <textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={2}
+            placeholder="Своя подсказка покупателю (необязательно)" className="a-input resize-none" />
+          {err && <div className="flex items-center gap-2 text-red-400 text-[11px]"><AlertCircle className="w-3.5 h-3.5" />{err}</div>}
+          <button onClick={save} disabled={saving || !form.label.trim() || !form.requisites.trim()} className="a-btn">
+            {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> {editingId ? "Сохранить" : "Добавить способ"}</>}
+          </button>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2 mx-4 mb-4">
+        {loading ? <div className="a-card flex justify-center py-10"><Spin /></div>
+          : methods.length === 0
+          ? <div className="a-card flex flex-col items-center gap-2 py-10">
+              <CreditCard className="w-8 h-8 text-zinc-700" />
+              <p className="text-zinc-600 text-sm">Способов оплаты пока нет</p>
+            </div>
+          : methods.map((m) => (
+            <div key={m.id} className="a-card p-3 flex flex-col gap-2"
+              style={{ opacity: m.is_active ? 1 : 0.5 }}>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{m.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-white text-sm truncate">{m.label}</p>
+                  <p className="text-zinc-500 text-[11px] truncate">{m.requisites}{m.holder ? ` · ${m.holder}` : ""}</p>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.is_active ? "bg-emerald-400/10 text-emerald-400" : "bg-zinc-700/40 text-zinc-500"}`}>
+                  {m.is_active ? "Активен" : "Скрыт"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => openEdit(m)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold active:opacity-70"
+                  style={{ background: "rgba(255,255,255,0.05)", color: "#a1a1aa" }}>
+                  Изменить
+                </button>
+                <div className="flex-1" />
+                <button onClick={async () => { await adminTogglePaymentMethod(m.id); load(); }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-bold active:opacity-70"
+                  style={{ background: "rgba(255,255,255,0.05)", color: m.is_active ? "#facc15" : "#10b981" }}>
+                  {m.is_active ? <><ToggleLeft className="w-3.5 h-3.5" /> Скрыть</> : <><ToggleRight className="w-3.5 h-3.5" /> Показать</>}
+                </button>
+                <button onClick={async () => { if (confirm("Удалить способ оплаты?")) { await adminDeletePaymentMethod(m.id); load(); } }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center active:opacity-70"
+                  style={{ background: "rgba(239,68,68,0.10)", color: "#f87171" }}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { t, lang, setLang } = useLang();
   const [section, setSection] = useState<Section>(() => {
     const param = new URLSearchParams(window.location.search).get("section") as Section | null;
-    if (param && (["dashboard","payments","orders","catalog","analytics","promos","banners","chat","order_chats"] as string[]).includes(param)) {
+    if (param && (["dashboard","payments","orders","catalog","analytics","promos","banners","payment_methods","chat","order_chats"] as string[]).includes(param)) {
       window.history.replaceState({}, "", window.location.pathname);
       return param;
     }
@@ -1910,6 +2033,7 @@ export default function AdminPage() {
     { id: "analytics", label: t.adStats,   Icon: BarChart2 },
     { id: "promos",    label: t.adPromos,  Icon: Tag },
     { id: "banners",   label: "Баннеры",   Icon: Package },
+    { id: "payment_methods", label: "Оплата", Icon: CreditCard },
   ];
 
   return (
@@ -1965,6 +2089,7 @@ export default function AdminPage() {
         {section === "analytics"   && <Analytics />}
         {section === "promos"      && <Promos />}
         {section === "banners"     && <Banners />}
+        {section === "payment_methods" && <PaymentMethodsSection />}
         {section === "chat"        && <AdminChat initialTarget={null} />}
         {section === "order_chats" && <AdminOrderChats initialOrderId={orderChatTarget} />}
       </div>

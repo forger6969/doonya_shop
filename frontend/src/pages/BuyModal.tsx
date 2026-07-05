@@ -66,8 +66,13 @@ export default function BuyModal({ product, balance, onClose, onSuccess }: Props
     setLoading(true);
     try {
       const res = await buyProduct(product.id, promoCode, selectedVariant?.label ?? "", fieldAnswers);
-      setOrderId(res?.order_id);
-      setOpenChat(Boolean(res?.open_chat));
+      const oid = res?.order_id;
+      const oc = Boolean(res?.open_chat);
+      setOrderId(oid);
+      setOpenChat(oc);
+      // For chat-delivery products, jump straight into the order chat (with the
+      // auto-message) instead of showing the "done" screen and a manual button.
+      if (oc) { onSuccess(oid, true); return; }
       setDone(true);
     } catch (e: any) {
       window.Telegram?.WebApp?.showAlert(e?.response?.data?.detail || "Purchase failed");

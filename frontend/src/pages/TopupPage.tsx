@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Clock, Copy } from "lucide-react";
-import { getTopupInfo, submitTopup } from "../api";
+import { getTopupInfo, submitTopup, getPaymentMethodsList, type PayMethodOption } from "../api";
 import { useLang } from "../i18n";
 
-type Method = "uzcard" | "visa" | "atm";
+// Method id is the payment method's _id (admin-managed).
+type Method = string;
 type Step = "amount" | "method" | "requisites" | "receipt" | "done" | "expired";
 
 interface CardInfo { requisites: string; holder: string; type: string }
@@ -29,12 +30,6 @@ const SESSION_KEY = "topup_pending";
 const SESSION_VERSION = 2;
 const TIMER_DURATION = 10 * 60;
 
-const METHODS: { id: Method; label: string; icon: string }[] = [
-  { id: "uzcard", label: "Uzcard",  icon: "🏦" },
-  { id: "visa",   label: "Visa",    icon: "💠" },
-  { id: "atm",    label: "ATM", icon: "🏧" },
-];
-
 interface Props { onBack: () => void }
 
 export default function TopupPage({ onBack }: Props) {
@@ -42,6 +37,7 @@ export default function TopupPage({ onBack }: Props) {
   const [step, setStep]     = useState<Step>("amount");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<Method | null>(null);
+  const [methods, setMethods] = useState<PayMethodOption[]>([]);
   const [info, setInfo]     = useState<TopupInfo | null>(null);
   const [file, setFile]     = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -87,11 +83,19 @@ export default function TopupPage({ onBack }: Props) {
     return () => window.clearInterval(intervalRef.current);
   }, [step]);
 
-  const handleAmountNext = () => {
+  const handleAmountNext = async () => {
     const n = parseInt(amount);
     if (!n || n < 5000) { setError(t.topupMinError); return; }
     setError("");
     setStep("method");
+    setLoading(true);
+    try {
+      setMethods(await getPaymentMethodsList());
+    } catch {
+      setMethods([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleMethod = async (m: Method) => {
@@ -256,8 +260,12 @@ export default function TopupPage({ onBack }: Props) {
                 style={{ border: "2px solid rgba(236,72,153,0.15)", borderTopColor: "#EC4899" }}
               />
             </div>
+          ) : methods.length === 0 ? (
+            <p className="text-center py-6 text-sm" style={{ color: "var(--text-dim)" }}>
+              Способы оплаты временно недоступны
+            </p>
           ) : (
-            METHODS.map((m) => (
+            methods.map((m) => (
               <button
                 key={m.id}
                 className="text-left flex items-center gap-4 active:opacity-70 p-4 rounded-2xl"

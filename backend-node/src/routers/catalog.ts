@@ -28,6 +28,7 @@ function fmtProduct(p: Doc, categoryName = ''): Doc {
     discounted_price: discounted,
     discount_percent: isDiscountActive(p) ? p.discount_percent ?? 0 : 0,
     photo_id: p.photo_id ?? '',
+    badge_emoji: p.badge_emoji ?? '',
     variants: p.variants ?? [],
     purchase_fields: p.purchase_fields ?? [],
     avg_rating: null as number | null,

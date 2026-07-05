@@ -2,8 +2,9 @@ import crypto from 'crypto';
 import {
   mongoose, Doc,
   Users, Games, Categories, Products, Topups, Orders, Reviews, Promos,
-  Notifications, SupportChats, OrderChats,
+  Notifications, SupportChats, OrderChats, PaymentMethods,
 } from './models';
+import { config } from './config';
 
 const { ObjectId } = mongoose.Types;
 
@@ -138,13 +139,13 @@ export async function getProduct(productId: string): Promise<Doc | null> {
 
 export async function createProduct(
   gameId: string, name: string, description: string, price: number, photoId = '', categoryId = '',
-  redirectToChat = false, chatMessage = '',
+  redirectToChat = false, chatMessage = '', badgeEmoji = '',
 ): Promise<string> {
   const count = await Products.countDocuments({ game_id: gameId });
   const doc = await Products.create({
     game_id: gameId, category_id: categoryId, name, description, price,
     photo_id: photoId, icon_url: photoId, is_active: true, order: count, created_at: new Date(),
-    redirect_to_chat: redirectToChat, chat_message: chatMessage,
+    redirect_to_chat: redirectToChat, chat_message: chatMessage, badge_emoji: badgeEmoji,
   });
   return String(doc._id);
 }
@@ -157,6 +158,29 @@ export async function updateProduct(productId: string, fields: Doc): Promise<voi
 export async function deleteProduct(productId: string): Promise<void> {
   const id = oid(productId);
   if (id) await Products.updateOne({ _id: id }, { $set: { is_active: false } });
+}
+
+// ── Payment methods seed ──────────────────────────────────────────────────────
+// Payment methods used to be hardcoded (uzcard/visa in config). They're now
+// admin-managed rows in `payment_methods`. On first boot, if the collection is
+// empty, seed the existing Uzcard + Visa from config so behaviour is unchanged;
+// the admin then adds/toggles methods (e.g. Humo) from the panel.
+export async function seedPaymentMethods(): Promise<void> {
+  const count = await PaymentMethods.countDocuments();
+  if (count > 0) return;
+  await PaymentMethods.create([
+    {
+      label: 'Uzcard', icon: '🏦',
+      requisites: config.uzcardRequisites, holder: config.uzcardHolder,
+      note: '', is_active: true, order: 0, created_at: new Date(),
+    },
+    {
+      label: 'Visa', icon: '💠',
+      requisites: config.visaRequisites, holder: config.visaHolder,
+      note: '', is_active: true, order: 1, created_at: new Date(),
+    },
+  ]);
+  console.log('✅ Seeded default payment methods (Uzcard, Visa)');
 }
 
 // ── Top-ups ──────────────────────────────────────────────────────────────────

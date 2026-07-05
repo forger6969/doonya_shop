@@ -30,6 +30,10 @@ const gameSchema = new Schema(
     description: { type: String, default: "" },
     photo_id: { type: String, default: "" },
     icon_url: { type: String, default: "" },
+    // banner_url is written by PATCH /admin/games and read by GET /games. With
+    // strict:true it MUST be declared here or Mongoose silently drops the update
+    // (that was the "баннер игры не сохраняется" bug).
+    banner_url: { type: String, default: "" },
     is_active: { type: Boolean, default: true },
     order: { type: Number, required: true },
     created_at: { type: Date, default: Date.now },
@@ -74,6 +78,9 @@ const productSchema = new Schema(
     // Перекидывание в чат заказа после покупки (напр. для гемов/премиума — обмен кодом с почты)
     redirect_to_chat: { type: Boolean, default: false },
     chat_message: { type: String, default: "" }, // Автосообщение в чат сразу после покупки
+
+    // Эмодзи-значок рядом с товаром (напр. 🎁), редактируется админом
+    badge_emoji: { type: String, default: "" },
   },
   { ...opts, collection: 'products' },
 );
@@ -197,14 +204,38 @@ const orderChatSchema = new Schema(
 );
 
 // ── 12. Banners Schema ──────────────────────────────────────────────────────
+// NOTE: the whole app (frontend api.ts Banner type, POST /admin/banners,
+// GET /catalog/banners, fmtBanner) uses the shape {title, subtitle, gradient,
+// emoji, active}. The old schema declared {name, photo_id, is_active} with
+// name/photo_id required — so with strict:true every Banners.create() failed
+// validation and the banner was never added. Schema now matches the real shape.
 const bannerSchema = new Schema(
   {
-    name: { type: String, required: true },
-    photo_id: { type: String, required: true },
-    is_active: { type: Boolean, default: true },
+    title: { type: String, required: true },
+    subtitle: { type: String, default: "" },
+    gradient: { type: String, default: "pink" },
+    emoji: { type: String, default: "🎉" },
+    active: { type: Boolean, default: true },
     created_at: { type: Date, default: Date.now },
   },
   { ...opts, collection: 'banners' },
+);
+
+// ── 13. Payment Methods Schema ──────────────────────────────────────────────
+// Admin-managed payment methods (card requisites shown to buyers on top-up).
+// Replaces the old hardcoded uzcard/visa/atm branches in topup.ts.
+const paymentMethodSchema = new Schema(
+  {
+    label: { type: String, required: true },      // "Uzcard", "Humo", "Visa"
+    icon: { type: String, default: "💳" },        // эмодзи
+    requisites: { type: String, required: true }, // номер карты
+    holder: { type: String, default: "" },        // владелец карты
+    note: { type: String, default: "" },          // необяз. своя подсказка
+    is_active: { type: Boolean, default: true, index: true },
+    order: { type: Number, default: 0 },
+    created_at: { type: Date, default: Date.now },
+  },
+  { ...opts, collection: 'payment_methods' },
 );
 
 // Экспорт моделей
@@ -220,6 +251,7 @@ export const Notifications = mongoose.model('Notification', notificationSchema);
 export const SupportChats = mongoose.model('SupportChat', supportChatSchema);
 export const OrderChats = mongoose.model('OrderChat', orderChatSchema);
 export const Banners = mongoose.model('Banner', bannerSchema);
+export const PaymentMethods = mongoose.model('PaymentMethod', paymentMethodSchema);
 
 // Снова добавляем тип Doc, который ищут все ваши роутеры и репозиторий
 export type Doc = Record<string, any>;

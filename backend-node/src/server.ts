@@ -9,7 +9,7 @@ import { verifyTelegramInitData, TgUser } from './auth';
 import { handleSupportConnection } from './routers/support';
 import { handleOrderChatConnection } from './routers/orderChat';
 import { notifyManager, sendJson } from './realtime';
-import { getUnreadNotifications } from './repo';
+import { getUnreadNotifications, seedPaymentMethods } from './repo';
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ noServer: true });
@@ -50,6 +50,7 @@ server.on('upgrade', (req, socket, head) => {
 async function start(): Promise<void> {
   await connectDb();
   await createIndexes();
+  await seedPaymentMethods();
 
   if (config.webhookUrl) {
     try {

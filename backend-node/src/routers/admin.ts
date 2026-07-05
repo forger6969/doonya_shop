@@ -7,7 +7,7 @@ import { cacheInvalidate } from '../cache';
 import { uploadImage } from '../cloudinary';
 import { notifyUserTopupConfirmed, notifyUserTopupRejected, notifyUserOrderReady, broadcastDiscount } from '../notify';
 import { notifyManager, orderChatManager } from '../realtime';
-import { mongoose, Topups, Orders, Games, Products, Users, Banners, Doc } from '../models';
+import { mongoose, Topups, Orders, Games, Products, Users, Banners, PaymentMethods, Doc } from '../models';
 import {
   confirmTopup, rejectTopup, completeOrder, addOrderChatMsg,
   createGame, deleteGame, updateGame, getGames, getProducts,
@@ -141,6 +141,7 @@ router.get('/games/:gameId/products', ...admin, asyncHandler(async (req, res) =>
       purchase_fields: p.purchase_fields ?? [],
       redirect_to_chat: p.redirect_to_chat ?? false,
       chat_message: p.chat_message ?? '',
+      badge_emoji: p.badge_emoji ?? '',
       discount_percent: p.discount_percent ?? 0,
       discount_enabled: p.discount_enabled ?? false,
       discount_until: until ? new Date(until).toISOString() : null,
@@ -149,10 +150,10 @@ router.get('/games/:gameId/products', ...admin, asyncHandler(async (req, res) =>
 }));
 
 router.post('/products', ...admin, asyncHandler(async (req, res) => {
-  const b = req.body as { game_id: string; category_id?: string; name: string; description?: string; price: number; icon_url?: string; redirect_to_chat?: boolean; chat_message?: string };
+  const b = req.body as { game_id: string; category_id?: string; name: string; description?: string; price: number; icon_url?: string; redirect_to_chat?: boolean; chat_message?: string; badge_emoji?: string };
   const pid = await createProduct(
     b.game_id, b.name, b.description ?? '', b.price, b.icon_url ?? '', b.category_id ?? '',
-    Boolean(b.redirect_to_chat), String(b.chat_message ?? ''),
+    Boolean(b.redirect_to_chat), String(b.chat_message ?? ''), String(b.badge_emoji ?? ''),
   );
   cacheInvalidate(`catalog:products:${b.game_id}`);
   cacheInvalidate('catalog:top');
@@ -167,7 +168,7 @@ router.patch('/products/:productId', ...admin, asyncHandler(async (req, res) => 
     if (k === 'icon_url') {
       fields.icon_url = v;
       fields.photo_id = v;
-    } else if (['name', 'description', 'price', 'variants', 'purchase_fields', 'redirect_to_chat', 'chat_message'].includes(k)) {
+    } else if (['name', 'description', 'price', 'variants', 'purchase_fields', 'redirect_to_chat', 'chat_message', 'badge_emoji'].includes(k)) {
       fields[k] = v;
     }
   }
@@ -384,6 +385,67 @@ router.patch('/banners/:bannerId/toggle', ...admin, asyncHandler(async (req, res
   const b = await Banners.findOne({ _id: oid(req.params.bannerId) }).lean<Doc>();
   if (!b) throw new HttpError(404, 'Banner not found');
   await Banners.updateOne({ _id: oid(req.params.bannerId) }, { $set: { active: !(b.active ?? true) } });
+  res.json({ ok: true });
+}));
+
+// ── Payment methods (admin-managed) ─────────────────────────────────────────────
+function fmtPaymentMethod(m: Doc): Doc {
+  return {
+    id: String(m._id),
+    label: m.label,
+    icon: m.icon ?? '💳',
+    requisites: m.requisites,
+    holder: m.holder ?? '',
+    note: m.note ?? '',
+    is_active: m.is_active ?? true,
+    order: m.order ?? 0,
+  };
+}
+
+router.get('/payment-methods', ...admin, asyncHandler(async (_req, res) => {
+  const methods = await PaymentMethods.find().sort({ order: 1, created_at: 1 }).lean<Doc[]>();
+  res.json(methods.map(fmtPaymentMethod));
+}));
+
+router.post('/payment-methods', ...admin, asyncHandler(async (req, res) => {
+  const b = req.body as { label?: string; icon?: string; requisites?: string; holder?: string; note?: string };
+  const label = String(b.label ?? '').trim();
+  const requisites = String(b.requisites ?? '').trim();
+  if (!label) throw new HttpError(400, 'Label required');
+  if (!requisites) throw new HttpError(400, 'Requisites required');
+  const count = await PaymentMethods.countDocuments();
+  const doc = await PaymentMethods.create({
+    label, requisites,
+    icon: String(b.icon ?? '💳').trim() || '💳',
+    holder: String(b.holder ?? '').trim(),
+    note: String(b.note ?? '').trim(),
+    is_active: true, order: count, created_at: new Date(),
+  });
+  res.json({ ok: true, id: String(doc._id) });
+}));
+
+router.patch('/payment-methods/:id', ...admin, asyncHandler(async (req, res) => {
+  const b = req.body as Record<string, unknown>;
+  const fields: Doc = {};
+  for (const k of ['label', 'icon', 'requisites', 'holder', 'note', 'order']) {
+    if (b[k] != null) fields[k] = k === 'order' ? Number(b[k]) : String(b[k]).trim();
+  }
+  if (typeof b.is_active === 'boolean') fields.is_active = b.is_active;
+  if (Object.keys(fields).length) {
+    await PaymentMethods.updateOne({ _id: oid(req.params.id) }, { $set: fields });
+  }
+  res.json({ ok: true });
+}));
+
+router.patch('/payment-methods/:id/toggle', ...admin, asyncHandler(async (req, res) => {
+  const m = await PaymentMethods.findOne({ _id: oid(req.params.id) }).lean<Doc>();
+  if (!m) throw new HttpError(404, 'Payment method not found');
+  await PaymentMethods.updateOne({ _id: oid(req.params.id) }, { $set: { is_active: !(m.is_active ?? true) } });
+  res.json({ ok: true });
+}));
+
+router.delete('/payment-methods/:id', ...admin, asyncHandler(async (req, res) => {
+  await PaymentMethods.deleteOne({ _id: oid(req.params.id) });
   res.json({ ok: true });
 }));
 

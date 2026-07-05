@@ -2,48 +2,47 @@ import { Router } from 'express';
 import multer from 'multer';
 import { asyncHandler, HttpError } from '../http';
 import { requireUser } from '../auth';
-import { config } from '../config';
 import { getOrCreateUser, createTopup } from '../repo';
 import { uploadImage } from '../cloudinary';
 import { notifyAdminTopup } from '../notify';
+import { PaymentMethods, mongoose, Doc } from '../models';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 + 1 } });
 
 const fmt = (n: number): string => n.toLocaleString('en-US');
 const uniqueAmount = (base: number): number => base + Math.floor(Math.random() * 100) + 1;
-const roundAmount = (base: number): number => Math.round(base / 1000) * 1000;
 
+const oid = (id: string): mongoose.Types.ObjectId | null => {
+  try { return new mongoose.Types.ObjectId(id); } catch { return null; }
+};
+
+// Active payment methods for the top-up picker (admin-managed).
+router.get('/methods/list', asyncHandler(async (_req, res) => {
+  const methods = await PaymentMethods.find({ is_active: true })
+    .sort({ order: 1, created_at: 1 }).lean<Doc[]>();
+  res.json(methods.map((m) => ({
+    id: String(m._id), label: m.label, icon: m.icon ?? '💳',
+  })));
+}));
+
+// Requisites for a chosen method (method = the payment method's _id).
 router.get('/methods', asyncHandler(async (req, res) => {
   const amount = parseInt(String(req.query.amount ?? '0'), 10);
-  const method = String(req.query.method ?? '');
+  const methodId = String(req.query.method ?? '');
+  const id = oid(methodId);
+  if (!id) throw new HttpError(400, 'Unknown method');
 
-  if (method === 'uzcard') {
-    const exact = uniqueAmount(amount);
-    return res.json({
-      method: 'uzcard', requisites: config.uzcardRequisites, holder: config.uzcardHolder, amount: exact,
-      note: `Переведите ровно ${fmt(exact)} сум на Uzcard. По этой сумме мы идентифицируем ваш платёж.`,
-    });
-  }
-  if (method === 'visa') {
-    const exact = uniqueAmount(amount);
-    return res.json({
-      method: 'visa', requisites: config.visaRequisites, holder: config.visaHolder, amount: exact,
-      note: `Переведите ровно ${fmt(exact)} сум на Visa. По этой сумме мы идентифицируем ваш платёж.`,
-    });
-  }
-  if (method === 'atm') {
-    const exact = roundAmount(amount);
-    return res.json({
-      method: 'atm', amount: exact,
-      cards: [
-        { requisites: config.uzcardRequisites, holder: config.uzcardHolder, type: 'Uzcard' },
-        { requisites: config.visaRequisites, holder: config.visaHolder, type: 'Visa' },
-      ],
-      note: `Внесите ровно ${fmt(exact)} сум через банкомат и прикрепите чек.`,
-    });
-  }
-  throw new HttpError(400, 'Unknown method');
+  const m = await PaymentMethods.findOne({ _id: id, is_active: true }).lean<Doc>();
+  if (!m) throw new HttpError(400, 'Unknown method');
+
+  const exact = uniqueAmount(amount);
+  const note = (m.note as string)?.trim()
+    || `Переведите ровно ${fmt(exact)} сум на ${m.label}. По этой сумме мы идентифицируем ваш платёж.`;
+  res.json({
+    method: String(m._id), label: m.label, icon: m.icon ?? '💳',
+    requisites: m.requisites, holder: m.holder ?? '', amount: exact, note,
+  });
 }));
 
 router.post('/submit', requireUser, upload.single('receipt'), asyncHandler(async (req, res) => {
