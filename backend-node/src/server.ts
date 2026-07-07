@@ -57,8 +57,14 @@ async function start(): Promise<void> {
       await bot.telegram.setWebhook(config.webhookUrl, {
         allowed_updates: ['message', 'callback_query', 'inline_query'],
         drop_pending_updates: true,
+        // Telegram echoes this in X-Telegram-Bot-Api-Secret-Token on every call;
+        // /webhook verifies it. Warn loudly if unset — the webhook is then open.
+        ...(config.webhookSecret ? { secret_token: config.webhookSecret } : {}),
       });
       console.log(`✅ Webhook set: ${config.webhookUrl}`);
+      if (!config.webhookSecret) {
+        console.warn('⚠️  WEBHOOK_SECRET not set — /webhook accepts unauthenticated updates (forgeable). Set it in prod.');
+      }
     } catch (e) {
       console.error('setWebhook failed:', e);
     }

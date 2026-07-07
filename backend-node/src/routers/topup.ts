@@ -11,7 +11,10 @@ const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 + 1 } });
 
 const fmt = (n: number): string => n.toLocaleString('en-US');
-const uniqueAmount = (base: number): number => base + Math.floor(Math.random() * 100) + 1;
+const SURCHARGE_MAX = 100; // uniqueAmount adds a random 1..SURCHARGE_MAX for payment ID
+const uniqueAmount = (base: number): number => base + Math.floor(Math.random() * SURCHARGE_MAX) + 1;
+const TOPUP_MIN = 1_000;
+const TOPUP_MAX = 100_000_000;
 
 const oid = (id: string): mongoose.Types.ObjectId | null => {
   try { return new mongoose.Types.ObjectId(id); } catch { return null; }
@@ -53,6 +56,18 @@ router.post('/submit', requireUser, upload.single('receipt'), asyncHandler(async
   const method = body.method ?? '';
   if (!req.file) throw new HttpError(400, 'No receipt');
   if (req.file.size > 10 * 1024 * 1024) throw new HttpError(413, 'Receipt file too large (max 10 MB)');
+
+  // Both amount and unique_amount arrive from the client. The credited value is
+  // `amount`, while the admin verifies the receipt against `unique_amount`. Bind
+  // them so a client can't submit unique_amount=<real receipt> with a hugely
+  // inflated amount: the surcharge must be within the range /methods can add.
+  if (!Number.isInteger(amount) || amount < TOPUP_MIN || amount > TOPUP_MAX) {
+    throw new HttpError(422, 'Invalid amount');
+  }
+  const surcharge = uniqAmount - amount;
+  if (!Number.isInteger(uniqAmount) || surcharge < 1 || surcharge > SURCHARGE_MAX) {
+    throw new HttpError(422, 'Invalid payment amount');
+  }
 
   await getOrCreateUser(u.id, u.username ?? '', u.first_name ?? '');
   const receiptUrl = await uploadImage(req.file.buffer, 'doonya_shop/receipts', `${u.id}_${uniqAmount}`);

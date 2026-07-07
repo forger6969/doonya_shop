@@ -39,6 +39,17 @@ export async function updateBalance(userId: number, amount: number): Promise<voi
   await Users.updateOne({ user_id: userId }, { $inc: { balance: amount } });
 }
 
+// Atomically debit `amount` only if the balance covers it. Returns true on
+// success, false if funds were insufficient. This is the single guard against
+// the check-then-act race that let concurrent /buy requests overspend.
+export async function deductBalanceIfEnough(userId: number, amount: number): Promise<boolean> {
+  const res = await Users.updateOne(
+    { user_id: userId, balance: { $gte: amount } },
+    { $inc: { balance: -amount } },
+  );
+  return res.modifiedCount === 1;
+}
+
 export async function getAllUserIds(): Promise<number[]> {
   const users = await Users.find({}, { user_id: 1 }).lean<Doc[]>();
   return users.map((u) => u.user_id as number).filter((id) => id != null);
@@ -197,45 +208,75 @@ export async function createTopup(
 export async function confirmTopup(topupId: string): Promise<Doc | null> {
   const id = oid(topupId);
   if (!id) return null;
-  const topup = await Topups.findOne({ _id: id }).lean<Doc>();
-  if (topup && topup.status === 'pending') {
-    await Topups.updateOne({ _id: id }, { $set: { status: 'confirmed', confirmed_at: new Date() } });
-    await updateBalance(topup.user_id as number, topup.amount as number);
-    return topup;
-  }
-  return null;
+  // Atomically flip pending→confirmed. Only the call that actually wins the
+  // transition credits the balance — a double-click or duplicate webhook can't
+  // credit twice (idempotency race).
+  const topup = await Topups.findOneAndUpdate(
+    { _id: id, status: 'pending' },
+    { $set: { status: 'confirmed', confirmed_at: new Date() } },
+  ).lean<Doc>();
+  if (!topup) return null;
+  await updateBalance(topup.user_id as number, topup.amount as number);
+  return topup;
 }
 
 export async function rejectTopup(topupId: string): Promise<Doc | null> {
   const id = oid(topupId);
   if (!id) return null;
-  const topup = await Topups.findOne({ _id: id }).lean<Doc>();
-  if (topup && topup.status === 'pending') {
-    await Topups.updateOne({ _id: id }, { $set: { status: 'rejected', rejected_at: new Date() } });
-  }
-  return topup;
+  return Topups.findOneAndUpdate(
+    { _id: id, status: 'pending' },
+    { $set: { status: 'rejected', rejected_at: new Date() } },
+  ).lean<Doc>();
 }
 
 // ── Orders ───────────────────────────────────────────────────────────────────
+// Debits the balance atomically FIRST, then records the order. Returns null if
+// funds were insufficient (nothing is charged, no order created). If the order
+// insert somehow fails after the debit, the amount is refunded so money can't
+// vanish.
 export async function createOrder(args: {
   userId: number; productId: string; gameId: string; amount: number;
   originalPrice?: number; promoCode?: string; variantLabel?: string; fieldAnswers?: Doc;
-}): Promise<string> {
-  const doc = await Orders.create({
-    user_id: args.userId, product_id: args.productId, game_id: args.gameId, amount: args.amount,
-    original_price: args.originalPrice || args.amount, promo_code: args.promoCode ?? '',
-    variant_label: args.variantLabel ?? '', field_answers: args.fieldAnswers ?? {},
-    status: 'pending', created_at: new Date(),
-  });
-  await updateBalance(args.userId, -args.amount);
-  return String(doc._id);
+}): Promise<string | null> {
+  const charged = await deductBalanceIfEnough(args.userId, args.amount);
+  if (!charged) return null;
+  try {
+    const doc = await Orders.create({
+      user_id: args.userId, product_id: args.productId, game_id: args.gameId, amount: args.amount,
+      original_price: args.originalPrice || args.amount, promo_code: args.promoCode ?? '',
+      variant_label: args.variantLabel ?? '', field_answers: args.fieldAnswers ?? {},
+      status: 'pending', created_at: new Date(),
+    });
+    return String(doc._id);
+  } catch (e) {
+    await updateBalance(args.userId, args.amount); // refund — the charge went through but the order didn't
+    throw e;
+  }
 }
 
 export async function completeOrder(orderId: string): Promise<Doc | null> {
   const id = oid(orderId);
   if (!id) return null;
-  await Orders.updateOne({ _id: id }, { $set: { status: 'completed', completed_at: new Date() } });
-  return Orders.findOne({ _id: id }).lean<Doc>();
+  // Only the pending→completed transition returns the order, so an already
+  // completed/refunded order isn't re-processed (re-notified).
+  return Orders.findOneAndUpdate(
+    { _id: id, status: 'pending' },
+    { $set: { status: 'completed', completed_at: new Date() } },
+  ).lean<Doc>();
+}
+
+// Refund a pending order: flip pending→refunded atomically and credit the buyer
+// back. Idempotent — a second call finds no pending order and is a no-op.
+export async function refundOrder(orderId: string): Promise<Doc | null> {
+  const id = oid(orderId);
+  if (!id) return null;
+  const order = await Orders.findOneAndUpdate(
+    { _id: id, status: 'pending' },
+    { $set: { status: 'refunded', refunded_at: new Date() } },
+  ).lean<Doc>();
+  if (!order) return null;
+  await updateBalance(order.user_id as number, order.amount as number);
+  return order;
 }
 
 export async function getUserOrders(userId: number): Promise<Doc[]> {

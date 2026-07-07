@@ -18,30 +18,35 @@ export const config = {
   miniAppUrl: process.env.MINI_APP_URL ?? '',
   port: parseInt(process.env.PORT ?? '8000', 10),
   webhookUrl: process.env.WEBHOOK_URL ?? '',
+  // Secret shared with Telegram (setWebhook secret_token). Requests to /webhook
+  // must echo it in the X-Telegram-Bot-Api-Secret-Token header, else they are
+  // forged and rejected. MUST be set in prod, otherwise the webhook is open.
+  webhookSecret: process.env.WEBHOOK_SECRET ?? '',
 
-  cardRequisites: process.env.CARD_REQUISITES ?? '8600 1234 5678 9012',
-  cardHolder: process.env.CARD_HOLDER ?? 'NYX SHOP',
-  uzcardRequisites: process.env.UZCARD_REQUISITES ?? '5614 6868 1494 1939',
-  uzcardHolder: process.env.UZCARD_HOLDER ?? 'H.D',
-  visaRequisites: process.env.VISA_REQUISITES ?? '4413 5976 0450 1484',
-  visaHolder: process.env.VISA_HOLDER ?? 'H.D',
+  // Payment requisites are seeded into the DB (payment_methods) from env on first
+  // boot only. No real card numbers in source — set via env or the admin panel.
+  cardRequisites: process.env.CARD_REQUISITES ?? '',
+  cardHolder: process.env.CARD_HOLDER ?? '',
+  uzcardRequisites: process.env.UZCARD_REQUISITES ?? '',
+  uzcardHolder: process.env.UZCARD_HOLDER ?? '',
+  visaRequisites: process.env.VISA_REQUISITES ?? '',
+  visaHolder: process.env.VISA_HOLDER ?? '',
 
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME ?? '',
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY ?? '',
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET ?? '',
 };
 
-// Multi-admin: ADMIN_ID + EXTRA_ADMIN_IDS (default mirrors the Python backend)
+// Multi-admin: ADMIN_ID + EXTRA_ADMIN_IDS. No IDs are hardcoded — configure via
+// env. Empty by default so a misconfigured deploy grants nobody admin (fail-safe).
 export const ADMIN_IDS: Set<number> = (() => {
-  const ids = parseIds(process.env.EXTRA_ADMIN_IDS ?? '7004667100');
+  const ids = parseIds(process.env.EXTRA_ADMIN_IDS ?? '');
   if (config.adminId !== 0) ids.add(config.adminId);
   return ids;
 })();
 
-// Support agents — can reply to users in support/order chats
-export const SUPPORT_AGENT_IDS: Set<number> = parseIds(
-  process.env.SUPPORT_AGENT_IDS ?? '1771984046,8235243143',
-);
+// Support agents — can reply to users in support/order chats. Env-only.
+export const SUPPORT_AGENT_IDS: Set<number> = parseIds(process.env.SUPPORT_AGENT_IDS ?? '');
 
 // Anyone who can act as a chat agent (admins + support agents)
 export const AGENT_IDS: Set<number> = new Set([...ADMIN_IDS, ...SUPPORT_AGENT_IDS]);

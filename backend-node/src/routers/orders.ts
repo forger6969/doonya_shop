@@ -41,6 +41,9 @@ router.post('/buy-stars', requireUser, asyncHandler(async (req, res) => {
     userId: u.id, productId: 'stars', gameId: 'telegram', amount: totalPrice,
     originalPrice: totalPrice, variantLabel: `${starsCount} ⭐`, fieldAnswers,
   });
+  // createOrder debits atomically; null means the balance didn't actually cover
+  // it (lost the race against a concurrent purchase) — nothing was charged.
+  if (!orderId) throw new HttpError(402, 'Insufficient balance');
 
   try {
     await getOrCreateOrderChat({
@@ -104,15 +107,19 @@ router.post('/buy', requireUser, asyncHandler(async (req, res) => {
     promo = await getPromoByCode(promoCode);
     if (promo) finalPrice = applyPromo(originalPrice, promo);
   }
+  const promoApplied = promo != null && finalPrice < originalPrice;
 
   if ((user.balance as number) < finalPrice) throw new HttpError(402, 'Insufficient balance');
 
   const orderId = await createOrder({
     userId: u.id, productId, gameId: product.game_id as string, amount: finalPrice,
-    originalPrice, promoCode: promoCode ? promoCode.toUpperCase() : '', variantLabel, fieldAnswers,
+    originalPrice, promoCode: promoApplied ? promoCode.toUpperCase() : '', variantLabel, fieldAnswers,
   });
+  if (!orderId) throw new HttpError(402, 'Insufficient balance');
 
-  if (promo) await usePromo(String(promo._id));
+  // Only count a promo use when a discount was actually granted (min_order /
+  // max_uses gates in applyPromo can leave the price unchanged).
+  if (promoApplied && promo) await usePromo(String(promo._id));
 
   // Chat redirect is opt-in per product (redirect_to_chat). Only then do we open
   // an order chat and drop the configured auto-message into it.
@@ -150,11 +157,16 @@ router.post('/buy', requireUser, asyncHandler(async (req, res) => {
 router.post('/validate-promo', requireUser, asyncHandler(async (req, res) => {
   const productId = String(req.query.product_id ?? req.body?.product_id ?? '');
   const promoCode = String(req.query.promo_code ?? req.body?.promo_code ?? '');
+  const variantLabel = String(req.query.variant_label ?? req.body?.variant_label ?? '');
   const product = await getProduct(productId);
   if (!product) throw new HttpError(404, 'Product not found');
   const promo = await getPromoByCode(promoCode);
   if (!promo) throw new HttpError(404, 'Promo code not found or inactive');
-  const original = product.price as number;
+  // Match /buy: a variant's price overrides the base price, otherwise the
+  // preview discount is wrong for variant products.
+  const variants = (product.variants as { label: string; price: number }[]) ?? [];
+  const variant = variantLabel ? variants.find((v) => v.label === variantLabel) : undefined;
+  const original = variant ? variant.price : (product.price as number);
   const final = applyPromo(original, promo);
   res.json({
     valid: true, original_price: original, final_price: final,

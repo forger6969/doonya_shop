@@ -9,17 +9,26 @@ import { notifyUserTopupConfirmed, notifyUserTopupRejected, notifyUserOrderReady
 import { notifyManager, orderChatManager } from '../realtime';
 import { mongoose, Topups, Orders, Games, Products, Users, Banners, PaymentMethods, Doc } from '../models';
 import {
-  confirmTopup, rejectTopup, completeOrder, addOrderChatMsg,
+  confirmTopup, rejectTopup, completeOrder, refundOrder, addOrderChatMsg,
   createGame, deleteGame, updateGame, getGames, getProducts,
   getCategories, createCategory, updateCategory, deleteCategory,
   createProduct, deleteProduct, updateProduct,
   createPromo, listPromos, deletePromo, togglePromo,
   getSalesByDay, getTopProducts, getTopUsers, getAllProductStats, setDiscount,
 } from '../repo';
+import { notifyUserOrderRefunded } from '../notify';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
-const oid = (id: string) => new mongoose.Types.ObjectId(id);
+// Coerce a path param to an ObjectId; a malformed id is a client error (400),
+// not an unhandled 500.
+const oid = (id: string): mongoose.Types.ObjectId => {
+  try {
+    return new mongoose.Types.ObjectId(id);
+  } catch {
+    throw new HttpError(400, 'Invalid id');
+  }
+};
 
 // Admin guard: valid initData + sender in ADMIN_IDS.
 const assertAdmin: RequestHandler = (req, _res, next) => {
@@ -294,6 +303,16 @@ router.post('/order/:orderId/complete', ...admin, asyncHandler(async (req, res) 
     const doneMsg = await addOrderChatMsg(req.params.orderId, 'admin', 'Заказ подтверждён ✅');
     orderChatManager.sendToUser(req.params.orderId, { type: 'message', order_id: req.params.orderId, ...doneMsg });
     orderChatManager.sendToUser(req.params.orderId, { type: 'order_completed', order_id: req.params.orderId });
+  } catch { /* ignore */ }
+  res.json({ ok: true });
+}));
+
+router.post('/order/:orderId/refund', ...admin, asyncHandler(async (req, res) => {
+  const order = await refundOrder(req.params.orderId);
+  if (!order) throw new HttpError(404, 'Order not found or not refundable');
+  try { await notifyUserOrderRefunded(order.user_id as number, order.amount as number); } catch { /* ignore */ }
+  try {
+    await notifyManager.send(order.user_id as number, 'order_refunded', { order_id: req.params.orderId, amount: order.amount });
   } catch { /* ignore */ }
   res.json({ ok: true });
 }));

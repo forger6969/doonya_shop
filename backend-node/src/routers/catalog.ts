@@ -142,9 +142,12 @@ router.get('/on-sale', asyncHandler(async (_req, res) => {
 }));
 
 router.get('/search', asyncHandler(async (req, res) => {
-  const q = String(req.query.q ?? '').trim();
+  const q = String(req.query.q ?? '').trim().slice(0, 100);
   if (!q) return res.json({ games: [], categories: [], products: [] });
-  const regex = { $regex: q, $options: 'i' };
+  // Escape regex metacharacters — raw user input in $regex is a ReDoS / query
+  // injection vector on this unauthenticated endpoint.
+  const safe = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = { $regex: safe, $options: 'i' };
   const [rawGames, rawCats, rawProducts] = await Promise.all([
     Games.find({ is_active: true, name: regex }).limit(10).lean<Doc[]>(),
     Categories.find({ is_active: true, name: regex }).limit(10).lean<Doc[]>(),

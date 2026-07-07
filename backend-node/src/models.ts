@@ -114,6 +114,7 @@ const orderSchema = new Schema(
     field_answers: { type: Schema.Types.Mixed, default: {} }, // Ответы пользователя на вопросы формы
     status: { type: String, enum: ['pending', 'completed', 'refunded'], default: 'pending', index: true },
     completed_at: { type: Date, default: null },
+    refunded_at: { type: Date, default: null },
     created_at: { type: Date, default: Date.now },
   },
   { ...opts, collection: 'orders' },

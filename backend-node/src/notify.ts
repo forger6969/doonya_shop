@@ -5,6 +5,13 @@ import { getAllUserIds } from './repo';
 // Python used "{n:,}" → comma thousands separator.
 const fmt = (n: number): string => n.toLocaleString('en-US');
 
+// Escape user-controlled text before embedding it in parse_mode:'HTML' messages.
+// Without this, a name/field-answer containing <, > or & makes Telegram reject
+// the whole message (invalid HTML) → the admin silently never gets the order,
+// and opens an HTML-injection hole.
+const esc = (s: unknown): string =>
+  String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 type InlineButton =
   | { text: string; callback_data: string }
   | { text: string; url: string }
@@ -17,14 +24,14 @@ export async function notifyAdminTopup(args: {
   receiptUrl?: string; firstName?: string;
 }): Promise<void> {
   const userLabel = args.firstName
-    ? `<b>${args.firstName}</b> (ID: <code>${args.userId}</code>)`
+    ? `<b>${esc(args.firstName)}</b> (ID: <code>${args.userId}</code>)`
     : `ID: <code>${args.userId}</code>`;
   const text =
     `💰 <b>Новое пополнение</b>\n` +
     `От: ${userLabel}\n` +
     `Сумма: <b>${fmt(args.amount)} сум</b>\n` +
-    `Метод: ${args.method}\n` +
-    `ID: <code>${args.topupId}</code>`;
+    `Метод: ${esc(args.method)}\n` +
+    `ID: <code>${esc(args.topupId)}</code>`;
   const rows: InlineButton[][] = [
     [
       { text: '✅ Подтвердить', callback_data: `confirm_topup:${args.topupId}` },
@@ -50,19 +57,19 @@ export async function notifyAdminOrder(args: {
   let userLabel: string;
   if (args.username) {
     userLabel = args.firstName
-      ? `<b>${args.firstName}</b> @${args.username} (<code>${args.userId}</code>)`
-      : `@${args.username} (<code>${args.userId}</code>)`;
+      ? `<b>${esc(args.firstName)}</b> @${esc(args.username)} (<code>${args.userId}</code>)`
+      : `@${esc(args.username)} (<code>${args.userId}</code>)`;
   } else if (args.firstName) {
-    userLabel = `<b>${args.firstName}</b> (<code>${args.userId}</code>)`;
+    userLabel = `<b>${esc(args.firstName)}</b> (<code>${args.userId}</code>)`;
   } else {
     userLabel = `<code>${args.userId}</code>`;
   }
-  let text = `🛒 <b>Новый заказ</b>\nОт: ${userLabel}\nТовар: <b>${args.productName}</b>`;
-  if (args.variantLabel) text += ` — ${args.variantLabel}`;
-  text += `\nЦена: ${fmt(args.price)} сум\nOrder ID: <code>${args.orderId}</code>`;
+  let text = `🛒 <b>Новый заказ</b>\nОт: ${userLabel}\nТовар: <b>${esc(args.productName)}</b>`;
+  if (args.variantLabel) text += ` — ${esc(args.variantLabel)}`;
+  text += `\nЦена: ${fmt(args.price)} сум\nOrder ID: <code>${esc(args.orderId)}</code>`;
   if (args.fieldAnswers && Object.keys(args.fieldAnswers).length) {
     text += '\n';
-    for (const [k, v] of Object.entries(args.fieldAnswers)) text += `\n${k}: <code>${v}</code>`;
+    for (const [k, v] of Object.entries(args.fieldAnswers)) text += `\n${esc(k)}: <code>${esc(v)}</code>`;
   }
   const contactUrl = args.username ? `https://t.me/${args.username}` : `tg://user?id=${args.userId}`;
   const rows: InlineButton[][] = [
@@ -93,15 +100,27 @@ export async function notifyUserTopupRejected(userId: number): Promise<void> {
   );
 }
 
+export async function notifyUserOrderRefunded(userId: number, amount: number): Promise<void> {
+  try {
+    await bot.telegram.sendMessage(
+      userId,
+      `↩️ Ваш заказ отменён, <b>${fmt(amount)} сум</b> возвращены на баланс.`,
+      { parse_mode: 'HTML' },
+    );
+  } catch (e) {
+    console.warn(`notifyUserOrderRefunded failed for user ${userId}:`, e);
+  }
+}
+
 export async function broadcastDiscount(args: {
   productName: string; discountPercent: number; photoUrl?: string; gameName?: string;
 }): Promise<number> {
   const userIds = await getAllUserIds();
-  const gameLine = args.gameName ? `🎮 <b>${args.gameName}</b>\n` : '';
+  const gameLine = args.gameName ? `🎮 <b>${esc(args.gameName)}</b>\n` : '';
   const text =
     `🔥 <b>СКИДКА В DOONYA SHOP!</b>\n\n` +
     `${gameLine}` +
-    `Товар: <b>${args.productName}</b>\n` +
+    `Товар: <b>${esc(args.productName)}</b>\n` +
     `Скидка: <b>-${args.discountPercent}%</b> 🎉\n\n` +
     `Успей купить по выгодной цене!`;
   const reply_markup = config.miniAppUrl
@@ -126,7 +145,7 @@ export async function broadcastDiscount(args: {
 }
 
 export async function notifyUserOrderReady(userId: number, orderId: string, productName = ''): Promise<void> {
-  const label = productName ? `<b>${productName}</b>` : 'Ваш заказ';
+  const label = productName ? `<b>${esc(productName)}</b>` : 'Ваш заказ';
   let reply_markup;
   const reviewUrl =
     config.miniAppUrl && config.miniAppUrl.startsWith('https://') ? `${config.miniAppUrl}?review=${orderId}` : '';
@@ -149,7 +168,7 @@ export async function notifyOrderChatUser(chat: Record<string, unknown>, text: s
   try {
     const product = (chat.product_name as string) || 'заказ';
     const orderId = chat.order_id as string;
-    const caption = `💬 <b>Сообщение по заказу «${product}»</b>\n\n${text}`;
+    const caption = `💬 <b>Сообщение по заказу «${esc(product)}»</b>\n\n${esc(text)}`;
     let reply_markup;
     if (config.miniAppUrl && config.miniAppUrl.startsWith('https://')) {
       reply_markup = {
@@ -167,7 +186,7 @@ export async function notifyOrderChatUser(chat: Record<string, unknown>, text: s
 // app closed got nothing — the "уведомление при ответе в чат не работает" bug.
 export async function notifyUserSupportReply(userId: number, text: string): Promise<void> {
   try {
-    const caption = `💬 <b>Ответ поддержки</b>\n\n${text}`;
+    const caption = `💬 <b>Ответ поддержки</b>\n\n${esc(text)}`;
     let reply_markup;
     if (config.miniAppUrl && config.miniAppUrl.startsWith('https://')) {
       reply_markup = {
@@ -182,9 +201,9 @@ export async function notifyUserSupportReply(userId: number, text: string): Prom
 
 // Notify support agents that a user wrote (used when no agent WS is online).
 export async function notifyAgentsBot(tgUser: { first_name?: string; username?: string }, text: string, agentIds: number[]): Promise<void> {
-  const name = tgUser.first_name ?? '';
-  const username = tgUser.username || '—';
-  const header = `💬 <b>${name}</b> (@${username}) написал в поддержку:\n\n${text}`;
+  const name = esc(tgUser.first_name ?? '');
+  const username = esc(tgUser.username || '—');
+  const header = `💬 <b>${name}</b> (@${username}) написал в поддержку:\n\n${esc(text)}`;
   for (const agentId of agentIds) {
     try {
       await bot.telegram.sendMessage(agentId, header, { parse_mode: 'HTML' });
