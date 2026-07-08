@@ -421,6 +421,31 @@ function fmtPaymentMethod(m: Doc): Doc {
   };
 }
 
+// Luhn (mod 10) checksum — the standard check-digit algorithm used by every major card
+// network (Visa/Mastercard/Mir) and confirmed to also apply to Uzcard/Humo, which both follow
+// the ISO/IEC 7812-1 numbering standard. Catches typos (transposed/mistyped digits) before a
+// bad card number gets shown to buyers.
+const isValidLuhn = (digits: string): boolean => {
+  let sum = 0;
+  let double = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let d = digits.charCodeAt(i) - 48; // '0' -> 0
+    if (double) { d *= 2; if (d > 9) d -= 9; }
+    sum += d;
+    double = !double;
+  }
+  return sum % 10 === 0;
+};
+
+// Only enforce Luhn when requisites look like a bare card number (13-19 digits once spaces/
+// dashes are stripped, per ISO/IEC 7812-1 length range) — other payment methods (phone-based
+// wallets, bank accounts) legitimately hold non-card text here and must not be rejected.
+const validateCardRequisites = (requisites: string): void => {
+  const digitsOnly = requisites.replace(/[\s-]/g, '');
+  if (!/^\d{13,19}$/.test(digitsOnly)) return;
+  if (!isValidLuhn(digitsOnly)) throw new HttpError(400, 'Неверный номер карты — проверьте цифры');
+};
+
 router.get('/payment-methods', ...admin, asyncHandler(async (_req, res) => {
   const methods = await PaymentMethods.find().sort({ order: 1, created_at: 1 }).lean<Doc[]>();
   res.json(methods.map(fmtPaymentMethod));
@@ -432,6 +457,7 @@ router.post('/payment-methods', ...admin, asyncHandler(async (req, res) => {
   const requisites = String(b.requisites ?? '').trim();
   if (!label) throw new HttpError(400, 'Label required');
   if (!requisites) throw new HttpError(400, 'Requisites required');
+  validateCardRequisites(requisites);
   const count = await PaymentMethods.countDocuments();
   const doc = await PaymentMethods.create({
     label, requisites,
@@ -450,6 +476,7 @@ router.patch('/payment-methods/:id', ...admin, asyncHandler(async (req, res) => 
     if (b[k] != null) fields[k] = k === 'order' ? Number(b[k]) : String(b[k]).trim();
   }
   if (typeof b.is_active === 'boolean') fields.is_active = b.is_active;
+  if (typeof fields.requisites === 'string') validateCardRequisites(fields.requisites);
   if (Object.keys(fields).length) {
     await PaymentMethods.updateOne({ _id: oid(req.params.id) }, { $set: fields });
   }

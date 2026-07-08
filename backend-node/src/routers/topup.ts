@@ -74,8 +74,13 @@ router.post('/submit', requireUser, upload.single('receipt'), asyncHandler(async
   const topupId = await createTopup(u.id, amount, uniqAmount, method, receiptUrl);
 
   try {
+    // `method` here is the payment method's _id (client sends the id, not the label) — resolve
+    // it to the human label so the admin notification reads "Uzcard"/"Humo", not a raw ObjectId.
+    const methodId = oid(method);
+    const methodDoc = methodId ? await PaymentMethods.findOne({ _id: methodId }).lean<Doc>() : null;
     await notifyAdminTopup({
-      topupId, userId: u.id, amount: uniqAmount, method, receiptUrl, firstName: u.first_name ?? '',
+      topupId, userId: u.id, amount: uniqAmount, method: methodDoc?.label ?? method, receiptUrl,
+      firstName: u.first_name ?? '', username: u.username ?? '',
     });
   } catch {
     /* ignore */

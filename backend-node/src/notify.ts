@@ -32,11 +32,18 @@ async function notifyAllAdmins(send: (chatId: number) => Promise<unknown>): Prom
 
 export async function notifyAdminTopup(args: {
   topupId: string; userId: number; amount: number; method: string;
-  receiptUrl?: string; firstName?: string;
+  receiptUrl?: string; firstName?: string; username?: string;
 }): Promise<void> {
-  const userLabel = args.firstName
-    ? `<b>${esc(args.firstName)}</b> (ID: <code>${args.userId}</code>)`
-    : `ID: <code>${args.userId}</code>`;
+  let userLabel: string;
+  if (args.username) {
+    userLabel = args.firstName
+      ? `<b>${esc(args.firstName)}</b> @${esc(args.username)} (ID: <code>${args.userId}</code>)`
+      : `@${esc(args.username)} (ID: <code>${args.userId}</code>)`;
+  } else if (args.firstName) {
+    userLabel = `<b>${esc(args.firstName)}</b> (ID: <code>${args.userId}</code>)`;
+  } else {
+    userLabel = `ID: <code>${args.userId}</code>`;
+  }
   const text =
     `💰 <b>Новое пополнение</b>\n` +
     `От: ${userLabel}\n` +
