@@ -1913,9 +1913,9 @@ function PaymentMethodsSection() {
           <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{editingId ? "Редактировать способ" : "Новый способ"}</p>
           <div className="flex gap-2 items-center">
             <input value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })}
-              placeholder="💳" className="a-input w-16 text-center text-xl" />
+              placeholder="💳" className="a-input !w-16 flex-shrink-0 text-center text-xl" />
             <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })}
-              placeholder="Название (Humo, Uzcard) *" className="a-input flex-1" />
+              placeholder="Название (Humo, Uzcard) *" className="a-input flex-1 min-w-0" />
           </div>
           <input value={form.requisites} onChange={(e) => setForm({ ...form, requisites: e.target.value })}
             placeholder="Номер карты / реквизиты *" className="a-input" />
