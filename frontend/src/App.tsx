@@ -17,7 +17,7 @@ const AdminPage         = lazy(() => import("./pages/AdminPage"));
 const ReviewSheet       = lazy(() => import("./pages/ReviewSheet"));
 
 type Tab = "catalog" | "chats" | "profile";
-interface UserT { user_id: number; balance: number; first_name: string; username?: string; avatar_url?: string }
+interface UserT { user_id: number; balance: number; first_name: string; username?: string; avatar_url?: string; is_admin?: boolean; is_agent?: boolean }
 interface Product {
   id: string; name: string; price: number; gameName?: string;
   variant_label?: string;
@@ -183,8 +183,10 @@ export default function App() {
       setSubmittingUsername(false);
     }
   };
-  const isAdmin = user?.user_id != null && ADMIN_IDS.has(user.user_id);
-  const isSupportAgent = user?.user_id != null && SUPPORT_AGENT_IDS.has(user.user_id);
+  // Roles come from the backend (dynamic staff collection + env super-roles). The
+  // hardcoded sets are a legacy fallback only, so a stale /me never locks anyone out.
+  const isAdmin = !!user?.is_admin || (user?.user_id != null && ADMIN_IDS.has(user.user_id));
+  const isSupportAgent = !!user?.is_agent || (user?.user_id != null && SUPPORT_AGENT_IDS.has(user.user_id));
 
   const openPendingTopup = () => setShowTopup(true);
 

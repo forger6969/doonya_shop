@@ -4,6 +4,7 @@ import { asyncHandler, HttpError } from '../http';
 import { requireUser } from '../auth';
 import { getOrCreateUser, getUserOrders } from '../repo';
 import { Users, Topups, Doc } from '../models';
+import { ADMIN_IDS, AGENT_IDS } from '../config';
 import { uploadImage } from '../cloudinary';
 
 const router = Router();
@@ -19,6 +20,10 @@ router.post('/me', requireUser, asyncHandler(async (req, res) => {
     balance: user.balance,
     email: user.email ?? '',
     avatar_url: user.avatar_url ?? '',
+    // Role flags for the client to gate the admin panel / agent features. Backed by the
+    // dynamic staff collection + env super-roles (config). is_agent = admin OR moderator.
+    is_admin: ADMIN_IDS.has(user.user_id),
+    is_agent: AGENT_IDS.has(user.user_id),
   });
 }));
 
