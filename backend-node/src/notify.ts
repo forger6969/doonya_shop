@@ -1,5 +1,5 @@
 import { bot } from './telegram';
-import { config } from './config';
+import { config, ADMIN_IDS } from './config';
 import { getAllUserIds } from './repo';
 
 // Python used "{n:,}" → comma thousands separator.
@@ -18,6 +18,17 @@ type InlineButton =
   | { text: string; web_app: { url: string } };
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+// Fan out an admin notification (topup/order) to every current admin — env super-admins AND
+// dynamic staff admins (config.ADMIN_IDS is kept live by reloadStaff()). Previously these only
+// reached config.adminId (the single owner), so admins added later via the panel never saw new
+// topups/orders. One admin's chat being unreachable (e.g. never opened /start) must not stop the
+// notification from reaching the others.
+async function notifyAllAdmins(send: (chatId: number) => Promise<unknown>): Promise<void> {
+  await Promise.all(
+    [...ADMIN_IDS].map((id) => send(id).catch((err) => console.error('notifyAllAdmins failed for', id, err))),
+  );
+}
 
 export async function notifyAdminTopup(args: {
   topupId: string; userId: number; amount: number; method: string;
@@ -42,11 +53,11 @@ export async function notifyAdminTopup(args: {
     rows.push([{ text: '📱 Открыть приложение', web_app: { url: `${config.miniAppUrl}?section=payments` } }]);
   }
   const extra = { parse_mode: 'HTML' as const, reply_markup: { inline_keyboard: rows } };
-  if (args.receiptUrl) {
-    await bot.telegram.sendPhoto(config.adminId, args.receiptUrl, { caption: text, ...extra });
-  } else {
-    await bot.telegram.sendMessage(config.adminId, text, extra);
-  }
+  await notifyAllAdmins((chatId) =>
+    args.receiptUrl
+      ? bot.telegram.sendPhoto(chatId, args.receiptUrl!, { caption: text, ...extra })
+      : bot.telegram.sendMessage(chatId, text, extra),
+  );
 }
 
 export async function notifyAdminOrder(args: {
@@ -78,10 +89,9 @@ export async function notifyAdminOrder(args: {
       { text: '✍️ Написать', url: contactUrl },
     ],
   ];
-  await bot.telegram.sendMessage(config.adminId, text, {
-    parse_mode: 'HTML',
-    reply_markup: { inline_keyboard: rows },
-  });
+  await notifyAllAdmins((chatId) =>
+    bot.telegram.sendMessage(chatId, text, { parse_mode: 'HTML', reply_markup: { inline_keyboard: rows } }),
+  );
 }
 
 export async function notifyUserTopupConfirmed(userId: number, amount: number): Promise<void> {

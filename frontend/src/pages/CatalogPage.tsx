@@ -162,11 +162,11 @@ function ListingCard({ item, onBuy, onDetail }: {
           <div className="flex flex-col gap-0">
             {item.discounted_price && item.discount_percent ? (
               <>
-                <span className="text-[9px] leading-none line-through" style={{ color: "var(--text-muted)" }}>{item.price.toLocaleString()}</span>
-                <span className="text-[14px] font-black leading-tight" style={{ color: "#EC4899" }}>{item.discounted_price.toLocaleString()}</span>
+                <span className="text-[10px] leading-none line-through" style={{ color: "var(--text-muted)" }}>{item.price.toLocaleString()}</span>
+                <span className="text-[17px] font-black leading-tight" style={{ color: "#EC4899" }}>{item.discounted_price.toLocaleString()}</span>
               </>
             ) : (
-              <span className="text-[14px] font-black leading-tight" style={{ color: "#EC4899" }}>{item.price.toLocaleString()}</span>
+              <span className="text-[17px] font-black leading-tight" style={{ color: "#EC4899" }}>{item.price.toLocaleString()}</span>
             )}
           </div>
           <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
@@ -216,11 +216,11 @@ function GameDetailProductCard({ item, onBuy, onDetail }: {
       <div className="px-2 pb-2 flex items-center justify-between gap-1.5">
         {item.discounted_price && item.discount_percent ? (
           <div className="flex flex-col gap-0">
-            <span className="text-[9px] text-white/30 line-through leading-none">{item.price.toLocaleString()}</span>
-            <span className="text-[10px] font-black leading-none" style={{ color: "#EC4899" }}>{item.discounted_price.toLocaleString()}</span>
+            <span className="text-[10px] text-white/30 line-through leading-none">{item.price.toLocaleString()}</span>
+            <span className="text-[14px] font-black leading-none" style={{ color: "#EC4899" }}>{item.discounted_price.toLocaleString()}</span>
           </div>
         ) : (
-          <span className="text-[10px] font-black" style={{ color: "#EC4899" }}>{item.price.toLocaleString()}</span>
+          <span className="text-[14px] font-black" style={{ color: "#EC4899" }}>{item.price.toLocaleString()}</span>
         )}
         <button onClick={(e) => { e.stopPropagation(); onBuy(); }}
           className="flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10px] font-bold text-white active:opacity-70 flex-shrink-0"
