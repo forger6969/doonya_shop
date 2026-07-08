@@ -1881,11 +1881,11 @@ const isValidLuhn = (digits: string): boolean => {
   return sum % 10 === 0;
 };
 
-// Only judge pass/fail once the number reaches full card length (13-19 digits, ISO/IEC 7812-1) —
-// partial input while still typing shouldn't flash a false "invalid" state.
+// Runs Luhn on whatever has been typed so far, updating on every keystroke (not just once the
+// number reaches full card length) — admin sees the border react immediately as they type.
 const cardValidity = (formatted: string): 'valid' | 'invalid' | 'neutral' => {
   const digits = formatted.replace(/\s/g, '');
-  if (!/^\d{13,19}$/.test(digits)) return 'neutral';
+  if (!digits.length) return 'neutral';
   return isValidLuhn(digits) ? 'valid' : 'invalid';
 };
 const cardBorderStyle = (v: 'valid' | 'invalid' | 'neutral') =>
