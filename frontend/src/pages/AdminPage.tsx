@@ -1862,6 +1862,35 @@ function Banners() {
 }
 
 // ─── Payment methods ──────────────────────────────────────────────────────────
+// Groups digits into 4-char blocks with spaces as the admin types, e.g. "5614 6822 1494 1939" —
+// standard card format, matches how the numbers are shown to buyers.
+const formatCardNumber = (raw: string): string =>
+  raw.replace(/\D/g, '').slice(0, 19).replace(/(.{4})/g, '$1 ').trim();
+
+// Same Luhn (mod 10) checksum the backend enforces — live feedback while typing, so a bad
+// number is caught before Save instead of only after a round-trip to the server.
+const isValidLuhn = (digits: string): boolean => {
+  let sum = 0;
+  let double = false;
+  for (let i = digits.length - 1; i >= 0; i--) {
+    let d = digits.charCodeAt(i) - 48;
+    if (double) { d *= 2; if (d > 9) d -= 9; }
+    sum += d;
+    double = !double;
+  }
+  return sum % 10 === 0;
+};
+
+// Only judge pass/fail once the number reaches full card length (13-19 digits, ISO/IEC 7812-1) —
+// partial input while still typing shouldn't flash a false "invalid" state.
+const cardValidity = (formatted: string): 'valid' | 'invalid' | 'neutral' => {
+  const digits = formatted.replace(/\s/g, '');
+  if (!/^\d{13,19}$/.test(digits)) return 'neutral';
+  return isValidLuhn(digits) ? 'valid' : 'invalid';
+};
+const cardBorderStyle = (v: 'valid' | 'invalid' | 'neutral') =>
+  v === 'invalid' ? { borderColor: '#ef4444' } : v === 'valid' ? { borderColor: '#10b981' } : undefined;
+
 function PaymentMethodsSection() {
   const empty = { label: "", icon: "💳", requisites: "", holder: "", note: "" };
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
@@ -1929,8 +1958,12 @@ function PaymentMethodsSection() {
             <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })}
               placeholder="Название (Humo, Uzcard) *" className="a-input flex-1 min-w-0" />
           </div>
-          <input value={form.requisites} onChange={(e) => setForm({ ...form, requisites: e.target.value })}
-            placeholder="Номер карты / реквизиты *" className="a-input" />
+          <input value={form.requisites} onChange={(e) => setForm({ ...form, requisites: formatCardNumber(e.target.value) })}
+            placeholder="Номер карты / реквизиты *" className="a-input" inputMode="numeric"
+            style={cardBorderStyle(cardValidity(form.requisites))} />
+          {cardValidity(form.requisites) === 'invalid' && (
+            <p className="text-red-400 text-[11px] -mt-1.5">Неверный номер карты</p>
+          )}
           <input value={form.holder} onChange={(e) => setForm({ ...form, holder: e.target.value })}
             placeholder="Владелец карты (необязательно)" className="a-input" />
 
@@ -1955,8 +1988,12 @@ function PaymentMethodsSection() {
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>
-                <input value={c.requisites} onChange={(e) => updateCard(i, { requisites: e.target.value })}
-                  placeholder="Номер карты" className="a-input !text-[12px] py-1.5" />
+                <input value={c.requisites} onChange={(e) => updateCard(i, { requisites: formatCardNumber(e.target.value) })}
+                  placeholder="Номер карты" className="a-input !text-[12px] py-1.5" inputMode="numeric"
+                  style={cardBorderStyle(cardValidity(c.requisites))} />
+                {cardValidity(c.requisites) === 'invalid' && (
+                  <p className="text-red-400 text-[11px] -mt-1">Неверный номер карты</p>
+                )}
                 <input value={c.holder} onChange={(e) => updateCard(i, { holder: e.target.value })}
                   placeholder="Владелец (необязательно)" className="a-input !text-[12px] py-1.5" />
               </div>
@@ -1966,7 +2003,8 @@ function PaymentMethodsSection() {
           <textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={2}
             placeholder="Своя подсказка покупателю (необязательно)" className="a-input resize-none" />
           {err && <div className="flex items-center gap-2 text-red-400 text-[11px]"><AlertCircle className="w-3.5 h-3.5" />{err}</div>}
-          <button onClick={save} disabled={saving || !form.label.trim() || (!form.requisites.trim() && !validCards.length)} className="a-btn">
+          <button onClick={save} disabled={saving || !form.label.trim() || (!form.requisites.trim() && !validCards.length)
+            || cardValidity(form.requisites) === 'invalid' || cards.some((c) => cardValidity(c.requisites) === 'invalid')} className="a-btn">
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> {editingId ? "Сохранить" : "Добавить способ"}</>}
           </button>
         </div>
