@@ -147,11 +147,12 @@ export const adminDeleteBanner = (id: string) => api.delete(`/admin/banners/${id
 export const adminToggleBanner = (id: string) => api.patch(`/admin/banners/${id}/toggle`).then((r) => r.data);
 
 // Payment methods (admin-managed)
-export interface PaymentMethod { id: string; label: string; icon: string; requisites: string; holder: string; note: string; is_active: boolean; order: number }
+export interface PaymentCard { type: string; requisites: string; holder: string }
+export interface PaymentMethod { id: string; label: string; icon: string; requisites: string; holder: string; cards?: PaymentCard[]; note: string; is_active: boolean; order: number }
 export const adminGetPaymentMethods = () => api.get("/admin/payment-methods").then((r) => r.data as PaymentMethod[]);
-export const adminCreatePaymentMethod = (data: { label: string; icon?: string; requisites: string; holder?: string; note?: string }) =>
+export const adminCreatePaymentMethod = (data: { label: string; icon?: string; requisites: string; holder?: string; note?: string; cards?: PaymentCard[] }) =>
   api.post("/admin/payment-methods", data).then((r) => r.data);
-export const adminUpdatePaymentMethod = (id: string, data: Partial<{ label: string; icon: string; requisites: string; holder: string; note: string; order: number; is_active: boolean }>) =>
+export const adminUpdatePaymentMethod = (id: string, data: Partial<{ label: string; icon: string; requisites: string; holder: string; note: string; order: number; is_active: boolean; cards: PaymentCard[] }>) =>
   api.patch(`/admin/payment-methods/${id}`, data).then((r) => r.data);
 export const adminTogglePaymentMethod = (id: string) => api.patch(`/admin/payment-methods/${id}/toggle`).then((r) => r.data);
 export const adminDeletePaymentMethod = (id: string) => api.delete(`/admin/payment-methods/${id}`).then((r) => r.data);

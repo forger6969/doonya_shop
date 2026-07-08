@@ -42,9 +42,17 @@ router.get('/methods', asyncHandler(async (req, res) => {
   const exact = uniqueAmount(amount);
   const note = (m.note as string)?.trim()
     || `Переведите ровно ${fmt(exact)} сум на ${m.label}. По этой сумме мы идентифицируем ваш платёж.`;
+  // Methods with multiple cards (e.g. "Банкомат" with 2+ card options) send `cards` — the
+  // frontend (TopupPage) renders a dedicated multi-card layout when it's present, falling back
+  // to the single requisites/holder pair below for ordinary one-card methods.
+  const cards = Array.isArray(m.cards) && m.cards.length
+    ? (m.cards as Array<{ type: string; requisites: string; holder?: string }>).map((c) => ({
+        type: c.type, requisites: c.requisites, holder: c.holder || (m.holder as string) || '',
+      }))
+    : undefined;
   res.json({
     method: String(m._id), label: m.label, icon: m.icon ?? '💳',
-    requisites: m.requisites, holder: m.holder ?? '', amount: exact, note,
+    requisites: m.requisites, holder: m.holder ?? '', cards, amount: exact, note,
   });
 }));
 

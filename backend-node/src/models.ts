@@ -225,12 +225,27 @@ const bannerSchema = new Schema(
 // ── 13. Payment Methods Schema ──────────────────────────────────────────────
 // Admin-managed payment methods (card requisites shown to buyers on top-up).
 // Replaces the old hardcoded uzcard/visa/atm branches in topup.ts.
+const paymentMethodCardSchema = new Schema(
+  {
+    type: { type: String, required: true },       // "Uzcard", "Humo" — label shown above this card
+    requisites: { type: String, required: true }, // номер карты
+    holder: { type: String, default: "" },        // владелец карты (falls back to method-level holder if empty)
+  },
+  { _id: false },
+);
+
 const paymentMethodSchema = new Schema(
   {
-    label: { type: String, required: true },      // "Uzcard", "Humo", "Visa"
+    label: { type: String, required: true },      // "Uzcard", "Humo", "Visa", "Банкомат"
     icon: { type: String, default: "💳" },        // эмодзи
-    requisites: { type: String, required: true }, // номер карты
+    requisites: { type: String, required: true }, // номер карты (= cards[0].requisites when cards is set)
     holder: { type: String, default: "" },        // владелец карты
+    // Optional extra cards for a single method (e.g. "Банкомат" showing 2+ cards to choose from).
+    // When set, the buyer-facing /topup/methods response returns this list instead of the single
+    // requisites/holder pair above — the frontend (TopupPage) already has a dedicated multi-card
+    // layout for it (info.cards). requisites/holder above always mirror cards[0] for admin-list
+    // display and backward compatibility with anything reading the single fields.
+    cards: { type: [paymentMethodCardSchema], default: undefined },
     note: { type: String, default: "" },          // необяз. своя подсказка
     is_active: { type: Boolean, default: true, index: true },
     order: { type: Number, default: 0 },

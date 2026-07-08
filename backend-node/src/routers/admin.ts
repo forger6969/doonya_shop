@@ -415,10 +415,31 @@ function fmtPaymentMethod(m: Doc): Doc {
     icon: m.icon ?? '💳',
     requisites: m.requisites,
     holder: m.holder ?? '',
+    cards: m.cards ?? undefined,
     note: m.note ?? '',
     is_active: m.is_active ?? true,
     order: m.order ?? 0,
   };
+}
+
+type PaymentCardInput = { type?: unknown; requisites?: unknown; holder?: unknown };
+
+// Normalise + validate the optional multi-card list (e.g. "Банкомат" with 2+ cards). Each card's
+// requisites goes through the same Luhn check as the single-card path. Returns undefined when no
+// usable cards were given, so the schema's `cards` field stays unset (single-card methods
+// untouched).
+function parseCards(raw: unknown): Array<{ type: string; requisites: string; holder: string }> | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const cards = (raw as PaymentCardInput[])
+    .map((c) => ({
+      type: String(c?.type ?? '').trim(),
+      requisites: String(c?.requisites ?? '').trim(),
+      holder: String(c?.holder ?? '').trim(),
+    }))
+    .filter((c) => c.type && c.requisites);
+  if (!cards.length) return undefined;
+  for (const c of cards) validateCardRequisites(c.requisites);
+  return cards;
 }
 
 // Luhn (mod 10) checksum — the standard check-digit algorithm used by every major card
@@ -452,17 +473,21 @@ router.get('/payment-methods', ...admin, asyncHandler(async (_req, res) => {
 }));
 
 router.post('/payment-methods', ...admin, asyncHandler(async (req, res) => {
-  const b = req.body as { label?: string; icon?: string; requisites?: string; holder?: string; note?: string };
+  const b = req.body as { label?: string; icon?: string; requisites?: string; holder?: string; note?: string; cards?: unknown };
   const label = String(b.label ?? '').trim();
-  const requisites = String(b.requisites ?? '').trim();
+  const cards = parseCards(b.cards);
+  // requisites/holder mirror the first card when cards[] is used — admin fills the card list
+  // once, not the single fields AND the card list redundantly. Kept in sync so the admin-list
+  // summary row and anything else reading the single fields still shows something sensible.
+  const requisites = String(b.requisites ?? '').trim() || cards?.[0]?.requisites || '';
+  const holder = String(b.holder ?? '').trim() || cards?.[0]?.holder || '';
   if (!label) throw new HttpError(400, 'Label required');
   if (!requisites) throw new HttpError(400, 'Requisites required');
   validateCardRequisites(requisites);
   const count = await PaymentMethods.countDocuments();
   const doc = await PaymentMethods.create({
-    label, requisites,
+    label, requisites, holder, cards,
     icon: String(b.icon ?? '💳').trim() || '💳',
-    holder: String(b.holder ?? '').trim(),
     note: String(b.note ?? '').trim(),
     is_active: true, order: count, created_at: new Date(),
   });
@@ -476,9 +501,29 @@ router.patch('/payment-methods/:id', ...admin, asyncHandler(async (req, res) => 
     if (b[k] != null) fields[k] = k === 'order' ? Number(b[k]) : String(b[k]).trim();
   }
   if (typeof b.is_active === 'boolean') fields.is_active = b.is_active;
+
+  // 'cards' key present but resolves to nothing usable → admin cleared the list, revert to
+  // single-card mode (Mongo $set can't remove a field with undefined — needs $unset).
+  let unsetCards = false;
+  if ('cards' in b) {
+    const cards = parseCards(b.cards);
+    if (cards) {
+      fields.cards = cards;
+      // Keep the single requisites/holder in sync with card #1 (admin-list summary row, and
+      // anything else reading the single fields) unless the request also set them explicitly.
+      if (b.requisites == null) fields.requisites = cards[0].requisites;
+      if (b.holder == null) fields.holder = cards[0].holder;
+    } else {
+      unsetCards = true;
+    }
+  }
   if (typeof fields.requisites === 'string') validateCardRequisites(fields.requisites);
-  if (Object.keys(fields).length) {
-    await PaymentMethods.updateOne({ _id: oid(req.params.id) }, { $set: fields });
+
+  const update: Doc = {};
+  if (Object.keys(fields).length) update.$set = fields;
+  if (unsetCards) update.$unset = { cards: '' };
+  if (Object.keys(update).length) {
+    await PaymentMethods.updateOne({ _id: oid(req.params.id) }, update);
   }
   res.json({ ok: true });
 }));

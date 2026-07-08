@@ -16,7 +16,7 @@ import {
   adminGetPromos, adminCreatePromo, adminDeletePromo, adminTogglePromo,
   adminGetBanners, adminCreateBanner, adminDeleteBanner, adminToggleBanner, type Banner,
   adminGetPaymentMethods, adminCreatePaymentMethod, adminUpdatePaymentMethod,
-  adminTogglePaymentMethod, adminDeletePaymentMethod, type PaymentMethod,
+  adminTogglePaymentMethod, adminDeletePaymentMethod, type PaymentMethod, type PaymentCard,
   getSupportWsUrl, agentGetAllUsers,
   getOrderChatWsUrl, adminGetOrderChats, type AdminOrderChat,
   adminGetStaff, adminAddStaff, adminDeleteStaff, type StaffMember,
@@ -1869,26 +1869,38 @@ function PaymentMethodsSection() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(empty);
+  // Optional extra cards under ONE method (e.g. "Банкомат" showing 2+ cards to pick from).
+  // The single requisites/holder fields above stay the primary/only path for ordinary
+  // one-card methods (Uzcard, Visa) — this section is purely additive.
+  const [cards, setCards] = useState<PaymentCard[]>([]);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
   const load = async () => { setLoading(true); setMethods(await adminGetPaymentMethods()); setLoading(false); };
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => { setEditingId(null); setForm(empty); setErr(""); setShowForm(true); };
+  const openCreate = () => { setEditingId(null); setForm(empty); setCards([]); setErr(""); setShowForm(true); };
   const openEdit = (m: PaymentMethod) => {
     setEditingId(m.id);
     setForm({ label: m.label, icon: m.icon || "💳", requisites: m.requisites, holder: m.holder, note: m.note });
+    setCards(m.cards ?? []);
     setErr(""); setShowForm(true);
   };
 
+  const addCard = () => setCards((c) => [...c, { type: "", requisites: "", holder: "" }]);
+  const updateCard = (i: number, patch: Partial<PaymentCard>) =>
+    setCards((c) => c.map((card, idx) => (idx === i ? { ...card, ...patch } : card)));
+  const removeCard = (i: number) => setCards((c) => c.filter((_, idx) => idx !== i));
+  const validCards = cards.filter((c) => c.type.trim() && c.requisites.trim());
+
   const save = async () => {
-    if (!form.label.trim() || !form.requisites.trim()) return;
+    if (!form.label.trim() || (!form.requisites.trim() && !validCards.length)) return;
     setSaving(true); setErr("");
     try {
-      if (editingId) await adminUpdatePaymentMethod(editingId, form);
-      else await adminCreatePaymentMethod(form);
-      setForm(empty); setEditingId(null); setShowForm(false);
+      const payload = { ...form, cards: validCards };
+      if (editingId) await adminUpdatePaymentMethod(editingId, payload);
+      else await adminCreatePaymentMethod(payload);
+      setForm(empty); setCards([]); setEditingId(null); setShowForm(false);
       load();
     } catch (e: any) {
       setErr(e?.response?.data?.detail || "Error");
@@ -1921,10 +1933,40 @@ function PaymentMethodsSection() {
             placeholder="Номер карты / реквизиты *" className="a-input" />
           <input value={form.holder} onChange={(e) => setForm({ ...form, holder: e.target.value })}
             placeholder="Владелец карты (необязательно)" className="a-input" />
+
+          <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">
+                Несколько карт (напр. для «Банкомат»)
+              </p>
+              <button type="button" onClick={addCard}
+                className="flex items-center gap-1 text-[11px] font-bold text-zinc-400 active:opacity-70">
+                <Plus className="w-3 h-3" /> Карта
+              </button>
+            </div>
+            {cards.map((c, i) => (
+              <div key={i} className="flex flex-col gap-1.5 rounded-lg p-2.5" style={{ background: "rgba(255,255,255,0.03)" }}>
+                <div className="flex gap-1.5 items-center">
+                  <input value={c.type} onChange={(e) => updateCard(i, { type: e.target.value })}
+                    placeholder="Тип (Uzcard, Humo)" className="a-input flex-1 min-w-0 !text-[12px] py-1.5" />
+                  <button type="button" onClick={() => removeCard(i)}
+                    className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0"
+                    style={{ background: "rgba(239,68,68,0.10)", color: "#f87171" }}>
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+                <input value={c.requisites} onChange={(e) => updateCard(i, { requisites: e.target.value })}
+                  placeholder="Номер карты" className="a-input !text-[12px] py-1.5" />
+                <input value={c.holder} onChange={(e) => updateCard(i, { holder: e.target.value })}
+                  placeholder="Владелец (необязательно)" className="a-input !text-[12px] py-1.5" />
+              </div>
+            ))}
+          </div>
+
           <textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={2}
             placeholder="Своя подсказка покупателю (необязательно)" className="a-input resize-none" />
           {err && <div className="flex items-center gap-2 text-red-400 text-[11px]"><AlertCircle className="w-3.5 h-3.5" />{err}</div>}
-          <button onClick={save} disabled={saving || !form.label.trim() || !form.requisites.trim()} className="a-btn">
+          <button onClick={save} disabled={saving || !form.label.trim() || (!form.requisites.trim() && !validCards.length)} className="a-btn">
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> {editingId ? "Сохранить" : "Добавить способ"}</>}
           </button>
         </div>
@@ -1944,7 +1986,9 @@ function PaymentMethodsSection() {
                 <span className="text-2xl">{m.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-black text-white text-sm truncate">{m.label}</p>
-                  <p className="text-zinc-500 text-[11px] truncate">{m.requisites}{m.holder ? ` · ${m.holder}` : ""}</p>
+                  <p className="text-zinc-500 text-[11px] truncate">
+                    {m.cards?.length ? `${m.cards.length} карты` : `${m.requisites}${m.holder ? ` · ${m.holder}` : ""}`}
+                  </p>
                 </div>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.is_active ? "bg-emerald-400/10 text-emerald-400" : "bg-zinc-700/40 text-zinc-500"}`}>
                   {m.is_active ? "Активен" : "Скрыт"}
