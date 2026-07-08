@@ -53,11 +53,28 @@ export async function notifyAdminTopup(args: {
     rows.push([{ text: '📱 Открыть приложение', web_app: { url: `${config.miniAppUrl}?section=payments` } }]);
   }
   const extra = { parse_mode: 'HTML' as const, reply_markup: { inline_keyboard: rows } };
-  await notifyAllAdmins((chatId) =>
-    args.receiptUrl
-      ? bot.telegram.sendPhoto(chatId, args.receiptUrl!, { caption: text, ...extra })
-      : bot.telegram.sendMessage(chatId, text, extra),
-  );
+  // Cloudinary receipts can come out as huge/16-bit PNGs (some phone screenshot pipelines produce
+  // these) — Telegram's sendPhoto-by-URL silently rejects anything it can't fetch/decode as a
+  // normal photo ("failed to get HTTP URL content"), and that used to kill the ENTIRE notification
+  // for every admin, not just the photo. Ask Cloudinary to deliver a safe, always-decodable copy
+  // for the Telegram call specifically (resize + force 8-bit JPEG) — the original stays untouched
+  // in the DB/receipt record.
+  const telegramSafeReceiptUrl = args.receiptUrl?.replace('/upload/', '/upload/w_1280,f_jpg,q_auto/');
+  await notifyAllAdmins(async (chatId) => {
+    if (!telegramSafeReceiptUrl) {
+      await bot.telegram.sendMessage(chatId, text, extra);
+      return;
+    }
+    try {
+      await bot.telegram.sendPhoto(chatId, telegramSafeReceiptUrl, { caption: text, ...extra });
+    } catch (err) {
+      // Belt-and-suspenders: even the transformed URL can fail (Cloudinary hiccup, huge original,
+      // etc). Never let a photo-delivery failure mean the admin hears NOTHING about the topup —
+      // fall back to a text message with a clickable link to the receipt.
+      console.error('notifyAdminTopup: sendPhoto failed, falling back to text', chatId, err);
+      await bot.telegram.sendMessage(chatId, `${text}\nЧек: ${args.receiptUrl}`, extra);
+    }
+  });
 }
 
 export async function notifyAdminOrder(args: {
