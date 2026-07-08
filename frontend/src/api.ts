@@ -117,6 +117,14 @@ export const adminConfirmTopup = (id: string) => api.post(`/admin/topup/${id}/co
 export const adminRejectTopup = (id: string) => api.post(`/admin/topup/${id}/reject`).then((r) => r.data);
 export const adminCompleteOrder = (id: string) => api.post(`/admin/order/${id}/complete`).then((r) => r.data);
 
+// ── Staff / roles ────────────────────────────────────────────────────────────
+export interface StaffMember { user_id: number; role: "admin" | "moderator"; username?: string; first_name?: string; added_by?: number; created_at?: string; }
+export interface StaffList { env: { admins: number[]; moderators: number[] }; staff: StaffMember[]; }
+export const adminGetStaff = () => api.get("/admin/staff").then((r) => r.data as StaffList);
+export const adminAddStaff = (user_id: number, role: "admin" | "moderator") =>
+  api.post("/admin/staff", { user_id, role }).then((r) => r.data);
+export const adminDeleteStaff = (user_id: number) => api.delete(`/admin/staff/${user_id}`).then((r) => r.data);
+
 // Analytics
 export const adminSalesStats = (days: number) => api.get(`/admin/analytics/sales?days=${days}`).then((r) => r.data);
 export const adminProductStats = () => api.get("/admin/analytics/products").then((r) => r.data);

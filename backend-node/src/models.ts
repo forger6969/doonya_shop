@@ -239,6 +239,24 @@ const paymentMethodSchema = new Schema(
   { ...opts, collection: 'payment_methods' },
 );
 
+// ── 14. Staff Schema ────────────────────────────────────────────────────────
+// Dynamically-managed roles, editable by admins from the panel (no redeploy).
+// Env ADMIN_ID / EXTRA_ADMIN_IDS / SUPPORT_AGENT_IDS remain immutable super-roles;
+// this collection layers additional admins/moderators on top (see config.reloadStaff).
+//   admin     — full panel access (everything an env-admin can do)
+//   moderator — support/order chat agent only (AGENT_IDS), no product/role management
+const staffSchema = new Schema(
+  {
+    user_id: { type: Number, required: true, unique: true, index: true }, // Telegram ID
+    role: { type: String, enum: ['admin', 'moderator'], required: true, index: true },
+    username: { type: String, default: "" },
+    first_name: { type: String, default: "" },
+    added_by: { type: Number, default: 0 }, // Telegram ID of the admin who added them
+    created_at: { type: Date, default: Date.now },
+  },
+  { ...opts, collection: 'staff' },
+);
+
 // Экспорт моделей
 export const Users = mongoose.model('User', userSchema);
 export const Games = mongoose.model('Game', gameSchema);
@@ -253,6 +271,7 @@ export const SupportChats = mongoose.model('SupportChat', supportChatSchema);
 export const OrderChats = mongoose.model('OrderChat', orderChatSchema);
 export const Banners = mongoose.model('Banner', bannerSchema);
 export const PaymentMethods = mongoose.model('PaymentMethod', paymentMethodSchema);
+export const Staff = mongoose.model('Staff', staffSchema);
 
 // Снова добавляем тип Doc, который ищут все ваши роутеры и репозиторий
 export type Doc = Record<string, any>;

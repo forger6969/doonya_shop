@@ -1,7 +1,7 @@
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { app } from './app';
-import { config } from './config';
+import { config, reloadStaff } from './config';
 import { connectDb } from './db';
 import { createIndexes } from './models';
 import { bot } from './bot';
@@ -51,6 +51,7 @@ async function start(): Promise<void> {
   await connectDb();
   await createIndexes();
   await seedPaymentMethods();
+  await reloadStaff(); // load dynamic admins/moderators from the staff collection
 
   if (config.webhookUrl) {
     try {

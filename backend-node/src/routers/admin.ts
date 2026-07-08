@@ -2,12 +2,12 @@ import { Router, RequestHandler } from 'express';
 import multer from 'multer';
 import { asyncHandler, HttpError } from '../http';
 import { requireUser } from '../auth';
-import { ADMIN_IDS } from '../config';
+import { ADMIN_IDS, reloadStaff, isEnvAdmin, listEnvRoles } from '../config';
 import { cacheInvalidate } from '../cache';
 import { uploadImage } from '../cloudinary';
 import { notifyUserTopupConfirmed, notifyUserTopupRejected, notifyUserOrderReady, broadcastDiscount } from '../notify';
 import { notifyManager, orderChatManager } from '../realtime';
-import { mongoose, Topups, Orders, Games, Products, Users, Banners, PaymentMethods, Doc } from '../models';
+import { mongoose, Topups, Orders, Games, Products, Users, Banners, PaymentMethods, Staff, Doc } from '../models';
 import {
   confirmTopup, rejectTopup, completeOrder, refundOrder, addOrderChatMsg,
   createGame, deleteGame, updateGame, getGames, getProducts,
@@ -465,6 +465,55 @@ router.patch('/payment-methods/:id/toggle', ...admin, asyncHandler(async (req, r
 
 router.delete('/payment-methods/:id', ...admin, asyncHandler(async (req, res) => {
   await PaymentMethods.deleteOne({ _id: oid(req.params.id) });
+  res.json({ ok: true });
+}));
+
+// ── Staff / roles (admin-only) ───────────────────────────────────────────────
+// Dynamic admins & moderators, editable without redeploy. Env super-roles are
+// immutable (returned under `env`, no delete). Only full admins reach here (assertAdmin).
+const ROLES = ['admin', 'moderator'] as const;
+type Role = (typeof ROLES)[number];
+
+router.get('/staff', ...admin, asyncHandler(async (_req, res) => {
+  const staff = await Staff.find({}).sort({ created_at: -1 }).lean<Doc[]>();
+  res.json({ env: listEnvRoles(), staff });
+}));
+
+router.post('/staff', ...admin, asyncHandler(async (req, res) => {
+  const b = req.body ?? {};
+  const userId = Number(b.user_id);
+  const role = String(b.role) as Role;
+  if (!Number.isFinite(userId) || userId <= 0) throw new HttpError(400, 'Invalid user_id');
+  if (!ROLES.includes(role)) throw new HttpError(400, 'Invalid role (admin | moderator)');
+  if (userId === req.tgUser.id) throw new HttpError(400, 'You already have full access');
+  if (isEnvAdmin(userId)) throw new HttpError(400, 'This user is already an owner-level admin');
+
+  // Prefill name/username from an existing bot user, if any.
+  const u = await Users.findOne({ user_id: userId }).lean<Doc>();
+  await Staff.updateOne(
+    { user_id: userId },
+    {
+      $set: {
+        role,
+        username: typeof b.username === 'string' && b.username ? b.username : (u?.username ?? ''),
+        first_name: typeof b.first_name === 'string' && b.first_name ? b.first_name : (u?.first_name ?? ''),
+        added_by: req.tgUser.id,
+      },
+      $setOnInsert: { created_at: new Date() },
+    },
+    { upsert: true },
+  );
+  await reloadStaff();
+  const saved = await Staff.findOne({ user_id: userId }).lean<Doc>();
+  res.json({ ok: true, staff: saved });
+}));
+
+router.delete('/staff/:userId', ...admin, asyncHandler(async (req, res) => {
+  const userId = Number(req.params.userId);
+  if (!Number.isFinite(userId)) throw new HttpError(400, 'Invalid user_id');
+  if (isEnvAdmin(userId)) throw new HttpError(400, 'Cannot remove an owner-level admin (set via env)');
+  await Staff.deleteOne({ user_id: userId });
+  await reloadStaff();
   res.json({ ok: true });
 }));
 

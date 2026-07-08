@@ -19,6 +19,7 @@ import {
   adminTogglePaymentMethod, adminDeletePaymentMethod, type PaymentMethod,
   getSupportWsUrl, agentGetAllUsers,
   getOrderChatWsUrl, adminGetOrderChats, type AdminOrderChat,
+  adminGetStaff, adminAddStaff, adminDeleteStaff, type StaffMember,
 } from "../api";
 import { useLang, type Lang } from "../i18n";
 
@@ -32,7 +33,7 @@ interface PurchaseField { label: string; required: boolean }
 interface Product { id: string; category_id?: string; category_name?: string; name: string; description: string; price: number; icon_url: string; sales_count: number; revenue: number; purchase_fields: PurchaseField[]; redirect_to_chat?: boolean; chat_message?: string; badge_emoji?: string; discount_percent?: number; discount_enabled?: boolean; discount_until?: string | null }
 interface Promo { id: string; code: string; discount_pct: number; min_order_amount: number; max_uses: number; uses: number; is_active: boolean; created_at: string }
 
-type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "banners" | "payment_methods" | "chat" | "order_chats";
+type Section = "dashboard" | "payments" | "orders" | "catalog" | "analytics" | "promos" | "banners" | "payment_methods" | "chat" | "order_chats" | "staff";
 
 // ─── Utils ────────────────────────────────────────────────────────────────────
 const fmt = (n: number) => n.toLocaleString("ru-RU") + " sum";
@@ -1976,6 +1977,118 @@ function PaymentMethodsSection() {
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
+function StaffSection() {
+  const [env, setEnv] = useState<{ admins: number[]; moderators: number[] }>({ admins: [], moderators: [] });
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState("");
+  const [role, setRole] = useState<"admin" | "moderator">("moderator");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  const load = async () => {
+    setLoading(true);
+    try { const d = await adminGetStaff(); setEnv(d.env); setStaff(d.staff); } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, []);
+
+  const add = async () => {
+    const id = Number(userId.trim());
+    if (!Number.isFinite(id) || id <= 0) { setErr("Введите корректный Telegram ID (число)"); return; }
+    setSaving(true); setErr("");
+    try {
+      await adminAddStaff(id, role);
+      setUserId("");
+      await load();
+    } catch (e: any) {
+      setErr(e?.response?.data?.detail || "Ошибка");
+    } finally { setSaving(false); }
+  };
+
+  const remove = async (id: number) => {
+    setErr("");
+    try { await adminDeleteStaff(id); await load(); }
+    catch (e: any) { setErr(e?.response?.data?.detail || "Ошибка"); }
+  };
+
+  const roleBadge = (r: string) => (
+    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide ${
+      r === "admin" ? "bg-amber-400/15 text-amber-400" : "bg-sky-400/15 text-sky-400"}`}>
+      {r === "admin" ? "Админ" : "Модератор"}
+    </span>
+  );
+
+  const Row = ({ id, name, r, removable }: { id: number; name?: string; r: string; removable: boolean }) => (
+    <div className="a-card px-4 py-3 flex items-center gap-3">
+      <div className="w-8 h-8 rounded-full bg-white/[0.04] flex items-center justify-center shrink-0">
+        <Users className="w-4 h-4 text-zinc-500" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-bold text-white truncate">{name || `ID ${id}`}</p>
+        <p className="text-[11px] text-zinc-600 font-mono">{id}</p>
+      </div>
+      {roleBadge(r)}
+      {removable ? (
+        <button onClick={() => remove(id)} className="p-1.5 text-zinc-600 active:text-red-400"><Trash2 className="w-4 h-4" /></button>
+      ) : (
+        <span className="text-[9px] font-bold uppercase text-zinc-700 px-1.5">Владелец</span>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col flex-1">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.15em] uppercase text-zinc-600">Роли</p>
+          <h2 className="text-xl font-black text-white mt-0.5">Команда</h2>
+        </div>
+        <button onClick={load} className="p-1.5 text-zinc-600 active:text-white"><RefreshCw className="w-4 h-4" /></button>
+      </div>
+
+      {/* Add form */}
+      <div className="mx-4 mb-3 a-card p-4 flex flex-col gap-3">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">Добавить в команду</p>
+        <input value={userId} onChange={(e) => setUserId(e.target.value.replace(/[^0-9]/g, ""))}
+          inputMode="numeric" placeholder="Telegram ID (напр. 8235243143)" className="a-input" />
+        <div className="flex gap-2">
+          {(["moderator", "admin"] as const).map((rv) => (
+            <button key={rv} onClick={() => setRole(rv)}
+              className={`flex-1 py-2 rounded-xl text-[12px] font-bold ${role === rv ? "bg-white/10 text-white" : "a-card text-zinc-500"}`}>
+              {rv === "admin" ? "Админ" : "Модератор"}
+            </button>
+          ))}
+        </div>
+        <p className="text-[11px] text-zinc-600 leading-snug">
+          {role === "admin" ? "Полный доступ к панели, как у тебя." : "Только чаты поддержки и заказов, без товаров и ролей."}
+        </p>
+        {err && <p className="text-[12px] text-red-400 font-semibold">{err}</p>}
+        <button onClick={add} disabled={saving}
+          className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-amber-400 text-black text-[13px] font-black active:opacity-80 disabled:opacity-50">
+          <Plus className="w-4 h-4" /> {saving ? "..." : "Добавить"}
+        </button>
+      </div>
+
+      {/* Lists */}
+      {loading ? (
+        <p className="text-center text-zinc-600 text-[13px] py-8">Загрузка...</p>
+      ) : (
+        <div className="px-4 pb-6 flex flex-col gap-2">
+          {env.admins.map((id) => <Row key={`ea-${id}`} id={id} r="admin" removable={false} />)}
+          {env.moderators.map((id) => <Row key={`em-${id}`} id={id} r="moderator" removable={false} />)}
+          {staff.map((m) => (
+            <Row key={`s-${m.user_id}`} id={m.user_id}
+              name={m.first_name || (m.username ? "@" + m.username : "")} r={m.role} removable={true} />
+          ))}
+          {env.admins.length + env.moderators.length + staff.length === 0 && (
+            <p className="text-center text-zinc-600 text-[13px] py-8">Пока никого нет</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { t, lang, setLang } = useLang();
   const [section, setSection] = useState<Section>(() => {
@@ -2034,6 +2147,7 @@ export default function AdminPage() {
     { id: "promos",    label: t.adPromos,  Icon: Tag },
     { id: "banners",   label: "Баннеры",   Icon: Package },
     { id: "payment_methods", label: "Оплата", Icon: CreditCard },
+    { id: "staff",     label: "Команда",  Icon: Users },
   ];
 
   return (
@@ -2090,6 +2204,7 @@ export default function AdminPage() {
         {section === "promos"      && <Promos />}
         {section === "banners"     && <Banners />}
         {section === "payment_methods" && <PaymentMethodsSection />}
+        {section === "staff"       && <StaffSection />}
         {section === "chat"        && <AdminChat initialTarget={null} />}
         {section === "order_chats" && <AdminOrderChats initialOrderId={orderChatTarget} />}
       </div>
