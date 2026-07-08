@@ -1891,6 +1891,19 @@ const cardValidity = (formatted: string): 'valid' | 'invalid' | 'neutral' => {
 const cardBorderStyle = (v: 'valid' | 'invalid' | 'neutral') =>
   v === 'invalid' ? { borderColor: '#ef4444' } : v === 'valid' ? { borderColor: '#10b981' } : undefined;
 
+// BIN-based network guess — Uzcard/Humo are Uzbekistan's local systems (Uzcard: classic 8600.. и
+// newer contactless 5614..; Humo: 9860..), plus the usual international networks as a fallback.
+// Purely a starting suggestion — admin can always type over it by hand.
+const detectCardType = (digits: string): string => {
+  if (digits.length < 4) return '';
+  if (/^(5614|8600)/.test(digits)) return 'Uzcard';
+  if (/^9860/.test(digits)) return 'Humo';
+  if (/^4/.test(digits)) return 'Visa';
+  if (/^5[1-5]/.test(digits) || /^2[2-7]/.test(digits)) return 'Mastercard';
+  if (/^220[0-4]/.test(digits)) return 'Mir';
+  return '';
+};
+
 function PaymentMethodsSection() {
   const empty = { label: "", icon: "💳", requisites: "", holder: "", note: "" };
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
@@ -1916,11 +1929,36 @@ function PaymentMethodsSection() {
     setErr(""); setShowForm(true);
   };
 
-  const addCard = () => setCards((c) => [...c, { type: "", requisites: "", holder: "" }]);
+  // Multi-card mode replaces the single top requisites/holder fields entirely (each card needs
+  // its own type, which the single fields don't have). First click: migrate whatever's already
+  // typed up top into card #1 (auto-guessing its type) instead of leaving it stranded/unused.
+  const addCard = () => {
+    if (cards.length === 0 && (form.requisites.trim() || form.holder.trim())) {
+      const detected = detectCardType(form.requisites.replace(/\s/g, ''));
+      setCards([
+        { type: detected, requisites: form.requisites, holder: form.holder },
+        { type: '', requisites: '', holder: '' },
+      ]);
+      setForm({ ...form, requisites: '', holder: '' });
+    } else {
+      setCards((c) => [...c, { type: '', requisites: '', holder: '' }]);
+    }
+  };
   const updateCard = (i: number, patch: Partial<PaymentCard>) =>
-    setCards((c) => c.map((card, idx) => (idx === i ? { ...card, ...patch } : card)));
+    setCards((c) => c.map((card, idx) => {
+      if (idx !== i) return card;
+      const next = { ...card, ...patch };
+      // Auto-fill the type as the number is typed, but never clobber a type the admin already
+      // set (by hand or from an earlier successful guess).
+      if (patch.requisites !== undefined && !card.type.trim()) {
+        const detected = detectCardType(patch.requisites.replace(/\s/g, ''));
+        if (detected) next.type = detected;
+      }
+      return next;
+    }));
   const removeCard = (i: number) => setCards((c) => c.filter((_, idx) => idx !== i));
   const validCards = cards.filter((c) => c.type.trim() && c.requisites.trim());
+  const incompleteCard = cards.some((c) => c.requisites.trim() && !c.type.trim());
 
   const save = async () => {
     if (!form.label.trim() || (!form.requisites.trim() && !validCards.length)) return;
@@ -1958,14 +1996,22 @@ function PaymentMethodsSection() {
             <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })}
               placeholder="Название (Humo, Uzcard) *" className="a-input flex-1 min-w-0" />
           </div>
-          <input value={form.requisites} onChange={(e) => setForm({ ...form, requisites: formatCardNumber(e.target.value) })}
-            placeholder="Номер карты / реквизиты *" className="a-input" inputMode="numeric"
-            style={cardBorderStyle(cardValidity(form.requisites))} />
-          {cardValidity(form.requisites) === 'invalid' && (
-            <p className="text-red-400 text-[11px] -mt-1.5">Неверный номер карты</p>
+          {cards.length === 0 && (
+            <>
+              <input value={form.requisites} onChange={(e) => {
+                  const formatted = formatCardNumber(e.target.value);
+                  const detected = !form.label.trim() ? detectCardType(formatted.replace(/\s/g, '')) : '';
+                  setForm({ ...form, requisites: formatted, ...(detected ? { label: detected } : {}) });
+                }}
+                placeholder="Номер карты / реквизиты *" className="a-input" inputMode="numeric"
+                style={cardBorderStyle(cardValidity(form.requisites))} />
+              {cardValidity(form.requisites) === 'invalid' && (
+                <p className="text-red-400 text-[11px] -mt-1.5">Неверный номер карты</p>
+              )}
+              <input value={form.holder} onChange={(e) => setForm({ ...form, holder: e.target.value })}
+                placeholder="Владелец карты (необязательно)" className="a-input" />
+            </>
           )}
-          <input value={form.holder} onChange={(e) => setForm({ ...form, holder: e.target.value })}
-            placeholder="Владелец карты (необязательно)" className="a-input" />
 
           <div className="flex flex-col gap-2 pt-1" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
             <div className="flex items-center justify-between pt-1">
@@ -1994,6 +2040,9 @@ function PaymentMethodsSection() {
                 {cardValidity(c.requisites) === 'invalid' && (
                   <p className="text-red-400 text-[11px] -mt-1">Неверный номер карты</p>
                 )}
+                {c.requisites.trim() && !c.type.trim() && (
+                  <p className="text-amber-400 text-[11px] -mt-1">Укажите тип карты (не определился автоматически)</p>
+                )}
                 <input value={c.holder} onChange={(e) => updateCard(i, { holder: e.target.value })}
                   placeholder="Владелец (необязательно)" className="a-input !text-[12px] py-1.5" />
               </div>
@@ -2003,7 +2052,7 @@ function PaymentMethodsSection() {
           <textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} rows={2}
             placeholder="Своя подсказка покупателю (необязательно)" className="a-input resize-none" />
           {err && <div className="flex items-center gap-2 text-red-400 text-[11px]"><AlertCircle className="w-3.5 h-3.5" />{err}</div>}
-          <button onClick={save} disabled={saving || !form.label.trim() || (!form.requisites.trim() && !validCards.length)
+          <button onClick={save} disabled={saving || !form.label.trim() || (!form.requisites.trim() && !validCards.length) || incompleteCard
             || cardValidity(form.requisites) === 'invalid' || cards.some((c) => cardValidity(c.requisites) === 'invalid')} className="a-btn">
             {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> {editingId ? "Сохранить" : "Добавить способ"}</>}
           </button>
