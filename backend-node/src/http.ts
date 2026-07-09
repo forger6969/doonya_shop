@@ -14,6 +14,19 @@ export const asyncHandler =
     fn(req, res, next).catch(next);
   };
 
+// Bounds a promise that could otherwise hang forever (e.g. a stalled upstream
+// HTTP call with no timeout of its own), turning a frozen request into a clean
+// rejection so the client doesn't spin indefinitely on "Отправка...".
+export function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
 // Central error handler — matches FastAPI's { "detail": ... } body shape.
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
   if (err instanceof HttpError) {

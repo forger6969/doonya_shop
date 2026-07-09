@@ -85,7 +85,7 @@ export interface Translations {
   // Support
   online: string; supportHint: string;
   // Topup extra
-  atmLabel: string; topupMinError: string; copied: string;
+  atmLabel: string; topupMinError: string; topupSubmitError: string; copied: string;
   selectFile: string; submitForReview: string; cancelTopup: string;
   iTransferred: string; iUnderstandNoRefund: string;
   continueBtn: string; choosePayMethod: string; attachReceiptHint: string;
@@ -172,7 +172,7 @@ const ru: Translations = {
   chatEmptyLine1: 'Здесь можно написать нам по заказу.', chatEmptyLine2: 'Обычно отвечаем быстро.',
   writeMsgPlaceholder: 'Написать сообщение...',
   online: 'Онлайн', supportHint: 'Напишите нам — обычно отвечаем в течение нескольких минут',
-  atmLabel: 'Банкомат', topupMinError: 'Минимум 5 000 сум', copied: 'Скопировано!',
+  atmLabel: 'Банкомат', topupMinError: 'Минимум 5 000 сум', topupSubmitError: 'Не удалось отправить чек. Проверьте соединение и попробуйте снова.', copied: 'Скопировано!',
   selectFile: 'Нажмите чтобы выбрать файл', submitForReview: 'Отправить на проверку', cancelTopup: 'Отменить пополнение',
   iTransferred: 'Я перевёл — прикрепить чек', iUnderstandNoRefund: 'Я понимаю, что средства не возвращаются и не выводятся',
   continueBtn: 'Продолжить', choosePayMethod: 'Выберите способ оплаты', attachReceiptHint: 'Прикрепите скриншот или фото чека об оплате',
@@ -263,7 +263,7 @@ const uz: Translations = {
   chatEmptyLine1: "Buyurtma bo'yicha yozishingiz mumkin.", chatEmptyLine2: "Odatda tez javob beramiz.",
   writeMsgPlaceholder: 'Xabar yozish...',
   online: 'Online', supportHint: "Yozing — odatda bir necha daqiqa ichida javob beramiz",
-  atmLabel: 'Bankomat', topupMinError: "Minimum 5 000 so'm", copied: 'Nusxalandi!',
+  atmLabel: 'Bankomat', topupMinError: "Minimum 5 000 so'm", topupSubmitError: "Chekni yuborib bo'lmadi. Ulanishni tekshirib, qayta urinib ko'ring.", copied: 'Nusxalandi!',
   selectFile: 'Faylni tanlash uchun bosing', submitForReview: "Ko'rib chiqish uchun yuborish", cancelTopup: "To'ldirishni bekor qilish",
   iTransferred: "O'tkazdim — chekni biriktirish", iUnderstandNoRefund: "Mablag' qaytarilmasligini va chiqarib bo'lmasligini tushunaman",
   continueBtn: 'Davom etish', choosePayMethod: "To'lov usulini tanlang", attachReceiptHint: "To'lov chekining skrinshoti yoki fotosuratini biriktiring",

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { asyncHandler, HttpError } from '../http';
+import { asyncHandler, HttpError, withTimeout } from '../http';
 import { requireUser } from '../auth';
 import { getOrCreateUser, createTopup } from '../repo';
 import { uploadImage } from '../cloudinary';
@@ -86,12 +86,14 @@ router.post('/submit', requireUser, upload.single('receipt'), asyncHandler(async
     // it to the human label so the admin notification reads "Uzcard"/"Humo", not a raw ObjectId.
     const methodId = oid(method);
     const methodDoc = methodId ? await PaymentMethods.findOne({ _id: methodId }).lean<Doc>() : null;
-    await notifyAdminTopup({
+    // Bounded: a stalled Telegram API call here must not hang the response — the
+    // surrounding catch only protects against rejection, not an unsettled promise.
+    await withTimeout(notifyAdminTopup({
       topupId, userId: u.id, amount: uniqAmount, method: methodDoc?.label ?? method, receiptUrl,
       firstName: u.first_name ?? '', username: u.username ?? '',
-    });
-  } catch {
-    /* ignore */
+    }), 10_000, 'notifyAdminTopup');
+  } catch (e) {
+    console.error('notifyAdminTopup failed for topup', topupId, e);
   }
 
   res.json({ ok: true, topup_id: topupId });

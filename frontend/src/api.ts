@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-export const api = axios.create({ baseURL: BASE_URL });
+// Without a timeout, a stalled backend call (e.g. an upstream upload hanging) leaves
+// the caller's loading/submit button spinning forever with no way to recover.
+export const api = axios.create({ baseURL: BASE_URL, timeout: 35_000 });
 
 api.interceptors.request.use((config) => {
   config.headers["X-Init-Data"] = window.Telegram?.WebApp?.initData ?? "";

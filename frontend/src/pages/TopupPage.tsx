@@ -116,6 +116,7 @@ export default function TopupPage({ onBack }: Props) {
   const handleSubmit = async () => {
     if (!file || !info || !method) return;
     setLoading(true);
+    setError("");
     try {
       const fd = new FormData();
       fd.append("amount", amount);
@@ -126,6 +127,8 @@ export default function TopupPage({ onBack }: Props) {
       window.clearInterval(intervalRef.current);
       localStorage.removeItem(SESSION_KEY);
       setStep("done");
+    } catch {
+      setError(t.topupSubmitError);
     } finally {
       setLoading(false);
     }
@@ -418,6 +421,7 @@ export default function TopupPage({ onBack }: Props) {
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             />
           </label>
+          {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             className="s-btn"
             disabled={!file || loading}
