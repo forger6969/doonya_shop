@@ -204,3 +204,7 @@ export const getMyOrderChatHistory = (order_id: string) =>
   api.get(`/order-chat/my/${order_id}`).then((r) => r.data as { messages: { id: string; from: string; text: string; ts: string }[]; order_id: string; unread_by_user: number });
 export const adminGetOrderChats = (game_id = "", product_id = "") =>
   api.get("/order-chat/admin/chats", { params: { ...(game_id && { game_id }), ...(product_id && { product_id }) } }).then((r) => r.data as AdminOrderChat[]);
+// Opens (creating if needed) the chat for an order — used when the admin clicks "Написать
+// клиенту" on an order whose product didn't have redirect_to_chat on at purchase time.
+export const adminOpenOrderChat = (order_id: string) =>
+  api.post(`/order-chat/admin/${order_id}/open`).then((r) => r.data as AdminOrderChat);

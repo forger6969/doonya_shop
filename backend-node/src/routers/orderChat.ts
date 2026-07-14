@@ -5,7 +5,7 @@ import { requireUser, TgUser } from '../auth';
 import { AGENT_IDS } from '../config';
 import {
   getOrderChat, addOrderChatMsg, listOrderChats,
-  markOrderChatReadAdmin, markOrderChatReadUser, getUserOrderChats,
+  markOrderChatReadAdmin, markOrderChatReadUser, getUserOrderChats, ensureOrderChat,
 } from '../repo';
 import { orderChatManager, sendJson } from '../realtime';
 import { notifyOrderChatUser } from '../notify';
@@ -102,7 +102,7 @@ export async function handleOrderChatConnection(ws: WebSocket, tgUser: TgUser, o
     } else if (msgType === 'select_order' && isAdmin) {
       const target = String(data.order_id ?? '');
       if (target) {
-        const chat = await getOrderChat(target);
+        const chat = await ensureOrderChat(target);
         await markOrderChatReadAdmin(target);
         sendJson(ws, { type: 'order_history', order_id: target, messages: chat ? (chat.messages as Doc[]) ?? [] : [] });
       }
@@ -121,6 +121,17 @@ router.get('/admin/chats', requireUser, asyncHandler(async (req, res) => {
   const chats = await listOrderChats(String(req.query.game_id ?? ''), String(req.query.product_id ?? ''));
   await enrichUsernames(chats);
   res.json(chats.map(fmt));
+}));
+
+// Admin taps "Написать клиенту" on an order that has no chat yet — e.g. its product had
+// redirect_to_chat off at purchase time (only /buy-stars opens one unconditionally). Creates
+// the chat on demand from the order's own data instead of leaving the button non-functional.
+router.post('/admin/:orderId/open', requireUser, asyncHandler(async (req, res) => {
+  if (!AGENT_IDS.has(req.tgUser.id)) throw new HttpError(403, 'Forbidden');
+  const chat = await ensureOrderChat(req.params.orderId);
+  if (!chat) throw new HttpError(404, 'Order not found');
+  await enrichUsernames([chat]);
+  res.json(fmt(chat));
 }));
 
 router.get('/my', requireUser, asyncHandler(async (req, res) => {

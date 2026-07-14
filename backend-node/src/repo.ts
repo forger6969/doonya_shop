@@ -579,6 +579,42 @@ export async function getOrCreateOrderChat(args: {
   return OrderChats.findOne({ order_id: args.orderId }).lean<Doc>();
 }
 
+// Admin clicked "Написать клиенту" on an order that never got a chat — e.g. its product
+// had `redirect_to_chat` off at purchase time (only /buy-stars creates one unconditionally;
+// /buy is opt-in per product). Looks up the order + product/game/user and opens a chat for
+// it now, instead of the button silently doing nothing when no chat exists yet.
+export async function ensureOrderChat(orderId: string): Promise<Doc | null> {
+  const existing = await OrderChats.findOne({ order_id: orderId }).lean<Doc>();
+  if (existing) return existing;
+
+  const id = oid(orderId);
+  if (!id) return null;
+  const order = await Orders.findById(id).lean<Doc>();
+  if (!order) return null;
+
+  // product_id/game_id are 'stars'/'telegram' literals (not ObjectIds) for Telegram Stars
+  // orders — oid() returns null for those, so skip the lookup rather than querying with an
+  // undefined filter (Mongoose would strip it and match an arbitrary first document).
+  const productOid = oid(String(order.product_id));
+  const gameOid = oid(String(order.game_id));
+  const [product, game, user] = await Promise.all([
+    productOid ? Products.findOne({ _id: productOid }).lean<Doc>() : null,
+    gameOid ? Games.findOne({ _id: gameOid }).lean<Doc>() : null,
+    Users.findOne({ user_id: order.user_id }).lean<Doc>(),
+  ]);
+
+  return getOrCreateOrderChat({
+    orderId,
+    userId: order.user_id as number,
+    productId: String(order.product_id),
+    gameId: String(order.game_id),
+    productName: (product?.name as string) ?? (order.product_id === 'stars' ? 'Telegram Stars' : ''),
+    gameName: (game?.name as string) ?? (order.game_id === 'telegram' ? 'Telegram' : ''),
+    username: (user?.username as string) ?? '',
+    firstName: (user?.first_name as string) ?? '',
+  });
+}
+
 export async function getOrderChat(orderId: string): Promise<Doc | null> {
   return OrderChats.findOne({ order_id: orderId }).lean<Doc>();
 }

@@ -18,7 +18,7 @@ import {
   adminGetPaymentMethods, adminCreatePaymentMethod, adminUpdatePaymentMethod,
   adminTogglePaymentMethod, adminDeletePaymentMethod, type PaymentMethod, type PaymentCard,
   getSupportWsUrl, agentGetAllUsers,
-  getOrderChatWsUrl, adminGetOrderChats, type AdminOrderChat,
+  getOrderChatWsUrl, adminGetOrderChats, adminOpenOrderChat, type AdminOrderChat,
   adminGetStaff, adminAddStaff, adminDeleteStaff, type StaffMember,
 } from "../api";
 import { useLang, type Lang } from "../i18n";
@@ -1517,14 +1517,27 @@ function AdminOrderChats({ initialOrderId }: { initialOrderId?: string | null })
     }
   };
 
-  // Auto-open a specific order chat when navigated from Orders section
+  // Auto-open a specific order chat when navigated from Orders section ("Написать клиенту").
+  // The order may never have gotten a chat (e.g. its product had redirect_to_chat off at
+  // purchase time — only Telegram Stars orders open one unconditionally) — in that case
+  // there's nothing to find in `chats` yet, so fall back to creating it on demand.
   useEffect(() => {
-    if (!initialOrderId || initialHandledRef.current || chats.length === 0) return;
+    if (!initialOrderId || initialHandledRef.current || !connected) return;
     const target = chats.find((c) => c.order_id === initialOrderId);
     if (target) {
       initialHandledRef.current = true;
       openChat(target);
+      return;
     }
+    // Not loaded yet vs. genuinely doesn't exist look the same here — ensureOrderChat is a
+    // safe no-op if it already exists, so it's fine to call even on a load-timing race.
+    initialHandledRef.current = true;
+    adminOpenOrderChat(initialOrderId)
+      .then((chat) => {
+        setChats((prev) => (prev.some((c) => c.order_id === chat.order_id) ? prev : [chat, ...prev]));
+        openChat(chat);
+      })
+      .catch(() => { initialHandledRef.current = false; });
   }, [initialOrderId, chats, connected]);
 
   const send = () => {
